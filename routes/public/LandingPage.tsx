@@ -1,60 +1,57 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Palette, 
   QrCode, 
   Users, 
   BarChart3, 
-  ArrowRight,
-  ExternalLink,
-  Zap
+  ArrowRight, 
+  ArrowUpRight,
+  Zap,
+  CheckCircle2
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { getCurrentUser } from '../../lib/storage';
-import { FeatureCard, PricingCard, FAQItem } from '../../components/landing/LandingUI';
+import { FeatureCard, PricingCard } from '../../components/landing/LandingUI';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const [isScrolled, setIsScrolled] = useState(false);
   const user = getCurrentUser();
 
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const ctaTarget = !user ? "/login" : (user.role === 'admin' ? "/admin" : "/app");
-
-  const navigateToCta = () => navigate(ctaTarget);
+  // Logic for redirection based on auth state
+  const handleStart = () => {
+    if (!user) {
+      navigate('/login');
+    } else if (user.role === 'admin') {
+      navigate('/admin');
+    } else {
+      navigate('/app');
+    }
+  };
 
   return (
-    <div className="bg-[#050505] text-white min-h-screen selection:bg-blue-500 selection:text-white font-['Inter']">
+    <div className="bg-[#030303] text-white min-h-screen font-['Inter'] selection:bg-white selection:text-black overflow-x-hidden">
       
-      {/* Navbar */}
-      <nav className={clsx(
-        "fixed top-0 left-0 right-0 z-[100] transition-all duration-500 px-6 h-20 flex items-center justify-center",
-        isScrolled ? "bg-black/80 backdrop-blur-xl border-b border-white/5" : "bg-transparent"
-      )}>
-        <div className="max-w-6xl w-full flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-black text-white text-xs">LF</div>
-            <span className="font-black text-lg tracking-tighter">LinkFlow</span>
+      {/* 1) TOPO (Navbar) */}
+      <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-6 bg-gradient-to-b from-black/80 to-transparent backdrop-blur-[2px]">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center font-black text-black text-xs shadow-[0_0_15px_rgba(255,255,255,0.3)]">LF</div>
+            <span className="font-bold text-lg tracking-tight hidden sm:block">LinkFlow SaaS</span>
           </div>
 
-          <div className="hidden md:flex items-center gap-10">
-            <a href="#recursos" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors">Recursos</a>
-            <a href="#precos" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors">Preços</a>
-            <a href="#faq" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors">FAQ</a>
-          </div>
-
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
             {!user && (
-              <Link to="/login" className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-colors">Entrar</Link>
+              <Link 
+                to="/login" 
+                className="text-xs font-bold text-zinc-400 hover:text-white transition-colors uppercase tracking-widest px-4"
+              >
+                Entrar
+              </Link>
             )}
             <button 
-              onClick={navigateToCta}
-              className="bg-white text-black px-6 py-2.5 rounded-full font-black text-[10px] uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all active:scale-95 shadow-xl shadow-white/5"
+              onClick={handleStart}
+              className="bg-white text-black px-6 py-3 rounded-full font-black text-[10px] uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all active:scale-95"
             >
               {user ? 'Acessar Painel' : 'Começar'}
             </button>
@@ -62,166 +59,170 @@ const LandingPage: React.FC = () => {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="pt-40 pb-32 px-6 flex flex-col items-center text-center relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-        
-        <div className="max-w-4xl space-y-8 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full">
-            <Zap size={10} className="text-blue-500" />
-            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">QR + NFC + Insights em um só lugar</span>
-          </div>
-          
-          <h1 className="text-5xl md:text-8xl font-black tracking-tighter leading-[0.9] text-white">
-            Sua identidade digital <br /> em um toque.
-          </h1>
-          
-          <p className="text-lg md:text-xl text-zinc-500 max-w-2xl mx-auto leading-relaxed">
-            Crie perfis profissionais de elite para compartilhar suas redes, portfólio e contatos via QR Code ou tecnologia NFC.
-          </p>
+      {/* 2) HERO (Principal) */}
+      <section className="pt-48 pb-32 px-6 relative flex flex-col items-center justify-center min-h-[90vh]">
+        {/* Ambient Background */}
+        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-white/[0.03] rounded-[100%] blur-[120px] pointer-events-none"></div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <button 
-              onClick={navigateToCta}
-              className="bg-blue-600 text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-blue-500 transition-all active:scale-95 shadow-2xl shadow-blue-600/20"
-            >
-              Criar meu perfil grátis
-              <ArrowRight size={18} />
-            </button>
-            <Link to="/u/israel" className="px-10 py-5 rounded-2xl border border-white/10 text-zinc-400 hover:text-white hover:bg-white/5 transition-all font-black text-xs uppercase tracking-widest flex items-center gap-2">
-              Ver exemplo
-              <ExternalLink size={18} />
-            </Link>
-          </div>
-        </div>
-
-        {/* Mockup */}
-        <div className="mt-24 w-full max-w-lg mx-auto p-4 bg-zinc-900/20 border border-white/5 rounded-[3rem] shadow-2xl animate-in fade-in slide-in-from-bottom-10 duration-1000">
-          <div className="bg-black rounded-[2.5rem] overflow-hidden border border-white/5 aspect-[9/16] relative group">
-            <div className="h-40 bg-zinc-900 relative">
-               <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-20 h-20 rounded-full bg-blue-600 border-8 border-black shadow-xl"></div>
+        <div className="max-w-4xl w-full grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative z-10">
+          
+          {/* Text Content */}
+          <div className="text-center lg:text-left space-y-8">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 backdrop-blur-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Novo: NFC 2.0 Suportado</span>
             </div>
-            <div className="pt-16 px-6 text-center space-y-6">
-              <div className="h-4 w-32 bg-zinc-800 rounded-full mx-auto"></div>
-              <div className="h-2 w-48 bg-zinc-900 rounded-full mx-auto"></div>
-              
-              <div className="space-y-3 pt-6">
-                {[1,2,3].map(i => (
-                  <div key={i} className="h-14 bg-white/5 border border-white/5 rounded-2xl flex items-center px-4 gap-4">
-                    <div className="w-8 h-8 rounded-lg bg-white/5"></div>
-                    <div className="h-2 w-24 bg-white/5 rounded-full"></div>
-                  </div>
-                ))}
-              </div>
+
+            <div className="space-y-4">
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter leading-[0.95]">
+                Seu perfil digital <br/>
+                <span className="text-zinc-500">em um único link.</span>
+              </h1>
+              <p className="text-lg text-zinc-400 font-medium leading-relaxed max-w-md mx-auto lg:mx-0">
+                Compartilhe contatos, links e presença online com QR Code e tecnologia NFC instantânea.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 justify-center lg:justify-start">
+              <button 
+                onClick={handleStart}
+                className="bg-white text-black px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+              >
+                Criar meu perfil
+                <ArrowRight size={16} />
+              </button>
+              <Link 
+                to="/u/israel" 
+                className="px-8 py-4 rounded-2xl border border-white/10 text-zinc-400 hover:text-white hover:bg-white/5 transition-all font-black text-xs uppercase tracking-widest flex items-center gap-2"
+              >
+                Ver exemplo
+                <ArrowUpRight size={16} />
+              </Link>
             </div>
           </div>
+
+          {/* Phone Mockup (CSS Only) */}
+          <div className="flex justify-center lg:justify-end">
+             <div className="relative w-[280px] h-[540px] bg-[#080808] border-[8px] border-[#1a1a1a] rounded-[3rem] shadow-2xl rotate-[-6deg] hover:rotate-0 transition-all duration-700 ease-out group">
+                {/* Screen */}
+                <div className="w-full h-full bg-[#050505] rounded-[2.3rem] overflow-hidden relative flex flex-col items-center pt-12 px-5">
+                   {/* Dynamic Island */}
+                   <div className="absolute top-4 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-20"></div>
+                   
+                   {/* Profile Content */}
+                   <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 mb-4 shadow-lg group-hover:scale-110 transition-transform"></div>
+                   <div className="w-32 h-4 bg-zinc-800 rounded-full mb-2"></div>
+                   <div className="w-20 h-2 bg-zinc-900 rounded-full mb-8"></div>
+
+                   {/* Buttons */}
+                   <div className="w-full space-y-3">
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className="w-full h-12 rounded-xl bg-zinc-900 border border-white/5 flex items-center px-4 gap-3 group-hover:bg-zinc-800 transition-colors">
+                           <div className="w-6 h-6 rounded-md bg-white/5"></div>
+                           <div className="w-20 h-2 bg-white/10 rounded-full"></div>
+                        </div>
+                      ))}
+                   </div>
+
+                   {/* Floating Label */}
+                   <div className="absolute bottom-8 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-white">Visual Premium</p>
+                   </div>
+                </div>
+                {/* Glow behind phone */}
+                <div className="absolute -inset-10 bg-blue-500/20 blur-[60px] -z-10 rounded-full opacity-50"></div>
+             </div>
+          </div>
+
         </div>
       </section>
 
-      {/* Recursos */}
-      <section id="recursos" className="py-32 px-6 max-w-6xl mx-auto">
-        <header className="mb-20">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-500 mb-4">Recursos</h2>
-          <h3 className="text-4xl md:text-5xl font-black tracking-tighter">Focado em performance.</h3>
-        </header>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* 3) RECURSOS */}
+      <section className="py-32 px-6 max-w-7xl mx-auto">
+        <div className="mb-16">
+           <h2 className="text-3xl md:text-5xl font-black tracking-tighter mb-6">Tudo o que você precisa.</h2>
+           <p className="text-zinc-500 max-w-md">Ferramentas essenciais para profissionais modernos e empresas.</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <FeatureCard 
             icon={Palette} 
-            title="Templates Prontos" 
-            desc="Designs de elite otimizados para conversão e leitura em qualquer dispositivo." 
+            title="Templates" 
+            desc="Designs minimalistas prontos para uso." 
           />
           <FeatureCard 
             icon={QrCode} 
-            title="QR Code & NFC" 
-            desc="Compartilhe instantaneamente encostando seu celular ou lendo seu código exclusivo." 
+            title="QR & NFC" 
+            desc="Conexão física e digital instantânea." 
           />
           <FeatureCard 
             icon={Users} 
-            title="Múltiplos Perfis" 
-            desc="Gerencie diferentes identidades (pessoal, business, eventos) em uma única conta." 
+            title="Multi-perfil" 
+            desc="Gerencie várias marcas em uma conta." 
           />
           <FeatureCard 
             icon={BarChart3} 
-            title="Insights & Cliques" 
-            desc="Telemetria completa para saber quem, quando e de onde seus links foram clicados." 
+            title="Insights" 
+            desc="Monitore cliques e visualizações reais." 
           />
         </div>
       </section>
 
-      {/* Preços */}
-      <section id="precos" className="py-32 px-6 max-w-6xl mx-auto">
-        <header className="mb-20 text-center">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-500 mb-4">Investimento</h2>
-          <h3 className="text-4xl md:text-5xl font-black tracking-tighter">Escolha seu plano.</h3>
-        </header>
+      {/* 4) PREÇOS */}
+      <section className="py-32 px-6 max-w-6xl mx-auto">
+        <div className="text-center mb-16">
+           <h2 className="text-3xl md:text-5xl font-black tracking-tighter">Planos simples.</h2>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
           <PricingCard 
-            plan="Free" 
-            price="R$ 0" 
-            features={['1 Perfil Ativo', 'Analytics Básico', 'Layouts Padrão']}
-            ctaLabel="Começar Grátis"
-            onCta={() => navigate('/login')}
+            plan="Gratuito" 
+            price="Grátis" 
+            features={['1 Perfil Ativo', 'QR Code Básico', 'Tema Dark']}
+            ctaLabel="Começar Agora"
+            onCta={handleStart}
           />
           <PricingCard 
-            plan="Pro" 
+            plan="Pro Master" 
             price="R$ 29" 
-            features={['5 Perfis Ativos', 'Advanced Insights', 'NFC Ativado']}
-            highlighted
-            ctaLabel="Assinar Pro"
-            onCta={() => navigate('/login')}
+            features={['5 Perfis Ativos', 'Analytics Avançado', 'Remover Marca LinkFlow']}
+            highlighted={true}
+            ctaLabel="Experimentar Pro"
+            onCta={handleStart}
           />
           <PricingCard 
-            plan="Business" 
+            plan="Enterprise" 
             price="R$ 89" 
-            features={['Perfis Ilimitados', 'API Access', 'Custom Domain']}
+            features={['Perfis Ilimitados', 'API de Integração', 'Domínio Personalizado']}
             ctaLabel="Falar com Vendas"
-            onCta={() => navigate('/login')}
+            onCta={handleStart}
           />
         </div>
       </section>
 
-      {/* FAQ */}
-      <section id="faq" className="py-32 px-6 max-w-3xl mx-auto">
-        <h3 className="text-3xl font-black tracking-tighter mb-12 text-center">Dúvidas Frequentes</h3>
-        <div className="space-y-2">
-          <FAQItem 
-            question="Funciona com iPhone e Android?" 
-            answer="Sim! O LinkFlow é otimizado para ambos os sistemas operacionais, utilizando leitura nativa de QR Code e NFC." 
-          />
-          <FAQItem 
-            question="Preciso de um app para ler o NFC?" 
-            answer="Não. O receptor não precisa de nada instalado. Ao aproximar o celular, o seu perfil abre automaticamente no navegador." 
-          />
-          <FAQItem 
-            question="Posso ter mais de um perfil?" 
-            answer="Sim. Dependendo do seu plano (Pro ou Business), você pode gerenciar vários perfis independentes em uma mesma conta." 
-          />
-          <FAQItem 
-            question="Consigo replicar o design para meus perfis?" 
-            answer="Sim! Nosso editor permite copiar estilos e configurações entre seus perfis com apenas um clique." 
-          />
-        </div>
+      {/* 5) CTA FINAL */}
+      <section className="py-32 px-6 text-center border-t border-white/5">
+         <div className="max-w-2xl mx-auto space-y-10">
+            <h2 className="text-4xl md:text-6xl font-black tracking-tighter">
+              Comece agora seu <br/> perfil digital.
+            </h2>
+            <button 
+              onClick={handleStart}
+              className="bg-white text-black px-12 py-6 rounded-full font-black text-sm uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all active:scale-95 shadow-2xl"
+            >
+              Criar meu perfil
+            </button>
+            <p className="text-zinc-600 text-xs font-medium">
+              Sem cartão de crédito necessário para começar.
+            </p>
+         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-20 px-6 border-t border-white/5 text-center">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center font-black text-white text-[10px]">L</div>
-            <span className="font-black text-sm tracking-tighter">LinkFlow</span>
-          </div>
-          
-          <div className="text-[10px] font-black uppercase tracking-widest text-zinc-700">
-            © 2024 LinkFlow Master Industries
-          </div>
-
-          <div className="flex gap-8">
-            <a href="#" className="text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">Privacidade</a>
-            <a href="#" className="text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors">Termos</a>
-          </div>
-        </div>
+      {/* Footer Minimal */}
+      <footer className="py-12 text-center border-t border-white/5 bg-black">
+        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-700">
+          © {new Date().getFullYear()} LinkFlow SaaS • Privacidade • Termos
+        </p>
       </footer>
     </div>
   );
