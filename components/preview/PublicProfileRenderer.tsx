@@ -18,13 +18,10 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, sou
   const { theme, fonts, buttons, layoutTemplate } = profile;
   const [pixCopied, setPixCopied] = useState(false);
 
-  // No editor (isPreview), mostramos os blocos Pro para feedback visual,
-  // mas na página pública, apenas se for realmente Pro.
   const canUseProBlocks = isPreview || !!isPro;
-
   const proCardClass = "mt-6 w-full rounded-[2rem] border border-white/10 bg-white/5 backdrop-blur-2xl p-5 overflow-hidden shadow-2xl";
 
-  const pushLead = (payload: { name: string; phone?: string; email?: string; message?: string }) => {
+  const pushLead = (payload: { name: string; contact: string; message?: string }) => {
     if (isPreview || !isPro) return;
     updateStorage(prev => ({
       ...prev,
@@ -35,8 +32,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, sou
           clientId: profile.clientId,
           profileId: profile.id,
           name: payload.name,
-          phone: payload.phone,
-          email: payload.email,
+          contact: payload.contact,
           message: payload.message,
           createdAt: new Date().toISOString(),
           source,
@@ -424,7 +420,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, sou
                 <NpsBlock onSubmit={pushNps} className={proCardClass} />
               )}
 
-              {/* Leads */}
+              {/* Leads - Fale Comigo Section */}
               {profile.enableLeadCapture && (
                 <LeadBlock onSubmit={pushLead} className={proCardClass} />
               )}
@@ -497,11 +493,10 @@ const NpsBlock: React.FC<{ className: string; onSubmit: (score: number, comment?
   );
 };
 
-const LeadBlock: React.FC<{ className: string; onSubmit: (data: { name: string; phone?: string; email?: string; message?: string }) => void }> = ({ className, onSubmit }) => {
+const LeadBlock: React.FC<{ className: string; onSubmit: (data: { name: string; contact: string; message?: string }) => void }> = ({ className, onSubmit }) => {
   const [sent, setSent] = React.useState(false);
   const [name, setName] = React.useState('');
-  const [phone, setPhone] = React.useState('');
-  const [email, setEmail] = React.useState('');
+  const [contact, setContact] = React.useState('');
   const [message, setMessage] = React.useState('');
 
   if (sent) {
@@ -516,8 +511,8 @@ const LeadBlock: React.FC<{ className: string; onSubmit: (data: { name: string; 
   return (
     <div className={className}>
       <div className="flex items-center justify-between mb-3">
-        <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Deixe seus dados</div>
-        <LucideIcons.FileInput size={16} className="opacity-50" />
+        <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Fale comigo</div>
+        <LucideIcons.MessageSquare size={16} className="opacity-50" />
       </div>
 
       <div className="space-y-2">
@@ -527,20 +522,12 @@ const LeadBlock: React.FC<{ className: string; onSubmit: (data: { name: string; 
           placeholder="Seu nome*"
           className="w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-xs outline-none focus:border-white/30"
         />
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="WhatsApp"
-            className="w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-xs outline-none focus:border-white/30"
-          />
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            className="w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-xs outline-none focus:border-white/30"
-          />
-        </div>
+        <input
+          value={contact}
+          onChange={(e) => setContact(e.target.value)}
+          placeholder="E-mail ou WhatsApp*"
+          className="w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-xs outline-none focus:border-white/30"
+        />
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -551,13 +538,12 @@ const LeadBlock: React.FC<{ className: string; onSubmit: (data: { name: string; 
       </div>
 
       <button
-        disabled={!name.trim()}
+        disabled={!name.trim() || !contact.trim()}
         onClick={() => {
-          if (!name.trim()) return;
+          if (!name.trim() || !contact.trim()) return;
           onSubmit({
             name: name.trim(),
-            phone: phone.trim() || undefined,
-            email: email.trim() || undefined,
+            contact: contact.trim(),
             message: message.trim() || undefined,
           });
           setSent(true);

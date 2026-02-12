@@ -260,7 +260,7 @@ const ClientDashboard: React.FC = () => {
                     <div key={l.id} className="flex items-center justify-between gap-3 text-xs">
                       <div className="min-w-0">
                         <div className="font-bold truncate">{l.name}</div>
-                        <div className="text-[10px] text-zinc-500 truncate">{l.email || l.phone || 'Sem contato'}</div>
+                        <div className="text-[10px] text-zinc-500 truncate">{l.contact}</div>
                       </div>
                       <div className="text-[10px] text-zinc-600 whitespace-nowrap">{new Date(l.createdAt).toLocaleDateString('pt-BR')}</div>
                     </div>

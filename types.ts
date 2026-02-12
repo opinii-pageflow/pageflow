@@ -15,8 +15,8 @@ export interface CatalogItem {
   kind: CatalogItemKind;
   title: string;
   description: string;
-  price?: string; // Alterado de priceText para price
-  image?: string; // Alterado de imageUrl para image
+  price?: string;
+  image?: string;
   ctaLabel?: string;
   ctaLink?: string;
   sortOrder: number;
@@ -36,7 +36,7 @@ export interface YoutubeVideoItem {
   id: string;
   profileId: string;
   title?: string;
-  url: string; // qualquer url válida do YouTube
+  url: string;
   sortOrder: number;
   isActive: boolean;
 }
@@ -46,8 +46,7 @@ export interface LeadCapture {
   clientId: string;
   profileId: string;
   name: string;
-  phone?: string;
-  email?: string;
+  contact: string; // Campo unificado solicitado
   message?: string;
   createdAt: string; // ISO
   source: AnalyticsSource;
@@ -80,8 +79,8 @@ export interface Client {
   maxTemplates?: number;
   createdAt: string;
   isActive: boolean;
-  password?: string; // autenticação do cliente
-  email?: string;    // e-mail de login do cliente
+  password?: string;
+  email?: string;
 }
 
 export interface ProfileButton {
