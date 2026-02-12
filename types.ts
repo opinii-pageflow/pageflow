@@ -6,6 +6,8 @@ export type VisibilityMode = 'public' | 'private' | 'password';
 export type AnalyticsSource = 'direct' | 'qr' | 'nfc';
 export type EventType = 'view' | 'click';
 
+export type LeadStatus = 'novo' | 'contatado' | 'negociando' | 'fechado' | 'perdido';
+
 // ===== Pro Modules =====
 export type CatalogItemKind = 'product' | 'service';
 
@@ -46,8 +48,10 @@ export interface LeadCapture {
   clientId: string;
   profileId: string;
   name: string;
-  contact: string; // Campo unificado solicitado
+  contact: string;
   message?: string;
+  status: LeadStatus;
+  notes?: string;
   createdAt: string; // ISO
   source: AnalyticsSource;
 }
