@@ -20,7 +20,8 @@ import {
   Target,
   Smile,
   Meh,
-  Frown
+  Frown,
+  MessageSquare
 } from 'lucide-react';
 import { getProfileSummary } from '../../lib/analytics';
 import TopBar from '../../components/common/TopBar';
@@ -269,24 +270,27 @@ const ClientDashboard: React.FC = () => {
                   <div className={clsx(
                     "p-4 rounded-2xl group-hover:scale-110 transition-transform",
                     isPro ? "text-blue-400 bg-blue-500/10" : "text-zinc-500 bg-white/5"
-                  )}><ExternalLink size={24} /></div>
+                  )}><MessageSquare size={24} /></div>
                   <div className="text-right">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Leads</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Leads Recentes</div>
                     <div className="text-3xl font-black tracking-tighter">{isPro ? leadsRecent.length : '—'}</div>
                   </div>
                 </div>
                 {isPro ? (
                   <div className="space-y-2">
                     {leadsRecent.length === 0 ? (
-                      <div className="text-xs text-zinc-500">Nenhum lead neste período.</div>
+                      <div className="text-xs text-zinc-500 flex flex-col items-center justify-center py-4 opacity-60">
+                         <span>Nenhum contato recebido.</span>
+                         <span className="text-[10px] mt-1">Compartilhe mais seu perfil!</span>
+                      </div>
                     ) : (
                       leadsRecent.slice(0, 5).map((l) => (
-                        <div key={l.id} className="flex items-center justify-between gap-3 text-xs">
+                        <div key={l.id} className="flex items-center justify-between gap-3 text-xs p-2 hover:bg-white/5 rounded-xl transition-colors">
                           <div className="min-w-0">
-                            <div className="font-bold truncate">{l.name}</div>
-                            <div className="text-[10px] text-zinc-500 truncate">{l.contact}</div>
+                            <div className="font-bold truncate text-white">{l.name}</div>
+                            <div className="text-[10px] text-zinc-500 truncate">{l.contact || l.email || l.phone || 'Sem contato'}</div>
                           </div>
-                          <div className="text-[10px] text-zinc-600 whitespace-nowrap">{new Date(l.createdAt).toLocaleDateString('pt-BR')}</div>
+                          <div className="text-[9px] text-zinc-600 whitespace-nowrap font-mono">{new Date(l.createdAt).toLocaleDateString('pt-BR')}</div>
                         </div>
                       ))
                     )}
@@ -314,9 +318,9 @@ const ClientDashboard: React.FC = () => {
                       <div className="w-20 h-20 rounded-full border-4 border-white/5 flex items-center justify-center bg-black/20 shadow-inner">
                         <span className="text-2xl font-black text-white">{npsAvg.toFixed(1)}</span>
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <div className="text-xs text-zinc-400 font-bold mb-1">Satisfação Geral</div>
-                        <div className="h-2 w-32 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
                           <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000" style={{ width: `${(npsAvg / 10) * 100}%` }}></div>
                         </div>
                         <div className="text-[10px] uppercase tracking-widest text-zinc-600 mt-2">{npsRecent.length} Avaliações</div>
