@@ -1,13 +1,13 @@
-
 import React from 'react';
-import { Profile } from '../../types';
+import { Profile, PlanType } from '../../types';
 import PublicProfileRenderer from './PublicProfileRenderer';
 
 interface Props {
   profile: Profile;
+  clientPlan?: PlanType;
 }
 
-const PhonePreview: React.FC<Props> = ({ profile }) => {
+const PhonePreview: React.FC<Props> = ({ profile, clientPlan }) => {
   return (
     <div className="relative group perspective-1000 h-full max-h-[600px] flex items-center justify-center">
       {/* Chassis Externo Sombreado */}
@@ -24,7 +24,7 @@ const PhonePreview: React.FC<Props> = ({ profile }) => {
           {/* Conteúdo do App */}
           <div className="w-full h-full overflow-y-auto no-scrollbar bg-black">
             <div className="min-h-full flex flex-col">
-               <PublicProfileRenderer profile={profile} isPreview={true} />
+               <PublicProfileRenderer profile={profile} isPreview={true} clientPlan={clientPlan} />
             </div>
           </div>
 

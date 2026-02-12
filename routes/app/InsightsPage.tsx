@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { getProfileSummary } from '../../lib/analytics';
 import { getCurrentUser, getStorage } from '../../lib/storage';
+import { canAccessFeature } from '../../lib/permissions';
 import TopBar from '../../components/common/TopBar';
 import { 
   MousePointer2, 
@@ -9,8 +10,6 @@ import {
   TrendingUp,
   Filter,
   Layout,
-  Clock,
-  Lock,
   Zap,
   ChevronRight
 } from 'lucide-react';
@@ -51,7 +50,10 @@ const InsightsPage: React.FC = () => {
   const clientProfiles = useMemo(() => data.profiles.filter(p => p.clientId === user?.clientId), [data.profiles, user?.clientId]);
   const summary = useMemo(() => getProfileSummary('all', days), [days]);
 
-  if (client?.plan === 'starter') {
+  // Usando permissões centralizadas
+  const hasAnalyticsAccess = canAccessFeature(client?.plan, 'analytics');
+
+  if (!hasAnalyticsAccess) {
     return (
       <div className="min-h-screen bg-[#020202] text-white">
         <TopBar title="Análise de Performance" />
@@ -157,7 +159,7 @@ const InsightsPage: React.FC = () => {
 
             <div className="bg-zinc-900/40 border border-white/5 p-12 rounded-[4rem] flex items-center gap-10 relative overflow-hidden group shadow-2xl">
                <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <Clock size={160} />
+                  <LucideIcons.Clock size={160} />
                </div>
                <div className="w-24 h-24 bg-blue-500/10 text-blue-500 rounded-[2.5rem] flex items-center justify-center border border-blue-500/20 shadow-inner">
                   <TrendingUp size={48} />

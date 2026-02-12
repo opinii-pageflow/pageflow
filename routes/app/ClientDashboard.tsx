@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCurrentUser, getStorage } from '../../lib/storage';
 import { 
@@ -11,7 +11,6 @@ import {
   TrendingUp, 
   ChevronRight, 
   Zap, 
-  Clock,
   ExternalLink,
   ArrowUpRight,
   Shield,
@@ -26,8 +25,8 @@ import {
 } from 'lucide-react';
 import { getProfileSummary } from '../../lib/analytics';
 import { PLANS } from '../../lib/plans';
+import { canAccessFeature } from '../../lib/permissions';
 import TopBar from '../../components/common/TopBar';
-import CrmManager from '../../components/crm/CrmManager';
 import AdvancedCrm from '../../components/crm/AdvancedCrm';
 import clsx from 'clsx';
 
@@ -43,13 +42,14 @@ const ClientDashboard: React.FC = () => {
   const client = data.clients.find(c => c.id === user?.clientId);
   const summary = useMemo(() => getProfileSummary('all', days), [days]);
 
-  const isPro = client?.plan !== 'starter';
-  const isBusiness = client?.plan === 'business' || client?.plan === 'enterprise';
+  // Usando a nova lógica de permissões
+  const hasProAccess = canAccessFeature(client?.plan, 'catalog');
+  const hasCrmAccess = canAccessFeature(client?.plan, 'crm');
+  const hasNpsAccess = canAccessFeature(client?.plan, 'nps');
   
   const now = Date.now();
   const ms = days * 24 * 60 * 60 * 1000;
 
-  // Filtros para cards de visão geral
   const leadsRecent = useMemo(() =>
     data.leads
       .filter(l => l.clientId === user?.clientId)
@@ -57,7 +57,6 @@ const ClientDashboard: React.FC = () => {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   , [data.leads, user?.clientId, days]);
 
-  // Todos os leads do cliente para o módulo de CRM
   const allLeads = useMemo(() => 
     data.leads
       .filter(l => l.clientId === user?.clientId)
@@ -100,8 +99,8 @@ const ClientDashboard: React.FC = () => {
 
       <main className="max-w-7xl mx-auto p-6 lg:p-10 pt-32 relative z-10 pb-40">
         
-        {/* Navigation Tabs if Business */}
-        {isBusiness && (
+        {/* Navigation Tabs if Business or Higher */}
+        {hasCrmAccess && (
           <div className="mb-12 flex bg-zinc-900/40 p-1.5 rounded-[2rem] border border-white/5 w-fit animate-in fade-in duration-1000">
              <button 
               onClick={() => setActiveTab('overview')}
@@ -125,7 +124,7 @@ const ClientDashboard: React.FC = () => {
         )}
 
         {/* LOGIC SWITCHER: OVERVIEW vs CRM */}
-        {activeTab === 'crm' && isBusiness ? (
+        {activeTab === 'crm' && hasCrmAccess ? (
           <AdvancedCrm leads={allLeads} />
         ) : (
           /* ================= OVERVIEW CONTENT ================= */
@@ -321,20 +320,19 @@ const ClientDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Leads (Pro) - Só mostra se não for Business (já que Business tem a aba dedicada) OU mantém como resumo */}
-              {/* Optei por manter como resumo "Leads Recentes" para consistência visual */}
+              {/* Leads (CRM) */}
               <div className="md:col-span-3 lg:col-span-6 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between shadow-2xl group animate-in fade-in zoom-in-95 duration-500 delay-200">
                 <div className="flex items-center justify-between mb-8">
                   <div className={clsx(
                     "p-4 rounded-2xl group-hover:scale-110 transition-transform",
-                    isPro ? "text-blue-400 bg-blue-500/10" : "text-zinc-500 bg-white/5"
+                    hasCrmAccess ? "text-blue-400 bg-blue-500/10" : "text-zinc-500 bg-white/5"
                   )}><MessageSquare size={24} /></div>
                   <div className="text-right">
                     <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Leads Recentes</div>
-                    <div className="text-3xl font-black tracking-tighter">{isPro ? leadsRecent.length : '—'}</div>
+                    <div className="text-3xl font-black tracking-tighter">{hasCrmAccess ? leadsRecent.length : '—'}</div>
                   </div>
                 </div>
-                {isPro ? (
+                {hasCrmAccess ? (
                   <div className="space-y-2">
                     {leadsRecent.length === 0 ? (
                       <div className="text-xs text-zinc-500 flex flex-col items-center justify-center py-4 opacity-60">
@@ -354,23 +352,25 @@ const ClientDashboard: React.FC = () => {
                     )}
                   </div>
                 ) : (
-                  <div className="text-xs text-zinc-500 flex items-center gap-2"><Lock size={14} /> Disponível no Pro</div>
+                  <div className="text-xs text-zinc-500 flex items-center gap-2 font-bold uppercase tracking-widest">
+                    <Lock size={14} /> Disponível no Business
+                  </div>
                 )}
               </div>
 
-              {/* NPS Dashboard (Pro) */}
+              {/* NPS Dashboard */}
               <div className="md:col-span-3 lg:col-span-6 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between shadow-2xl group animate-in fade-in zoom-in-95 duration-500 delay-300">
                 <div className="flex items-center justify-between mb-8">
                   <div className={clsx(
                     "p-4 rounded-2xl group-hover:scale-110 transition-transform",
-                    isPro ? "text-emerald-400 bg-emerald-500/10" : "text-zinc-500 bg-white/5"
+                    hasNpsAccess ? "text-emerald-400 bg-emerald-500/10" : "text-zinc-500 bg-white/5"
                   )}><TrendingUp size={24} /></div>
                   <div className="text-right">
                     <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">NPS Score</div>
-                    <div className={clsx("text-3xl font-black tracking-tighter", isPro && npsScore > 0 ? "text-emerald-500" : isPro ? "text-zinc-300" : "")}>{isPro ? Math.round(npsScore) : '—'}</div>
+                    <div className={clsx("text-3xl font-black tracking-tighter", hasNpsAccess && npsScore > 0 ? "text-emerald-500" : hasNpsAccess ? "text-zinc-300" : "")}>{hasNpsAccess ? Math.round(npsScore) : '—'}</div>
                   </div>
                 </div>
-                {isPro ? (
+                {hasNpsAccess ? (
                   <div className="space-y-6">
                     <div className="flex items-center gap-5">
                       <div className="w-20 h-20 rounded-full border-4 border-white/5 flex items-center justify-center bg-black/20 shadow-inner">
@@ -404,7 +404,9 @@ const ClientDashboard: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-xs text-zinc-500 flex items-center gap-2"><Lock size={14} /> Disponível no Pro</div>
+                  <div className="text-xs text-zinc-500 flex items-center gap-2 font-bold uppercase tracking-widest">
+                    <Lock size={14} /> Disponível no Business
+                  </div>
                 )}
               </div>
             </div>
@@ -475,7 +477,7 @@ const ClientDashboard: React.FC = () => {
         )}
         
         {/* Pro Teaser Footer */}
-        {!isBusiness && activeTab !== 'crm' && (
+        {!hasCrmAccess && activeTab !== 'crm' && (
           <footer className="mt-20">
              <div className="bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 border border-white/10 rounded-[3.5rem] p-12 relative overflow-hidden group shadow-[0_0_80px_rgba(37,99,235,0.1)]">
                 <div className="absolute top-0 right-0 p-20 opacity-10 pointer-events-none group-hover:rotate-12 group-hover:scale-110 transition-transform duration-1000">

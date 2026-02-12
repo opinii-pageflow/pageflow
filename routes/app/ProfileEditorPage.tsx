@@ -19,7 +19,7 @@ import {
   Zap
 } from 'lucide-react';
 import { getStorage, updateStorage, copyStyleToClipboard, getStyleFromClipboard, StyleConfig } from '../../lib/storage';
-import { Profile } from '../../types';
+import { Profile, PlanType } from '../../types';
 import PhonePreview from '../../components/preview/PhonePreview';
 
 // Tabs Components
@@ -43,7 +43,7 @@ const ProfileEditorPage: React.FC = () => {
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [clipboard, setClipboard] = useState<StyleConfig | null>(getStyleFromClipboard());
   const [justCopied, setJustCopied] = useState(false);
-  const [isPro, setIsPro] = useState(false);
+  const [clientPlan, setClientPlan] = useState<PlanType | undefined>();
 
   useEffect(() => {
     const data = getStorage();
@@ -51,8 +51,7 @@ const ProfileEditorPage: React.FC = () => {
     if (found) {
       setProfile({ ...found });
       const client = data.clients.find(c => c.id === found.clientId);
-      // REGRA: Starter não tem acesso ao ProTab. Pro, Business e Enterprise sim.
-      setIsPro(client?.plan !== 'starter');
+      setClientPlan(client?.plan);
     } else {
       navigate('/app/profiles');
     }
@@ -216,7 +215,7 @@ const ProfileEditorPage: React.FC = () => {
             <button 
               onClick={handleSave}
               disabled={!hasUnsavedChanges || isSaving}
-              className="bg-white text-black px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 disabled:opacity-10 transition-all hover:bg-zinc-200 active:scale-95 shadow-xl shadow-white/5"
+              className="bg-white text-black px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-10 transition-all hover:bg-zinc-200 active:scale-95 shadow-xl shadow-white/5"
             >
               {isSaving ? (
                 <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
@@ -263,7 +262,7 @@ const ProfileEditorPage: React.FC = () => {
               {activeTab === 'templates' && <TemplatesTab profile={profile} onUpdate={handleUpdateProfile} />}
               {activeTab === 'fonts' && <FontsTab profile={profile} onUpdate={handleUpdateProfile} />}
               {activeTab === 'share' && <ShareTab profile={profile} />}
-              {activeTab === 'pro' && <ProTab profile={profile} isPro={isPro} onUpdate={handleUpdateProfile} />}
+              {activeTab === 'pro' && <ProTab profile={profile} clientPlan={clientPlan} onUpdate={handleUpdateProfile} />}
             </div>
           </div>
         </div>
@@ -291,7 +290,7 @@ const ProfileEditorPage: React.FC = () => {
             </div>
 
             <div className="w-full h-full flex items-center justify-center overflow-hidden">
-              <PhonePreview profile={profile} />
+              <PhonePreview profile={profile} clientPlan={clientPlan} />
             </div>
           </div>
         </div>

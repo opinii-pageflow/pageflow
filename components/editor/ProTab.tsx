@@ -1,18 +1,22 @@
 import React, { useRef } from 'react';
 import { Plus, Trash2, Lock, Sparkles, ArrowUp, ArrowDown, Image, Youtube, QrCode, Upload } from 'lucide-react';
 import clsx from 'clsx';
-import { CatalogItem, PortfolioItem, Profile, YoutubeVideoItem } from '../../types';
+import { CatalogItem, PortfolioItem, Profile, YoutubeVideoItem, PlanType } from '../../types';
+import { canAccessFeature } from '../../lib/permissions';
 
 type Props = {
   profile: Profile;
-  isPro: boolean;
+  clientPlan?: PlanType;
   onUpdate: (updates: Partial<Profile>) => void;
 };
 
-const ProTab: React.FC<Props> = ({ profile, isPro, onUpdate }) => {
+const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
-  if (!isPro) {
+  // Proteção de acesso à aba Pro (precisa de pelo menos o plano Pro)
+  const hasProAccess = canAccessFeature(clientPlan, 'catalog');
+
+  if (!hasProAccess) {
     return (
       <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-10 text-center">
         <div className="mx-auto w-16 h-16 rounded-[1.8rem] bg-white/5 border border-white/10 flex items-center justify-center mb-6">
@@ -96,33 +100,44 @@ const ProTab: React.FC<Props> = ({ profile, isPro, onUpdate }) => {
         />
       </section>
 
-      {/* Toggles */}
+      {/* Toggles (CRM e NPS protegidos pelo plano Business) */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {[{
           key: 'enableLeadCapture',
+          feature: 'crm' as const,
           title: 'Captura de Leads',
           desc: 'Formulário para o visitante deixar nome/contato.'
         }, {
           key: 'enableNps',
+          feature: 'nps' as const,
           title: 'Avaliação NPS',
           desc: 'Nota 0-10 e comentário para virar dashboard.'
-        }].map((t) => (
-          <div key={t.key} className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-6 flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <div className="font-black text-base">{t.title}</div>
-              <div className="text-zinc-500 text-xs">{t.desc}</div>
+        }].map((t) => {
+          const hasFeatureAccess = canAccessFeature(clientPlan, t.feature);
+          return (
+            <div key={t.key} className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-6 flex items-center justify-between gap-4 relative overflow-hidden">
+              <div className="min-w-0">
+                <div className="font-black text-base flex items-center gap-2">
+                  {t.title}
+                  {!hasFeatureAccess && <Lock size={12} className="text-zinc-600" />}
+                </div>
+                <div className="text-zinc-500 text-xs">{t.desc}</div>
+                {!hasFeatureAccess && <div className="text-[8px] font-black uppercase text-blue-500 mt-2">Disponível no Business</div>}
+              </div>
+              <button
+                disabled={!hasFeatureAccess}
+                onClick={() => onUpdate({ [t.key]: !((profile as any)[t.key]) } as any)}
+                className={clsx(
+                  "px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
+                  (profile as any)[t.key] ? "bg-white text-black" : "bg-white/5 border border-white/10 text-zinc-400",
+                  !hasFeatureAccess && "opacity-30 cursor-not-allowed"
+                )}
+              >
+                {(profile as any)[t.key] ? 'Ligado' : 'Desligado'}
+              </button>
             </div>
-            <button
-              onClick={() => onUpdate({ [t.key]: !((profile as any)[t.key]) } as any)}
-              className={clsx(
-                "px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
-                (profile as any)[t.key] ? "bg-white text-black" : "bg-white/5 border border-white/10 text-zinc-400"
-              )}
-            >
-              {(profile as any)[t.key] ? 'Ligado' : 'Desligado'}
-            </button>
-          </div>
-        ))}
+          );
+        })}
       </section>
 
       {/* Catálogo */}
@@ -393,7 +408,7 @@ const ProTab: React.FC<Props> = ({ profile, isPro, onUpdate }) => {
         </div>
       </section>
 
-      {/* Videos */}
+      {/* Vídeos */}
       <section className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">

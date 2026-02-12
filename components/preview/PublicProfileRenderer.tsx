@@ -1,30 +1,37 @@
 "use client";
 
 import React from 'react';
-import { Profile, AnalyticsSource, CatalogItem, PortfolioItem, YoutubeVideoItem } from '../../types';
+import { Profile, AnalyticsSource, CatalogItem, PortfolioItem, YoutubeVideoItem, PlanType } from '../../types';
 import { formatLink, getIconColor } from '../../lib/linkHelpers';
 import { trackEvent } from '../../lib/analytics';
 import { updateStorage } from '../../lib/storage';
 import { extractYouTubeId } from '../../lib/youtube';
+import { canAccessFeature } from '../../lib/permissions';
 import * as LucideIcons from 'lucide-react';
 import clsx from 'clsx';
 
 interface Props {
   profile: Profile;
   isPreview?: boolean;
-  isPro?: boolean;
+  clientPlan?: PlanType;
   source?: AnalyticsSource;
 }
 
-const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, source = 'direct' }) => {
+const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan, source = 'direct' }) => {
   const { theme, fonts, buttons, layoutTemplate } = profile;
 
-  const canUseProBlocks = !!isPro && !isPreview;
+  // Verificações de permissão por funcionalidade
+  const hasCatalogAccess = canAccessFeature(clientPlan, 'catalog');
+  const hasPortfolioAccess = canAccessFeature(clientPlan, 'portfolio');
+  const hasVideosAccess = canAccessFeature(clientPlan, 'videos');
+  const hasPixAccess = canAccessFeature(clientPlan, 'pix');
+  const hasCrmAccess = canAccessFeature(clientPlan, 'crm');
+  const hasNpsAccess = canAccessFeature(clientPlan, 'nps');
 
   const proCardClass = "mt-6 w-full rounded-[2.5rem] border border-white/5 bg-white/5 backdrop-blur-2xl p-6 shadow-2xl";
 
   const pushLead = (payload: { name: string; contact: string; message?: string }) => {
-    if (!canUseProBlocks) return;
+    if (!hasCrmAccess || isPreview) return;
     updateStorage(prev => ({
       ...prev,
       leads: [
@@ -45,7 +52,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, sou
   };
 
   const pushNps = (score: number, comment?: string) => {
-    if (!canUseProBlocks) return;
+    if (!hasNpsAccess || isPreview) return;
     updateStorage(prev => ({
       ...prev,
       nps: [
@@ -273,144 +280,132 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, sou
 
           {renderLinks()}
 
-          {/* ===== Pro Blocks ===== */}
-          {canUseProBlocks && (
-            <div className="w-full">
-              {/* PIX */}
-              {profile.pixKey && (
-                <div className={proCardClass}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Pix</div>
-                      <div className="font-bold text-sm truncate" style={{ fontFamily: fonts.headingFont }}>{profile.pixKey}</div>
-                    </div>
-                    <button
-                      onClick={async () => {
-                        try { await navigator.clipboard.writeText(profile.pixKey || ''); } catch {}
-                      }}
-                      className="px-3 py-2 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest active:scale-95"
-                    >
-                      Copiar
-                    </button>
-                  </div>
+          {/* PIX */}
+          {hasPixAccess && profile.pixKey && (
+            <div className={proCardClass}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Pix</div>
+                  <div className="font-bold text-sm truncate" style={{ fontFamily: fonts.headingFont }}>{profile.pixKey}</div>
                 </div>
-              )}
-
-              {/* Catálogo com Grid Responsivo */}
-              {(profile.catalogItems || []).filter(i => i.isActive).length > 0 && (
-                <div className={proCardClass}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Catálogo</div>
-                    <LucideIcons.ShoppingBag size={16} className="opacity-50" />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {(profile.catalogItems as CatalogItem[])
-                      .filter(i => i.isActive)
-                      .sort((a, b) => a.sortOrder - b.sortOrder)
-                      .map((item) => (
-                        <div key={item.id} className="flex flex-col gap-3 rounded-[1.8rem] border border-white/10 bg-black/20 p-4 transition-all hover:bg-black/30 group">
-                          {item.imageUrl ? (
-                            <img src={item.imageUrl} alt={item.title} className="w-full aspect-square rounded-2xl object-cover border border-white/10 group-hover:scale-[1.02] transition-transform duration-500" />
-                          ) : (
-                            <div className="w-full aspect-square rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-                              <LucideIcons.Package size={24} className="opacity-30" />
-                            </div>
-                          )}
-                          <div className="flex-1 flex flex-col min-w-0">
-                            <div className="font-black text-sm truncate" style={{ fontFamily: fonts.headingFont }}>{item.title}</div>
-                            {item.description && <div className="text-[10px] opacity-60 line-clamp-2 mt-1 mb-2 leading-relaxed">{item.description}</div>}
-                            
-                            <div className="mt-auto pt-3 border-t border-white/5 flex items-center justify-between gap-2">
-                              <div className="text-[11px] font-black text-emerald-400 whitespace-nowrap">{item.priceText || 'Consultar'}</div>
-                              {item.ctaLink && (
-                                <a
-                                  href={item.ctaLink}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="px-3 py-1.5 rounded-xl bg-white text-black text-[9px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-colors"
-                                >
-                                  {item.ctaLabel || 'Ver'}
-                                </a>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Portfólio */}
-              {(profile.portfolioItems || []).filter(i => i.isActive).length > 0 && (
-                <div className={proCardClass}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Portfólio</div>
-                    <LucideIcons.Image size={16} className="opacity-50" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(profile.portfolioItems as PortfolioItem[])
-                      .filter(i => i.isActive)
-                      .sort((a, b) => a.sortOrder - b.sortOrder)
-                      .slice(0, 9)
-                      .map((item) => (
-                        <a key={item.id} href={item.imageUrl} target="_blank" rel="noopener noreferrer" className="block">
-                          <img src={item.imageUrl} alt={item.title || 'Portfolio'} className="w-full aspect-square object-cover rounded-xl border border-white/10 hover:opacity-90 transition-opacity" />
-                        </a>
-                      ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Vídeos */}
-              {(profile.youtubeVideos || []).filter(i => i.isActive).length > 0 && (
-                <div className={proCardClass}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Vídeos</div>
-                    <LucideIcons.Youtube size={16} className="opacity-50" />
-                  </div>
-                  <div className="space-y-3">
-                    {(profile.youtubeVideos as YoutubeVideoItem[])
-                      .filter(i => i.isActive)
-                      .sort((a, b) => a.sortOrder - b.sortOrder)
-                      .slice(0, 3)
-                      .map((vid) => {
-                        const id = extractYouTubeId(vid.url);
-                        if (!id) {
-                          return (
-                            <a key={vid.id} href={vid.url} target="_blank" rel="noopener noreferrer" className="block rounded-2xl border border-white/10 bg-black/20 p-4 text-xs">
-                              {vid.title || 'Abrir vídeo'}
-                            </a>
-                          );
-                        }
-                        return (
-                          <div key={vid.id} className="rounded-2xl border border-white/10 overflow-hidden bg-black/20">
-                            <div className="aspect-video w-full">
-                              <iframe
-                                className="w-full h-full"
-                                src={`https://www.youtube.com/embed/${id}`}
-                                title={vid.title || 'YouTube video'}
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                              />
-                            </div>
-                            {vid.title && <div className="p-3 text-[10px] font-bold opacity-70">{vid.title}</div>}
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
-
-              {/* NPS */}
-              {profile.enableNps && (
-                <NpsBlock onSubmit={pushNps} className={proCardClass} />
-              )}
-
-              {/* Leads */}
-              {profile.enableLeadCapture && (
-                <LeadBlock onSubmit={pushLead} className={proCardClass} />
-              )}
+                <button
+                  onClick={async () => {
+                    try { await navigator.clipboard.writeText(profile.pixKey || ''); } catch {}
+                  }}
+                  className="px-3 py-2 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest active:scale-95"
+                >
+                  Copiar
+                </button>
+              </div>
             </div>
+          )}
+
+          {/* Catálogo */}
+          {hasCatalogAccess && (profile.catalogItems || []).filter(i => i.isActive).length > 0 && (
+            <div className={proCardClass}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Catálogo</div>
+                <LucideIcons.ShoppingBag size={16} className="opacity-50" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {(profile.catalogItems as CatalogItem[])
+                  .filter(i => i.isActive)
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map((item) => (
+                    <div key={item.id} className="flex flex-col gap-3 rounded-[1.8rem] border border-white/10 bg-black/20 p-4 transition-all hover:bg-black/30 group">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.title} className="w-full aspect-square rounded-2xl object-cover border border-white/10 group-hover:scale-[1.02] transition-transform duration-500" />
+                      ) : (
+                        <div className="w-full aspect-square rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                          <LucideIcons.Package size={24} className="opacity-30" />
+                        </div>
+                      )}
+                      <div className="flex-1 flex flex-col min-w-0">
+                        <div className="font-black text-sm truncate" style={{ fontFamily: fonts.headingFont }}>{item.title}</div>
+                        {item.description && <div className="text-[10px] opacity-60 line-clamp-2 mt-1 mb-2 leading-relaxed">{item.description}</div>}
+                        <div className="mt-auto pt-3 border-t border-white/5 flex items-center justify-between gap-2">
+                          <div className="text-[11px] font-black text-emerald-400 whitespace-nowrap">{item.priceText || 'Consultar'}</div>
+                          {item.ctaLink && (
+                            <a
+                              href={item.ctaLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1.5 rounded-xl bg-white text-black text-[9px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-colors"
+                            >
+                              {item.ctaLabel || 'Ver'}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Portfólio */}
+          {hasPortfolioAccess && (profile.portfolioItems || []).filter(i => i.isActive).length > 0 && (
+            <div className={proCardClass}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Portfólio</div>
+                <LucideIcons.Image size={16} className="opacity-50" />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {(profile.portfolioItems as PortfolioItem[])
+                  .filter(i => i.isActive)
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .slice(0, 9)
+                  .map((item) => (
+                    <a key={item.id} href={item.imageUrl} target="_blank" rel="noopener noreferrer" className="block">
+                      <img src={item.imageUrl} alt={item.title || 'Portfolio'} className="w-full aspect-square object-cover rounded-xl border border-white/10 hover:opacity-90 transition-opacity" />
+                    </a>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Vídeos */}
+          {hasVideosAccess && (profile.youtubeVideos || []).filter(i => i.isActive).length > 0 && (
+            <div className={proCardClass}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Vídeos</div>
+                <LucideIcons.Youtube size={16} className="opacity-50" />
+              </div>
+              <div className="space-y-3">
+                {(profile.youtubeVideos as YoutubeVideoItem[])
+                  .filter(i => i.isActive)
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .slice(0, 3)
+                  .map((vid) => {
+                    const id = extractYouTubeId(vid.url);
+                    if (!id) return null;
+                    return (
+                      <div key={vid.id} className="rounded-2xl border border-white/10 overflow-hidden bg-black/20">
+                        <div className="aspect-video w-full">
+                          <iframe
+                            className="w-full h-full"
+                            src={`https://www.youtube.com/embed/${id}`}
+                            title={vid.title || 'YouTube video'}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          />
+                        </div>
+                        {vid.title && <div className="p-3 text-[10px] font-bold opacity-70">{vid.title}</div>}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* NPS */}
+          {hasNpsAccess && profile.enableNps && (
+            <NpsBlock onSubmit={pushNps} className={proCardClass} />
+          )}
+
+          {/* Leads */}
+          {hasCrmAccess && profile.enableLeadCapture && (
+            <LeadBlock onSubmit={pushLead} className={proCardClass} />
           )}
 
           <footer className="mt-6 flex flex-col items-center gap-1 opacity-20">
