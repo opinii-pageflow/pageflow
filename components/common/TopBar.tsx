@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LogOut, ChevronLeft, Layout, BarChart3, Settings, Shield } from 'lucide-react';
 import { logout, getCurrentUser, getStorage } from '../../lib/storage';
+import { PLANS } from '../../lib/plans';
 import clsx from 'clsx';
 
 interface TopBarProps {
@@ -23,15 +23,13 @@ const TopBar: React.FC<TopBarProps> = ({ title, showBack }) => {
     navigate('/login');
   };
 
-  // Lógica de itens de navegação baseada no plano
   const navItems = isAdmin 
     ? [
         { label: 'Admin', path: '/admin', icon: Shield },
         { label: 'Clientes', path: '/admin/clients', icon: Layout },
       ]
     : [
-        // Se for free, não mostra Insights na TopBar
-        ...(client?.plan !== 'free' ? [{ label: 'Insights', path: '/app/insights', icon: BarChart3 }] : []),
+        ...(client?.plan !== 'starter' ? [{ label: 'Insights', path: '/app/insights', icon: BarChart3 }] : []),
         { label: 'Meus Perfis', path: '/app/profiles', icon: Layout },
         { label: 'Configurações', path: '/app/settings', icon: Settings },
       ];
@@ -39,7 +37,6 @@ const TopBar: React.FC<TopBarProps> = ({ title, showBack }) => {
   return (
     <nav className="fixed top-0 left-0 right-0 w-full z-[200] bg-black/90 backdrop-blur-2xl border-b border-white/5 h-20 shadow-2xl">
       <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between gap-4">
-        {/* Lado Esquerdo: Logo/Título */}
         <div className="flex items-center gap-4 min-w-[140px] md:min-w-[200px]">
           {showBack ? (
             <button 
@@ -59,7 +56,6 @@ const TopBar: React.FC<TopBarProps> = ({ title, showBack }) => {
           </h1>
         </div>
 
-        {/* Centro: Navegação Principal */}
         <div className="hidden lg:flex items-center gap-1 p-1.5 bg-zinc-900/50 rounded-2xl border border-white/5 mx-auto">
           {navItems.map(item => {
             const isActive = location.pathname === item.path;
@@ -81,12 +77,11 @@ const TopBar: React.FC<TopBarProps> = ({ title, showBack }) => {
           })}
         </div>
 
-        {/* Lado Direito: Usuário e Sair */}
         <div className="flex items-center gap-3 md:gap-4 flex-shrink-0 min-w-[140px] md:min-w-[200px] justify-end">
           <div className="text-right hidden md:block">
             <div className="text-[10px] font-black uppercase tracking-widest truncate max-w-[120px]">{user?.name}</div>
             <div className="text-[9px] text-zinc-500 uppercase font-black tracking-widest opacity-60 leading-none mt-0.5">
-              {client?.plan === 'free' ? 'Plano Grátis' : user?.role}
+              {PLANS[client?.plan || 'starter']?.name || user?.role}
             </div>
           </div>
           
