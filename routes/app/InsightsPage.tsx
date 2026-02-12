@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { getProfileSummary } from '../../lib/analytics';
 import { getCurrentUser, getStorage } from '../../lib/storage';
@@ -51,8 +52,8 @@ const InsightsPage: React.FC = () => {
   const clientProfiles = useMemo(() => data.profiles.filter(p => p.clientId === user?.clientId), [data.profiles, user?.clientId]);
   const summary = useMemo(() => getProfileSummary('all', days), [days]);
 
-  // Se o plano for starter, mostra a tela de Upgrade
-  if (client?.plan === 'starter') {
+  // Se o plano for free, mostra a tela de Upgrade
+  if (client?.plan === 'free') {
     return (
       <div className="min-h-screen bg-[#020202] text-white">
         <TopBar title="Análise de Performance" />

@@ -1,9 +1,9 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, Lock, Loader2, Mail, ChevronRight, Building, ShieldCheck } from 'lucide-react';
 import { loginAs, updateStorage } from '../../lib/storage';
 import { Client } from '../../types';
-import { getPlanById } from '../../lib/plans';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -23,7 +23,6 @@ const RegisterPage: React.FC = () => {
       try {
         const clientId = 'client-' + Math.random().toString(36).substring(7);
         const slug = name.toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
-        const starterPlan = getPlanById('starter');
         
         const newClient: Client = {
           id: clientId,
@@ -31,8 +30,8 @@ const RegisterPage: React.FC = () => {
           slug: slug,
           email: email,
           password: password,
-          plan: 'starter',
-          maxProfiles: starterPlan?.maxProfiles || 1,
+          plan: 'free',
+          maxProfiles: 1, // Limite do plano free
           createdAt: new Date().toISOString(),
           isActive: true
         };
@@ -152,7 +151,7 @@ const RegisterPage: React.FC = () => {
         <div className="mt-8 flex items-center justify-center gap-6 opacity-40">
            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"><ShieldCheck size={14} /> Dados Protegidos</div>
            <div className="w-1 h-1 rounded-full bg-zinc-800"></div>
-           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">Plano Starter Ativo</div>
+           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">Plano Free Ativo</div>
         </div>
       </div>
     </div>
