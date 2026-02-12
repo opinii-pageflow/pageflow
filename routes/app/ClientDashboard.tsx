@@ -21,9 +21,11 @@ import {
   Smile,
   Meh,
   Frown,
-  MessageSquare
+  MessageSquare,
+  AlertCircle
 } from 'lucide-react';
 import { getProfileSummary } from '../../lib/analytics';
+import { PLANS } from '../../lib/plans';
 import TopBar from '../../components/common/TopBar';
 import CrmManager from '../../components/crm/CrmManager';
 import AdvancedCrm from '../../components/crm/AdvancedCrm';
@@ -41,8 +43,8 @@ const ClientDashboard: React.FC = () => {
   const client = data.clients.find(c => c.id === user?.clientId);
   const summary = useMemo(() => getProfileSummary('all', days), [days]);
 
-  const isPro = client?.plan !== 'free';
-  const isBusiness = client?.plan === 'business';
+  const isPro = client?.plan !== 'starter';
+  const isBusiness = client?.plan === 'business' || client?.plan === 'enterprise';
   
   const now = Date.now();
   const ms = days * 24 * 60 * 60 * 1000;
@@ -171,6 +173,48 @@ const ClientDashboard: React.FC = () => {
                 ))}
               </div>
             </header>
+
+            {/* Plan Status Card */}
+            <div className={clsx(
+              "w-full bg-zinc-900/40 backdrop-blur-xl border p-8 rounded-[2.5rem] mb-12 flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-500 animate-in fade-in slide-in-from-top-4",
+              usagePercentage >= 80 ? "border-amber-500/50 shadow-[0_0_40px_rgba(245,158,11,0.1)]" : "border-white/5"
+            )}>
+              <div className="flex items-center gap-6">
+                <div className={clsx(
+                  "w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl transition-colors duration-500",
+                  usagePercentage >= 80 ? "bg-amber-500 text-black" : "bg-blue-600 text-white"
+                )}>
+                  {usagePercentage >= 80 ? <AlertCircle size={28} /> : <Shield size={28} />}
+                </div>
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-1">Status da Assinatura</div>
+                  <div className="text-2xl font-black tracking-tight flex items-center gap-3">
+                    Plano {PLANS[client?.plan || 'starter'].name}
+                    {usagePercentage >= 80 && (
+                      <span className="text-[9px] bg-amber-500/20 text-amber-500 px-3 py-1 rounded-full border border-amber-500/30 animate-pulse font-black uppercase tracking-widest">
+                        Capacidade Crítica
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col md:flex-row items-center gap-8 w-full md:w-auto">
+                <div className="text-center md:text-right">
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-1">Uso de Slots</div>
+                  <div className="text-2xl font-black tracking-tight">
+                    {clientProfiles.length} <span className="text-zinc-600">/ {client?.maxProfiles}</span>
+                  </div>
+                </div>
+                <Link 
+                  to="/app/upgrade"
+                  className="w-full md:w-auto bg-white text-black px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-xl shadow-white/5 flex items-center justify-center gap-2"
+                >
+                  Expandir Limite
+                  <ChevronRight size={16} />
+                </Link>
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-6 mb-12">
               <div className="md:col-span-6 lg:col-span-8 bg-gradient-to-br from-zinc-900 to-black border border-white/10 rounded-[3rem] p-10 flex flex-col justify-between group overflow-hidden relative shadow-2xl animate-in fade-in zoom-in-95 duration-500">
