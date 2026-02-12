@@ -16,7 +16,8 @@ import {
   ExternalLink,
   ArrowUpRight,
   Shield,
-  Activity
+  Activity,
+  Lock
 } from 'lucide-react';
 import { getProfileSummary } from '../../lib/analytics';
 import TopBar from '../../components/common/TopBar';
@@ -32,6 +33,29 @@ const ClientDashboard: React.FC = () => {
   const clientProfiles = data.profiles.filter(p => p.clientId === user?.clientId);
   const client = data.clients.find(c => c.id === user?.clientId);
   const summary = useMemo(() => getProfileSummary('all', days), [days]);
+
+  const isPro = client?.plan !== 'free';
+  const now = Date.now();
+  const ms = days * 24 * 60 * 60 * 1000;
+
+  const leadsRecent = useMemo(() =>
+    data.leads
+      .filter(l => l.clientId === user?.clientId)
+      .filter(l => now - new Date(l.createdAt).getTime() <= ms)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5)
+  , [data.leads, user?.clientId, days]);
+
+  const npsRecent = useMemo(() =>
+    data.nps
+      .filter(n => n.clientId === user?.clientId)
+      .filter(n => now - new Date(n.createdAt).getTime() <= ms)
+  , [data.nps, user?.clientId, days]);
+
+  const npsAvg = npsRecent.length ? (npsRecent.reduce((acc, n) => acc + n.score, 0) / npsRecent.length) : 0;
+  const npsPromoters = npsRecent.filter(n => n.score >= 9).length;
+  const npsDetractors = npsRecent.filter(n => n.score <= 6).length;
+  const npsScore = npsRecent.length ? ((npsPromoters / npsRecent.length) * 100) - ((npsDetractors / npsRecent.length) * 100) : 0;
 
   // Cálculo de uso de slots
   const usagePercentage = Math.min((clientProfiles.length / (client?.maxProfiles || 1)) * 100, 100);
@@ -132,7 +156,7 @@ const ClientDashboard: React.FC = () => {
                   <Plus size={18} />
                   Novo Perfil Digital
                 </button>
-                <Link 
+              <Link 
                   to="/app/insights"
                   className="bg-zinc-800/80 hover:bg-zinc-700 backdrop-blur-xl text-white px-10 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 border border-white/5"
                 >
@@ -213,6 +237,64 @@ const ClientDashboard: React.FC = () => {
                 </div>
                 <p className="text-[8px] font-black uppercase text-zinc-600 tracking-widest text-center">Performance média global</p>
              </div>
+          </div>
+
+          {/* Leads (Pro) */}
+          <div className="md:col-span-3 lg:col-span-4 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between shadow-2xl group animate-in fade-in zoom-in-95 duration-500 delay-200">
+            <div className="flex items-center justify-between mb-8">
+              <div className={clsx(
+                "p-4 rounded-2xl group-hover:scale-110 transition-transform",
+                isPro ? "text-blue-400 bg-blue-500/10" : "text-zinc-500 bg-white/5"
+              )}><ExternalLink size={24} /></div>
+              <div className="text-right">
+                <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Leads</div>
+                <div className="text-3xl font-black tracking-tighter">{isPro ? leadsRecent.length : '—'}</div>
+              </div>
+            </div>
+            {isPro ? (
+              <div className="space-y-2">
+                {leadsRecent.length === 0 ? (
+                  <div className="text-xs text-zinc-500">Nenhum lead neste período.</div>
+                ) : (
+                  leadsRecent.map((l) => (
+                    <div key={l.id} className="flex items-center justify-between gap-3 text-xs">
+                      <div className="min-w-0">
+                        <div className="font-bold truncate">{l.name}</div>
+                        <div className="text-[10px] text-zinc-500 truncate">{l.email || l.phone || 'Sem contato'}</div>
+                      </div>
+                      <div className="text-[10px] text-zinc-600 whitespace-nowrap">{new Date(l.createdAt).toLocaleDateString('pt-BR')}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : (
+              <div className="text-xs text-zinc-500 flex items-center gap-2"><Lock size={14} /> Disponível no Pro</div>
+            )}
+          </div>
+
+          {/* NPS (Pro) */}
+          <div className="md:col-span-3 lg:col-span-4 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between shadow-2xl group animate-in fade-in zoom-in-95 duration-500 delay-300">
+            <div className="flex items-center justify-between mb-8">
+              <div className={clsx(
+                "p-4 rounded-2xl group-hover:scale-110 transition-transform",
+                isPro ? "text-emerald-400 bg-emerald-500/10" : "text-zinc-500 bg-white/5"
+              )}><TrendingUp size={24} /></div>
+              <div className="text-right">
+                <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">NPS</div>
+                <div className="text-3xl font-black tracking-tighter">{isPro ? Math.round(npsScore) : '—'}</div>
+              </div>
+            </div>
+            {isPro ? (
+              <div className="space-y-2">
+                <div className="text-xs text-zinc-500">Média: <span className="text-white font-bold">{npsAvg.toFixed(1)}</span> · Respostas: <span className="text-white font-bold">{npsRecent.length}</span></div>
+                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(Math.max((npsScore + 100) / 200 * 100, 0), 100)}%` }}></div>
+                </div>
+                <div className="text-[10px] text-zinc-600">Promotores: {npsPromoters} · Detratores: {npsDetractors}</div>
+              </div>
+            ) : (
+              <div className="text-xs text-zinc-500 flex items-center gap-2"><Lock size={14} /> Disponível no Pro</div>
+            )}
           </div>
         </div>
 

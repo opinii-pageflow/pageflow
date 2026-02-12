@@ -1,5 +1,5 @@
 
-import { AppData, Client, Profile, AnalyticsEvent, UserAuth, Theme, Fonts } from '../types';
+import { AppData, Profile, UserAuth, Theme, Fonts } from '../types';
 import { themePresets } from './themePresets';
 
 const STORAGE_KEY = 'linkflow_v1_data';
@@ -58,6 +58,14 @@ export const INITIAL_DATA: AppData = {
         { id: 'b5', profileId: 'profile-1', type: 'linkedin', label: 'LinkedIn', value: 'israel-tech', enabled: true, visibility: 'public', pinned: false, sortOrder: 4 },
         { id: 'b6', profileId: 'profile-1', type: 'discord', label: 'Comunidade Discord', value: 'invite-link', enabled: true, visibility: 'public', pinned: false, sortOrder: 5 },
       ]
+      ,
+      // Pro fields (opcionais)
+      pixKey: '',
+      catalogItems: [],
+      portfolioItems: [],
+      youtubeVideos: [],
+      enableLeadCapture: true,
+      enableNps: true
     }
   ],
   events: [
@@ -79,6 +87,8 @@ export const INITIAL_DATA: AppData = {
       ts: Date.now() - (Math.random() * 7 * 24 * 60 * 60 * 1000)
     }))
   ],
+  leads: [],
+  nps: [],
   currentUser: null
 };
 
@@ -90,12 +100,29 @@ export const getStorage = (): AppData => {
   }
   try {
     const data = JSON.parse(stored) as AppData;
+
+    // ===== Migration (campos novos) =====
+    // AppData roots
+    if (!Array.isArray((data as any).leads)) (data as any).leads = [];
+    if (!Array.isArray((data as any).nps)) (data as any).nps = [];
+
+    // Profiles pro fields
+    (data.profiles || []).forEach((p: any) => {
+      if (p.pixKey === undefined) p.pixKey = '';
+      if (!Array.isArray(p.catalogItems)) p.catalogItems = [];
+      if (!Array.isArray(p.portfolioItems)) p.portfolioItems = [];
+      if (!Array.isArray(p.youtubeVideos)) p.youtubeVideos = [];
+      if (p.enableLeadCapture === undefined) p.enableLeadCapture = true;
+      if (p.enableNps === undefined) p.enableNps = true;
+    });
     const demo = data.clients.find(c => c.id === 'client-1');
     if (demo && demo.email !== 'israel.cruzeiro@gmail.com') {
       demo.email = 'israel.cruzeiro@gmail.com';
       demo.password = '602387';
       saveStorage(data);
     }
+    // Persist migrations (sem quebrar)
+    saveStorage(data);
     return data;
   } catch {
     return INITIAL_DATA;

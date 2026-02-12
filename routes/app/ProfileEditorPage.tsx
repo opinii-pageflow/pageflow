@@ -29,6 +29,7 @@ import LinksTab from '../../components/editor/LinksTab';
 import TemplatesTab from '../../components/editor/TemplatesTab';
 import FontsTab from '../../components/editor/FontsTab';
 import ShareTab from '../../components/editor/ShareTab';
+import ProTab from '../../components/editor/ProTab';
 import clsx from 'clsx';
 
 const ProfileEditorPage: React.FC = () => {
@@ -42,12 +43,15 @@ const ProfileEditorPage: React.FC = () => {
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [clipboard, setClipboard] = useState<StyleConfig | null>(getStyleFromClipboard());
   const [justCopied, setJustCopied] = useState(false);
+  const [isPro, setIsPro] = useState(false);
 
   useEffect(() => {
     const data = getStorage();
     const found = data.profiles.find(p => p.id === profileId);
     if (found) {
       setProfile({ ...found });
+      const client = data.clients.find(c => c.id === found.clientId);
+      setIsPro(client?.plan !== 'free');
     } else {
       navigate('/app/profiles');
     }
@@ -123,6 +127,7 @@ const ProfileEditorPage: React.FC = () => {
     { id: 'templates', label: 'Layout', icon: <Layout size={16} /> },
     { id: 'fonts', label: 'Fontes', icon: <Type size={16} /> },
     { id: 'share', label: 'Share', icon: <Share2 size={16} /> },
+    { id: 'pro', label: 'Pro', icon: <Zap size={16} /> },
   ];
 
   return (
@@ -260,6 +265,7 @@ const ProfileEditorPage: React.FC = () => {
               {activeTab === 'templates' && <TemplatesTab profile={profile} onUpdate={handleUpdateProfile} />}
               {activeTab === 'fonts' && <FontsTab profile={profile} onUpdate={handleUpdateProfile} />}
               {activeTab === 'share' && <ShareTab profile={profile} />}
+              {activeTab === 'pro' && <ProTab profile={profile} isPro={isPro} onUpdate={handleUpdateProfile} />}
             </div>
           </div>
         </div>

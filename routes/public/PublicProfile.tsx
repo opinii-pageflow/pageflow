@@ -10,6 +10,7 @@ const PublicProfile: React.FC = () => {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isPro, setIsPro] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,6 +19,8 @@ const PublicProfile: React.FC = () => {
     
     if (found) {
       setProfile(found);
+      const client = data.clients.find(c => c.id === found.clientId);
+      setIsPro(client?.plan !== 'free');
       const source = (searchParams.get('src') as AnalyticsSource) || 'direct';
       trackEvent({
         profileId: found.id,
@@ -47,7 +50,7 @@ const PublicProfile: React.FC = () => {
     );
   }
 
-  return <PublicProfileRenderer profile={profile} isPreview={false} />;
+  return <PublicProfileRenderer profile={profile} isPreview={false} isPro={isPro} source={(searchParams.get('src') as AnalyticsSource) || 'direct'} />;
 };
 
 export default PublicProfile;

@@ -1,18 +1,66 @@
 
 import React from 'react';
-import { Profile } from '../../types';
+import { Profile, AnalyticsSource, CatalogItem, PortfolioItem, YoutubeVideoItem } from '../../types';
 import { formatLink, getIconColor } from '../../lib/linkHelpers';
 import { trackEvent } from '../../lib/analytics';
+import { updateStorage } from '../../lib/storage';
+import { extractYouTubeId } from '../../lib/youtube';
 import * as LucideIcons from 'lucide-react';
 import clsx from 'clsx';
 
 interface Props {
   profile: Profile;
   isPreview?: boolean;
+  isPro?: boolean;
+  source?: AnalyticsSource;
 }
 
-const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview }) => {
+const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, source = 'direct' }) => {
   const { theme, fonts, buttons, layoutTemplate } = profile;
+
+  const canUseProBlocks = !!isPro && !isPreview;
+
+  const proCardClass = "mt-4 w-full rounded-[1.6rem] border border-white/10 bg-white/5 backdrop-blur-2xl p-4";
+
+  const pushLead = (payload: { name: string; phone?: string; email?: string; message?: string }) => {
+    if (!canUseProBlocks) return;
+    updateStorage(prev => ({
+      ...prev,
+      leads: [
+        ...prev.leads,
+        {
+          id: Math.random().toString(36).slice(2),
+          clientId: profile.clientId,
+          profileId: profile.id,
+          name: payload.name,
+          phone: payload.phone,
+          email: payload.email,
+          message: payload.message,
+          createdAt: new Date().toISOString(),
+          source,
+        },
+      ],
+    }));
+  };
+
+  const pushNps = (score: number, comment?: string) => {
+    if (!canUseProBlocks) return;
+    updateStorage(prev => ({
+      ...prev,
+      nps: [
+        ...prev.nps,
+        {
+          id: Math.random().toString(36).slice(2),
+          clientId: profile.clientId,
+          profileId: profile.id,
+          score,
+          comment,
+          createdAt: new Date().toISOString(),
+          source,
+        },
+      ],
+    }));
+  };
 
   const handleLinkClick = (btnId: string) => {
     if (isPreview) return;
@@ -224,6 +272,146 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview }) => {
 
           {renderLinks()}
 
+          {/* ===== Pro Blocks ===== */}
+          {canUseProBlocks && (
+            <div className="w-full">
+              {/* PIX */}
+              {profile.pixKey && (
+                <div className={proCardClass}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Pix</div>
+                      <div className="font-bold text-sm truncate" style={{ fontFamily: fonts.headingFont }}>{profile.pixKey}</div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        try { await navigator.clipboard.writeText(profile.pixKey || ''); } catch {}
+                      }}
+                      className="px-3 py-2 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest active:scale-95"
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Catálogo */}
+              {(profile.catalogItems || []).filter(i => i.isActive).length > 0 && (
+                <div className={proCardClass}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Catálogo</div>
+                    <LucideIcons.ShoppingBag size={16} className="opacity-50" />
+                  </div>
+                  <div className="grid grid-cols-1 gap-3">
+                    {(profile.catalogItems as CatalogItem[])
+                      .filter(i => i.isActive)
+                      .sort((a, b) => a.sortOrder - b.sortOrder)
+                      .slice(0, 12)
+                      .map((item) => (
+                        <div key={item.id} className="flex gap-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                          {item.imageUrl ? (
+                            <img src={item.imageUrl} alt={item.title} className="w-16 h-16 rounded-xl object-cover border border-white/10" />
+                          ) : (
+                            <div className="w-16 h-16 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                              <LucideIcons.Package size={18} className="opacity-50" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="font-black text-sm truncate" style={{ fontFamily: fonts.headingFont }}>{item.title}</div>
+                            {item.description && <div className="text-[10px] opacity-60 line-clamp-2">{item.description}</div>}
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              <div className="text-[10px] font-black uppercase tracking-widest opacity-70">{item.priceText || (item.kind === 'service' ? 'Serviço' : 'Produto')}</div>
+                              {item.ctaLink && (
+                                <a
+                                  href={item.ctaLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-3 py-1.5 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest"
+                                >
+                                  {item.ctaLabel || 'Abrir'}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Portfólio */}
+              {(profile.portfolioItems || []).filter(i => i.isActive).length > 0 && (
+                <div className={proCardClass}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Portfólio</div>
+                    <LucideIcons.Image size={16} className="opacity-50" />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(profile.portfolioItems as PortfolioItem[])
+                      .filter(i => i.isActive)
+                      .sort((a, b) => a.sortOrder - b.sortOrder)
+                      .slice(0, 9)
+                      .map((item) => (
+                        <a key={item.id} href={item.imageUrl} target="_blank" rel="noopener noreferrer" className="block">
+                          <img src={item.imageUrl} alt={item.title || 'Portfolio'} className="w-full aspect-square object-cover rounded-xl border border-white/10 hover:opacity-90 transition-opacity" />
+                        </a>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Vídeos */}
+              {(profile.youtubeVideos || []).filter(i => i.isActive).length > 0 && (
+                <div className={proCardClass}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Vídeos</div>
+                    <LucideIcons.Youtube size={16} className="opacity-50" />
+                  </div>
+                  <div className="space-y-3">
+                    {(profile.youtubeVideos as YoutubeVideoItem[])
+                      .filter(i => i.isActive)
+                      .sort((a, b) => a.sortOrder - b.sortOrder)
+                      .slice(0, 3)
+                      .map((vid) => {
+                        const id = extractYouTubeId(vid.url);
+                        if (!id) {
+                          return (
+                            <a key={vid.id} href={vid.url} target="_blank" rel="noopener noreferrer" className="block rounded-2xl border border-white/10 bg-black/20 p-4 text-xs">
+                              {vid.title || 'Abrir vídeo'}
+                            </a>
+                          );
+                        }
+                        return (
+                          <div key={vid.id} className="rounded-2xl border border-white/10 overflow-hidden bg-black/20">
+                            <div className="aspect-video w-full">
+                              <iframe
+                                className="w-full h-full"
+                                src={`https://www.youtube.com/embed/${id}`}
+                                title={vid.title || 'YouTube video'}
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              />
+                            </div>
+                            {vid.title && <div className="p-3 text-[10px] font-bold opacity-70">{vid.title}</div>}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
+              {/* NPS */}
+              {profile.enableNps && (
+                <NpsBlock onSubmit={pushNps} className={proCardClass} />
+              )}
+
+              {/* Leads */}
+              {profile.enableLeadCapture && (
+                <LeadBlock onSubmit={pushLead} className={proCardClass} />
+              )}
+            </div>
+          )}
+
           <footer className="mt-6 flex flex-col items-center gap-1 opacity-20">
              <div className="w-3 h-3 bg-current rounded-sm flex items-center justify-center font-black text-[5px]">LF</div>
              <span className="text-[5px] font-black uppercase tracking-[0.3em]">LinkFlow</span>
@@ -231,6 +419,387 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview }) => {
         </main>
       </div>
     </div>
+  );
+};
+
+const NpsBlock: React.FC<{ className: string; onSubmit: (score: number, comment?: string) => void }> = ({ className, onSubmit }) => {
+  const [score, setScore] = React.useState<number | null>(null);
+  const [comment, setComment] = React.useState('');
+  const [sent, setSent] = React.useState(false);
+
+  if (sent) {
+    return (
+      <div className={className}>
+        <div className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-2">Avaliação</div>
+        <div className="text-sm font-black">Obrigado pela sua nota! ✅</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={className}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Avalie este perfil (NPS)</div>
+        <LucideIcons.Star size={16} className="opacity-50" />
+      </div>
+      <div className="grid grid-cols-11 gap-1">
+        {Array.from({ length: 11 }).map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setScore(i)}
+            className={clsx(
+              "aspect-square rounded-lg text-[10px] font-black transition-all active:scale-95",
+              score === i ? "bg-white text-black" : "bg-white/5 border border-white/10 opacity-70 hover:opacity-100"
+            )}
+          >
+            {i}
+          </button>
+        ))}
+      </div>
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Se quiser, deixe um comentário (opcional)"
+        className="mt-3 w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-xs outline-none focus:border-white/30"
+        rows={2}
+      />
+      <button
+        disabled={score === null}
+        onClick={() => {
+          if (score === null) return;
+          onSubmit(score, comment.trim() || undefined);
+          setSent(true);
+        }}
+        className="mt-3 w-full py-3 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest disabled:opacity-30 active:scale-95"
+      >
+        Enviar
+      </button>
+    </div>
+  );
+};
+
+const LeadBlock: React.FC<{ className: string; onSubmit: (data: { name: string; phone?: string; email?: string; message?: string }) => void }> = ({ className, onSubmit }) => {
+  const [sent, setSent] = React.useState(false);
+  const [name, setName] = React.useState('');
+  const [phone, setPhone] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [message, setMessage] = React.useState('');
+
+  if (sent) {
+    return (
+      <div className={className}>
+        <div className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-2">Contato</div>
+        <div className="text-sm font-black">Recebido! Vou te chamar em breve. ✅</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={className}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Deixe seus dados</div>
+        <LucideIcons.FileInput size={16} className="opacity-50" />
+      </div>
+
+      <div className="space-y-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Seu nome*"
+          className="w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-xs outline-none focus:border-white/30"
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="WhatsApp"
+            className="w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-xs outline-none focus:border-white/30"
+          />
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            className="w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-xs outline-none focus:border-white/30"
+          />
+        </div>
+        <textarea
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Mensagem (opcional)"
+          className="w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-xs outline-none focus:border-white/30"
+          rows={2}
+        />
+      </div>
+
+      <button
+        disabled={!name.trim()}
+        onClick={() => {
+          if (!name.trim()) return;
+          onSubmit({
+            name: name.trim(),
+            phone: phone.trim() || undefined,
+            email: email.trim() || undefined,
+            message: message.trim() || undefined,
+          });
+          setSent(true);
+        }}
+        className="mt-3 w-full py-3 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest disabled:opacity-30 active:scale-95"
+      >
+        Enviar
+      </button>
+    </div>
+  );
+};
+
+// ===== Pro blocks (small, safe & self-contained) =====
+
+const Card: React.FC<{ title: string; children: React.ReactNode; icon?: React.ReactNode }> = ({ title, children, icon }) => (
+  <div className="bg-black/25 backdrop-blur-xl border border-white/5 rounded-2xl p-4">
+    <div className="flex items-center gap-2 mb-3">
+      <div className="opacity-70">{icon}</div>
+      <div className="text-[10px] font-black uppercase tracking-widest opacity-60">{title}</div>
+    </div>
+    {children}
+  </div>
+);
+
+const PixSection: React.FC<{ pixKey?: string; primary: string; text: string; muted: string }> = ({ pixKey, primary }) => {
+  const key = (pixKey || '').trim();
+  if (!key) return null;
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(key);
+      alert('PIX copiado!');
+    } catch {
+      alert('Não consegui copiar automaticamente. Selecione e copie.');
+    }
+  };
+  return (
+    <Card title="PIX" icon={<LucideIcons.CreditCard size={14} />}>
+      <div className="flex items-center gap-2">
+        <input
+          value={key}
+          readOnly
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none"
+        />
+        <button
+          onClick={onCopy}
+          style={{ backgroundColor: primary }}
+          className="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white active:scale-95"
+        >
+          Copiar
+        </button>
+      </div>
+    </Card>
+  );
+};
+
+const CatalogSection: React.FC<{ items: CatalogItem[]; primary: string }> = ({ items, primary }) => {
+  const active = (items || []).filter(i => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
+  if (active.length === 0) return null;
+  return (
+    <Card title="Catálogo" icon={<LucideIcons.ShoppingBag size={14} />}>
+      <div className="space-y-3">
+        {active.map((it) => (
+          <div key={it.id} className="flex gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+            {it.imageUrl ? (
+              <img src={it.imageUrl} className="w-16 h-16 rounded-lg object-cover" alt={it.title} />
+            ) : (
+              <div className="w-16 h-16 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center opacity-50">
+                <LucideIcons.Image size={18} />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <div className="font-bold text-sm truncate">{it.title}</div>
+                {it.priceText && <div className="text-[10px] font-black opacity-70">{it.priceText}</div>}
+              </div>
+              {it.description && <div className="text-[11px] opacity-60 mt-1 line-clamp-2">{it.description}</div>}
+              {it.ctaLink && (
+                <a
+                  href={it.ctaLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ backgroundColor: primary }}
+                  className="inline-flex mt-2 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white active:scale-95"
+                >
+                  {it.ctaLabel || (it.kind === 'product' ? 'Comprar' : 'Agendar')}
+                </a>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+};
+
+const PortfolioSection: React.FC<{ items: PortfolioItem[] }> = ({ items }) => {
+  const active = (items || []).filter(i => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
+  if (active.length === 0) return null;
+  return (
+    <Card title="Portfólio" icon={<LucideIcons.LayoutGrid size={14} />}>
+      <div className="grid grid-cols-3 gap-2">
+        {active.slice(0, 12).map((it) => (
+          <div key={it.id} className="relative aspect-square overflow-hidden rounded-xl bg-white/5 border border-white/10">
+            <img src={it.imageUrl} className="w-full h-full object-cover hover:scale-105 transition-transform" alt={it.title || 'Portfolio'} />
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+};
+
+const YoutubeSection: React.FC<{ items: YoutubeVideoItem[] }> = ({ items }) => {
+  const active = (items || []).filter(i => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
+  if (active.length === 0) return null;
+  return (
+    <Card title="Vídeos" icon={<LucideIcons.Youtube size={14} />}>
+      <div className="space-y-3">
+        {active.slice(0, 4).map((it) => {
+          const vid = extractYouTubeId(it.url);
+          if (!vid) {
+            return (
+              <div key={it.id} className="p-3 rounded-xl bg-white/5 border border-white/10 text-[11px] opacity-70">
+                URL inválida: {it.url}
+              </div>
+            );
+          }
+          return (
+            <div key={it.id} className="overflow-hidden rounded-2xl border border-white/10 bg-black/30">
+              <div className="aspect-video">
+                <iframe
+                  className="w-full h-full"
+                  src={`https://www.youtube.com/embed/${vid}`}
+                  title={it.title || 'YouTube video'}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+              {it.title && <div className="p-3 text-[11px] font-bold opacity-80">{it.title}</div>}
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+};
+
+const NpsSection: React.FC<{ enabled: boolean; profileId: string; clientId: string; primary: string; source: AnalyticsSource }> = ({ enabled, profileId, clientId, primary, source }) => {
+  const [score, setScore] = React.useState<number | null>(null);
+  const [comment, setComment] = React.useState('');
+  const [sent, setSent] = React.useState(false);
+  if (!enabled) return null;
+
+  const submit = () => {
+    if (score === null) return;
+    updateStorage(prev => ({
+      ...prev,
+      nps: [...prev.nps, {
+        id: Math.random().toString(36).slice(2),
+        clientId,
+        profileId,
+        score,
+        comment: comment.trim() || undefined,
+        createdAt: new Date().toISOString(),
+        source
+      }]
+    }));
+    setSent(true);
+  };
+
+  return (
+    <Card title="Avalie este perfil" icon={<LucideIcons.Star size={14} />}>
+      {sent ? (
+        <div className="text-[11px] opacity-70">Obrigado! Sua avaliação foi registrada.</div>
+      ) : (
+        <>
+          <div className="grid grid-cols-11 gap-1 mb-3">
+            {Array.from({ length: 11 }).map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setScore(i)}
+                className={clsx(
+                  "py-2 rounded-lg text-[10px] font-black transition-all border",
+                  score === i ? "text-black" : "text-white/70",
+                  score === i ? "border-transparent" : "border-white/10 bg-white/5"
+                )}
+                style={score === i ? { backgroundColor: primary } : undefined}
+              >
+                {i}
+              </button>
+            ))}
+          </div>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Quer deixar um comentário? (opcional)"
+            className="w-full min-h-[72px] bg-white/5 border border-white/10 rounded-xl p-3 text-xs outline-none"
+          />
+          <button
+            onClick={submit}
+            disabled={score === null}
+            style={{ backgroundColor: primary }}
+            className="mt-3 w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-30 active:scale-95"
+          >
+            Enviar avaliação
+          </button>
+        </>
+      )}
+    </Card>
+  );
+};
+
+const LeadSection: React.FC<{ enabled: boolean; profileId: string; clientId: string; primary: string; source: AnalyticsSource }> = ({ enabled, profileId, clientId, primary, source }) => {
+  const [name, setName] = React.useState('');
+  const [phone, setPhone] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [message, setMessage] = React.useState('');
+  const [sent, setSent] = React.useState(false);
+  if (!enabled) return null;
+
+  const submit = () => {
+    if (!name.trim()) return;
+    updateStorage(prev => ({
+      ...prev,
+      leads: [...prev.leads, {
+        id: Math.random().toString(36).slice(2),
+        clientId,
+        profileId,
+        name: name.trim(),
+        phone: phone.trim() || undefined,
+        email: email.trim() || undefined,
+        message: message.trim() || undefined,
+        createdAt: new Date().toISOString(),
+        source
+      }]
+    }));
+    setSent(true);
+  };
+
+  return (
+    <Card title="Deixe seus dados" icon={<LucideIcons.UserPlus size={14} />}>
+      {sent ? (
+        <div className="text-[11px] opacity-70">Perfeito! Seus dados foram enviados.</div>
+      ) : (
+        <div className="space-y-2">
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome*" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none" />
+          <div className="grid grid-cols-2 gap-2">
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="WhatsApp" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none" />
+            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none" />
+          </div>
+          <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Mensagem (opcional)" className="w-full min-h-[64px] bg-white/5 border border-white/10 rounded-xl p-3 text-xs outline-none" />
+          <button
+            onClick={submit}
+            disabled={!name.trim()}
+            style={{ backgroundColor: primary }}
+            className="w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-30 active:scale-95"
+          >
+            Enviar
+          </button>
+        </div>
+      )}
+    </Card>
   );
 };
 
