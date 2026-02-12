@@ -127,8 +127,8 @@ const ProTab: React.FC<Props> = ({ profile, isPro, onUpdate }) => {
                 kind: 'service',
                 title: 'Novo item',
                 description: '',
-                price: '',
-                image: '',
+                priceText: '',
+                imageUrl: '',
                 ctaLabel: 'Chamar',
                 ctaLink: '',
                 sortOrder: catalog.length,
@@ -225,8 +225,8 @@ const ProTab: React.FC<Props> = ({ profile, isPro, onUpdate }) => {
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Preço (texto)</label>
                     <input
-                      value={item.price || ''}
-                      onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, price: e.target.value } : c))}
+                      value={item.priceText || ''}
+                      onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, priceText: e.target.value } : c))}
                       placeholder="Ex: R$ 149 / Sob consulta"
                       className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
                     />
@@ -235,8 +235,8 @@ const ProTab: React.FC<Props> = ({ profile, isPro, onUpdate }) => {
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Imagem (URL)</label>
                     <input
-                      value={item.image || ''}
-                      onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, image: e.target.value } : c))}
+                      value={item.imageUrl || ''}
+                      onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, imageUrl: e.target.value } : c))}
                       placeholder="https://..."
                       className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
                     />

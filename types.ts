@@ -6,8 +6,6 @@ export type VisibilityMode = 'public' | 'private' | 'password';
 export type AnalyticsSource = 'direct' | 'qr' | 'nfc';
 export type EventType = 'view' | 'click';
 
-export type LeadStatus = 'novo' | 'contatado' | 'negociando' | 'fechado' | 'perdido';
-
 // ===== Pro Modules =====
 export type CatalogItemKind = 'product' | 'service';
 
@@ -16,11 +14,11 @@ export interface CatalogItem {
   profileId: string;
   kind: CatalogItemKind;
   title: string;
-  description: string;
-  price?: string;
-  image?: string;
-  ctaLabel?: string;
-  ctaLink?: string;
+  description?: string;
+  priceText?: string; // ex: "R$ 149" ou "Sob consulta"
+  imageUrl?: string;
+  ctaLabel?: string; // ex: "Comprar" / "Agendar"
+  ctaLink?: string;  // link externo (whatsapp, site etc.)
   sortOrder: number;
   isActive: boolean;
 }
@@ -38,7 +36,7 @@ export interface YoutubeVideoItem {
   id: string;
   profileId: string;
   title?: string;
-  url: string;
+  url: string; // qualquer url válida do YouTube
   sortOrder: number;
   isActive: boolean;
 }
@@ -48,10 +46,9 @@ export interface LeadCapture {
   clientId: string;
   profileId: string;
   name: string;
-  contact: string;
+  phone?: string;
+  email?: string;
   message?: string;
-  status: LeadStatus;
-  notes?: string;
   createdAt: string; // ISO
   source: AnalyticsSource;
 }
@@ -83,8 +80,8 @@ export interface Client {
   maxTemplates?: number;
   createdAt: string;
   isActive: boolean;
-  password?: string;
-  email?: string;
+  password?: string; // autenticação do cliente
+  email?: string;    // e-mail de login do cliente
 }
 
 export interface ProfileButton {
