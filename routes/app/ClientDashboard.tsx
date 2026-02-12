@@ -26,6 +26,7 @@ import {
 import { getProfileSummary } from '../../lib/analytics';
 import TopBar from '../../components/common/TopBar';
 import CrmManager from '../../components/crm/CrmManager';
+import AdvancedCrm from '../../components/crm/AdvancedCrm';
 import clsx from 'clsx';
 
 const ClientDashboard: React.FC = () => {
@@ -46,12 +47,20 @@ const ClientDashboard: React.FC = () => {
   const now = Date.now();
   const ms = days * 24 * 60 * 60 * 1000;
 
+  // Filtros para cards de visão geral
   const leadsRecent = useMemo(() =>
     data.leads
       .filter(l => l.clientId === user?.clientId)
       .filter(l => now - new Date(l.createdAt).getTime() <= ms)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   , [data.leads, user?.clientId, days]);
+
+  // Todos os leads do cliente para o módulo de CRM
+  const allLeads = useMemo(() => 
+    data.leads
+      .filter(l => l.clientId === user?.clientId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  , [data.leads, user?.clientId]);
 
   const npsRecent = useMemo(() =>
     data.nps
@@ -113,7 +122,11 @@ const ClientDashboard: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'overview' ? (
+        {/* LOGIC SWITCHER: OVERVIEW vs CRM */}
+        {activeTab === 'crm' && isBusiness ? (
+          <AdvancedCrm leads={allLeads} />
+        ) : (
+          /* ================= OVERVIEW CONTENT ================= */
           <>
             <header className="mb-12 flex flex-col md:flex-row items-start md:items-end justify-between gap-8">
               <div 
@@ -264,7 +277,8 @@ const ClientDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Leads (Pro) */}
+              {/* Leads (Pro) - Só mostra se não for Business (já que Business tem a aba dedicada) OU mantém como resumo */}
+              {/* Optei por manter como resumo "Leads Recentes" para consistência visual */}
               <div className="md:col-span-3 lg:col-span-6 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between shadow-2xl group animate-in fade-in zoom-in-95 duration-500 delay-200">
                 <div className="flex items-center justify-between mb-8">
                   <div className={clsx(
@@ -414,12 +428,10 @@ const ClientDashboard: React.FC = () => {
               </div>
             </section>
           </>
-        ) : (
-          <CrmManager leads={leadsRecent} />
         )}
-
+        
         {/* Pro Teaser Footer */}
-        {!isBusiness && (
+        {!isBusiness && activeTab !== 'crm' && (
           <footer className="mt-20">
              <div className="bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 border border-white/10 rounded-[3.5rem] p-12 relative overflow-hidden group shadow-[0_0_80px_rgba(37,99,235,0.1)]">
                 <div className="absolute top-0 right-0 p-20 opacity-10 pointer-events-none group-hover:rotate-12 group-hover:scale-110 transition-transform duration-1000">

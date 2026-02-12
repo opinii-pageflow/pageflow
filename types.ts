@@ -41,16 +41,26 @@ export interface YoutubeVideoItem {
   isActive: boolean;
 }
 
+export type LeadStatus = 'novo' | 'contatado' | 'negociando' | 'fechado' | 'perdido' | 'respondido' | 'arquivado';
+
+export interface LeadHistoryItem {
+  status: LeadStatus;
+  date: string;
+  note?: string;
+}
+
 export interface LeadCapture {
   id: string;
   clientId: string;
   profileId: string;
   name: string;
-  contact: string; // Novo campo unificado
-  phone?: string; // Mantido para compatibilidade
-  email?: string; // Mantido para compatibilidade
+  contact: string;
+  phone?: string; 
+  email?: string; 
   message?: string;
-  status: 'novo' | 'respondido' | 'arquivado';
+  status: LeadStatus;
+  notes?: string; // Notas internas
+  history?: LeadHistoryItem[]; // Histórico de mudanças
   createdAt: string;
   source: AnalyticsSource;
 }
