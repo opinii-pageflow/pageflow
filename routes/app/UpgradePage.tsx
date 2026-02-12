@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentUser, getStorage } from '../../lib/storage';
 import { PLANS, PLAN_TYPES } from '../../lib/plans';
 import TopBar from '../../components/common/TopBar';
 import { Check, Zap, Shield, Rocket, Crown, ChevronRight, Star } from 'lucide-react';
+import { BillingCycle } from '../../types';
 import clsx from 'clsx';
 
 const UpgradePage: React.FC = () => {
@@ -11,12 +12,19 @@ const UpgradePage: React.FC = () => {
   const user = getCurrentUser();
   const data = getStorage();
   const client = data.clients.find(c => c.id === user?.clientId);
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
 
   const planIcons: Record<string, any> = {
     starter: Shield,
     pro: Zap,
     business: Rocket,
     enterprise: Crown
+  };
+
+  const calculatePrice = (basePrice: number) => {
+    if (basePrice === 0) return 'Grátis';
+    const price = billingCycle === 'yearly' ? basePrice * 0.8 : basePrice;
+    return `R$ ${price.toFixed(0)}`;
   };
 
   return (
@@ -28,7 +36,7 @@ const UpgradePage: React.FC = () => {
       </div>
 
       <main className="max-w-7xl mx-auto p-6 lg:p-10 pt-32 relative z-10">
-        <header className="text-center mb-16 space-y-4 animate-in fade-in slide-in-from-top-8 duration-1000">
+        <header className="text-center mb-12 space-y-4 animate-in fade-in slide-in-from-top-8 duration-1000">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full">
             <Star size={14} className="text-blue-400 fill-blue-400" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Impulsione seu Alcance</span>
@@ -36,9 +44,34 @@ const UpgradePage: React.FC = () => {
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none">
             Escolha o Próximo <span className="text-zinc-600">Nível</span>
           </h1>
-          <p className="text-zinc-500 text-lg md:text-xl font-medium max-w-2xl mx-auto">
-            Desbloqueie recursos premium, aumente seus slots de perfis e domine sua presença digital.
-          </p>
+          
+          <div className="pt-8 flex flex-col items-center gap-4">
+             <div className="flex bg-zinc-900/60 p-1 rounded-2xl border border-white/5 shadow-2xl">
+                <button 
+                  onClick={() => setBillingCycle('monthly')}
+                  className={clsx(
+                    "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                    billingCycle === 'monthly' ? "bg-white text-black" : "text-zinc-500 hover:text-white"
+                  )}
+                >
+                  Mensal
+                </button>
+                <button 
+                  onClick={() => setBillingCycle('yearly')}
+                  className={clsx(
+                    "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                    billingCycle === 'yearly' ? "bg-white text-black" : "text-zinc-500 hover:text-white"
+                  )}
+                >
+                  Anual
+                  <span className={clsx(
+                    "text-[8px] px-1.5 py-0.5 rounded-full font-black",
+                    billingCycle === 'yearly' ? "bg-blue-600 text-white" : "bg-blue-500/10 text-blue-400"
+                  )}>-20%</span>
+                </button>
+             </div>
+             <p className="text-zinc-500 text-sm font-medium">Economize com o faturamento anual.</p>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -77,7 +110,7 @@ const UpgradePage: React.FC = () => {
                   </h3>
                   <div className="mt-2 flex items-baseline gap-1">
                     <span className={clsx("text-4xl font-black", isFeatured ? "text-white" : "text-white")}>
-                      {plan.price}
+                      {calculatePrice(plan.priceValue)}
                     </span>
                     {planId !== 'starter' && (
                       <span className={clsx("text-xs font-bold uppercase", isFeatured ? "text-blue-100/60" : "text-zinc-500")}>
@@ -107,7 +140,7 @@ const UpgradePage: React.FC = () => {
 
                 <button
                   disabled={isCurrent}
-                  onClick={() => alert(`Iniciando upgrade para ${plan.name}...`)}
+                  onClick={() => alert(`Iniciando upgrade para ${plan.name} (${billingCycle})...`)}
                   className={clsx(
                     "w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-2",
                     isCurrent 
