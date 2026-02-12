@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getStorage, updateStorage } from '../../lib/storage';
 import { 
@@ -21,6 +20,7 @@ import {
 } from 'lucide-react';
 import TopBar from '../../components/common/TopBar';
 import { Client, PlanType } from '../../types';
+import { PLANS, PLAN_TYPES } from '../../lib/plans';
 import clsx from 'clsx';
 
 const ClientsListPage: React.FC = () => {
@@ -85,7 +85,6 @@ const ClientsListPage: React.FC = () => {
     e.preventDefault();
     if (!selectedClient) return;
     
-    // Garantir slug válido
     const finalSlug = formData.slug || formData.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
 
     updateStorage(prev => ({
@@ -111,7 +110,6 @@ const ClientsListPage: React.FC = () => {
   const handleCreateSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Geração de slug automática se vazio
     const finalSlug = formData.slug || formData.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
     
     const newClient: Client = {
@@ -127,7 +125,6 @@ const ClientsListPage: React.FC = () => {
     }));
     
     setIsCreateModalOpen(false);
-    // Pequeno delay para garantir persistência antes do reload (opcional mas seguro em localstorage)
     setTimeout(() => window.location.reload(), 100);
   };
 
@@ -135,7 +132,6 @@ const ClientsListPage: React.FC = () => {
     <div className="min-h-screen bg-[#020202] text-white overflow-x-hidden">
       <TopBar title="Diretório de Inquilinos" />
       
-      {/* Glows */}
       <div className="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-600/5 rounded-full blur-[120px] pointer-events-none"></div>
 
       <main className="max-w-7xl mx-auto p-6 lg:p-10 pt-48 pb-32 relative z-10">
@@ -156,7 +152,6 @@ const ClientsListPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Filters Bar */}
         <div className="flex flex-col md:flex-row gap-4 mb-10 items-center animate-in fade-in slide-in-from-bottom-4 duration-700">
            <div className="relative flex-1 w-full group">
               <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors" size={20} />
@@ -170,7 +165,6 @@ const ClientsListPage: React.FC = () => {
            </div>
         </div>
 
-        {/* Clients Cards System */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
            {filteredClients.map(client => (
              <div key={client.id} className="bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3.5rem] p-10 flex flex-col justify-between group hover:border-blue-500/20 transition-all duration-500 shadow-2xl relative overflow-hidden">
@@ -201,7 +195,7 @@ const ClientsListPage: React.FC = () => {
                       <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600">Plano</span>
                       <span className="text-sm font-black text-white flex items-center gap-2">
                         <Zap size={14} className="text-blue-500" />
-                        {client.plan}
+                        {PLANS[client.plan]?.name || client.plan}
                       </span>
                    </div>
                    <div className="bg-black/40 p-5 rounded-3xl border border-white/5 flex flex-col gap-1">
@@ -298,10 +292,18 @@ const ClientsListPage: React.FC = () => {
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Nível de Serviço</label>
                     <div className="relative">
-                      <select value={formData.plan} onChange={(e) => setFormData({...formData, plan: e.target.value as PlanType})} className="w-full bg-black/40 border border-white/10 rounded-[1.5rem] px-6 py-5 text-sm font-bold outline-none appearance-none cursor-pointer">
-                        <option value="free">Gratuito</option>
-                        <option value="pro">Pro Master</option>
-                        <option value="business">Enterprise</option>
+                      <select 
+                        value={formData.plan} 
+                        onChange={(e) => {
+                          const newPlanId = e.target.value as PlanType;
+                          const newPlan = PLANS[newPlanId];
+                          setFormData({...formData, plan: newPlanId, maxProfiles: newPlan.maxProfiles });
+                        }} 
+                        className="w-full bg-black/40 border border-white/10 rounded-[1.5rem] px-6 py-5 text-sm font-bold outline-none appearance-none cursor-pointer"
+                      >
+                        {PLAN_TYPES.map(planId => (
+                          <option key={planId} value={planId}>{PLANS[planId].name}</option>
+                        ))}
                       </select>
                       <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500" size={16} />
                     </div>
