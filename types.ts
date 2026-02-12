@@ -5,7 +5,6 @@ export type ButtonStyle = 'solid' | 'outline' | 'glass';
 export type VisibilityMode = 'public' | 'private' | 'password';
 export type AnalyticsSource = 'direct' | 'qr' | 'nfc';
 export type EventType = 'view' | 'click';
-export type BillingCycle = 'monthly' | 'yearly';
 
 // ===== Pro Modules =====
 export type CatalogItemKind = 'product' | 'service';
@@ -89,7 +88,6 @@ export interface Client {
   name: string;
   slug: string;
   plan: PlanType;
-  billingCycle?: BillingCycle;
   maxProfiles: number;
   maxTemplates?: number;
   createdAt: string;
