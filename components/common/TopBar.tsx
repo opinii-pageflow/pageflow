@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LogOut, ChevronLeft, Layout, BarChart3, Settings, Shield } from 'lucide-react';
@@ -30,8 +29,8 @@ const TopBar: React.FC<TopBarProps> = ({ title, showBack }) => {
         { label: 'Clientes', path: '/admin/clients', icon: Layout },
       ]
     : [
-        // Se for free, não mostra Insights na TopBar
-        ...(client?.plan !== 'free' ? [{ label: 'Insights', path: '/app/insights', icon: BarChart3 }] : []),
+        // Se for starter, não mostra Insights na TopBar
+        ...(client?.plan !== 'starter' ? [{ label: 'Insights', path: '/app/insights', icon: BarChart3 }] : []),
         { label: 'Meus Perfis', path: '/app/profiles', icon: Layout },
         { label: 'Configurações', path: '/app/settings', icon: Settings },
       ];
@@ -86,7 +85,7 @@ const TopBar: React.FC<TopBarProps> = ({ title, showBack }) => {
           <div className="text-right hidden md:block">
             <div className="text-[10px] font-black uppercase tracking-widest truncate max-w-[120px]">{user?.name}</div>
             <div className="text-[9px] text-zinc-500 uppercase font-black tracking-widest opacity-60 leading-none mt-0.5">
-              {client?.plan === 'free' ? 'Plano Grátis' : user?.role}
+              {client?.plan === 'starter' ? 'Plano Starter' : user?.role}
             </div>
           </div>
           

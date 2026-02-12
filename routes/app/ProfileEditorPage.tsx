@@ -51,7 +51,7 @@ const ProfileEditorPage: React.FC = () => {
     if (found) {
       setProfile({ ...found });
       const client = data.clients.find(c => c.id === found.clientId);
-      setIsPro(client?.plan !== 'free');
+      setIsPro(client?.plan !== 'starter');
     } else {
       navigate('/app/profiles');
     }

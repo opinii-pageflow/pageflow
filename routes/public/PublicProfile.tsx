@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { getStorage } from '../../lib/storage';
@@ -20,7 +19,7 @@ const PublicProfile: React.FC = () => {
     if (found) {
       setProfile(found);
       const client = data.clients.find(c => c.id === found.clientId);
-      setIsPro(client?.plan !== 'free');
+      setIsPro(client?.plan !== 'starter');
       const source = (searchParams.get('src') as AnalyticsSource) || 'direct';
       trackEvent({
         profileId: found.id,

@@ -1,5 +1,5 @@
 export type UserRole = 'admin' | 'client';
-export type PlanType = 'free' | 'pro' | 'business';
+export type PlanType = 'starter' | 'pro' | 'business' | 'enterprise';
 export type BackgroundType = 'solid' | 'gradient' | 'image';
 export type ButtonStyle = 'solid' | 'outline' | 'glass';
 export type VisibilityMode = 'public' | 'private' | 'password';

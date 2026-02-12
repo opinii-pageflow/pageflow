@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { getCurrentUser } from '../../lib/storage';
 import { FeatureCard, PricingCard, FAQItem } from '../../components/landing/LandingUI';
+import { PLANS } from '../../lib/plans';
 
 const NAV_HEIGHT = 80; // h-20
 
@@ -245,24 +246,24 @@ const LandingPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
           <PricingCard
-            plan="Gratuito"
-            price="Grátis"
-            features={['1 Perfil Ativo', 'QR Code Básico', 'Tema Dark']}
+            plan={PLANS.starter.name}
+            price={PLANS.starter.price || 'Grátis'}
+            features={PLANS.starter.features}
             ctaLabel="Começar Grátis"
             onCta={handleStart}
           />
           <PricingCard
-            plan="Pro"
-            price="R$ 29"
-            features={['5 Perfis Ativos', 'Analytics Avançado', 'NFC Ativado']}
+            plan={PLANS.pro.name}
+            price={PLANS.pro.price || ''}
+            features={PLANS.pro.features}
             highlighted={true}
             ctaLabel="Começar Pro"
             onCta={handleStart}
           />
           <PricingCard
-            plan="Business"
-            price="R$ 89"
-            features={['Perfis Ilimitados', 'Equipe/Clientes', 'Domínio Próprio']}
+            plan={PLANS.business.name}
+            price={PLANS.business.price || ''}
+            features={PLANS.business.features}
             ctaLabel="Começar Business"
             onCta={handleStart}
           />
@@ -289,7 +290,7 @@ const LandingPage: React.FC = () => {
             />
             <FAQItem
               question="Posso ter mais de 1 perfil?"
-              answer="Sim. No plano Pro você tem até 5 perfis. No Business, ilimitado."
+              answer="Sim. No plano Pro você tem até 3 perfis e no Business, até 10."
             />
             <FAQItem
               question="Consigo replicar o design em todos?"
