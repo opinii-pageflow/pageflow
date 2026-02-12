@@ -17,7 +17,10 @@ import {
   Shield,
   Activity,
   Lock,
-  Target
+  Target,
+  Smile,
+  Meh,
+  Frown
 } from 'lucide-react';
 import { getProfileSummary } from '../../lib/analytics';
 import TopBar from '../../components/common/TopBar';
@@ -57,6 +60,7 @@ const ClientDashboard: React.FC = () => {
 
   const npsAvg = npsRecent.length ? (npsRecent.reduce((acc, n) => acc + n.score, 0) / npsRecent.length) : 0;
   const npsPromoters = npsRecent.filter(n => n.score >= 9).length;
+  const npsNeutrals = npsRecent.filter(n => n.score >= 7 && n.score <= 8).length;
   const npsDetractors = npsRecent.filter(n => n.score <= 6).length;
   const npsScore = npsRecent.length ? ((npsPromoters / npsRecent.length) * 100) - ((npsDetractors / npsRecent.length) * 100) : 0;
 
@@ -292,7 +296,7 @@ const ClientDashboard: React.FC = () => {
                 )}
               </div>
 
-              {/* NPS (Pro Quick Stats) */}
+              {/* NPS Dashboard (Pro) */}
               <div className="md:col-span-3 lg:col-span-6 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between shadow-2xl group animate-in fade-in zoom-in-95 duration-500 delay-300">
                 <div className="flex items-center justify-between mb-8">
                   <div className={clsx(
@@ -300,17 +304,42 @@ const ClientDashboard: React.FC = () => {
                     isPro ? "text-emerald-400 bg-emerald-500/10" : "text-zinc-500 bg-white/5"
                   )}><TrendingUp size={24} /></div>
                   <div className="text-right">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">NPS</div>
-                    <div className="text-3xl font-black tracking-tighter">{isPro ? Math.round(npsScore) : '—'}</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">NPS Score</div>
+                    <div className={clsx("text-3xl font-black tracking-tighter", isPro && npsScore > 0 ? "text-emerald-500" : isPro ? "text-zinc-300" : "")}>{isPro ? Math.round(npsScore) : '—'}</div>
                   </div>
                 </div>
                 {isPro ? (
-                  <div className="space-y-2">
-                    <div className="text-xs text-zinc-500">Média: <span className="text-white font-bold">{npsAvg.toFixed(1)}</span> · Respostas: <span className="text-white font-bold">{npsRecent.length}</span></div>
-                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(Math.max((npsScore + 100) / 200 * 100, 0), 100)}%` }}></div>
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-5">
+                      <div className="w-20 h-20 rounded-full border-4 border-white/5 flex items-center justify-center bg-black/20 shadow-inner">
+                        <span className="text-2xl font-black text-white">{npsAvg.toFixed(1)}</span>
+                      </div>
+                      <div>
+                        <div className="text-xs text-zinc-400 font-bold mb-1">Satisfação Geral</div>
+                        <div className="h-2 w-32 bg-white/5 rounded-full overflow-hidden">
+                          <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000" style={{ width: `${(npsAvg / 10) * 100}%` }}></div>
+                        </div>
+                        <div className="text-[10px] uppercase tracking-widest text-zinc-600 mt-2">{npsRecent.length} Avaliações</div>
+                      </div>
                     </div>
-                    <div className="text-[10px] text-zinc-600">Promotores: {npsPromoters} · Detratores: {npsDetractors}</div>
+                    
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/10 text-center flex flex-col items-center gap-1">
+                        <Smile size={16} className="text-emerald-500 mb-1" />
+                        <div className="text-emerald-500 font-black text-xl leading-none">{npsPromoters}</div>
+                        <div className="text-[8px] uppercase tracking-widest text-emerald-500/60">Promotores</div>
+                      </div>
+                      <div className="bg-zinc-500/10 p-3 rounded-2xl border border-zinc-500/10 text-center flex flex-col items-center gap-1">
+                        <Meh size={16} className="text-zinc-400 mb-1" />
+                        <div className="text-zinc-400 font-black text-xl leading-none">{npsNeutrals}</div>
+                        <div className="text-[8px] uppercase tracking-widest text-zinc-500/60">Neutros</div>
+                      </div>
+                      <div className="bg-red-500/10 p-3 rounded-2xl border border-red-500/10 text-center flex flex-col items-center gap-1">
+                        <Frown size={16} className="text-red-500 mb-1" />
+                        <div className="text-red-500 font-black text-xl leading-none">{npsDetractors}</div>
+                        <div className="text-[8px] uppercase tracking-widest text-red-500/60">Detratores</div>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-xs text-zinc-500 flex items-center gap-2"><Lock size={14} /> Disponível no Pro</div>
