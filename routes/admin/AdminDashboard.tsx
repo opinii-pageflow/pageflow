@@ -18,7 +18,7 @@ import {
   Settings
 } from 'lucide-react';
 import TopBar from '../../components/common/TopBar';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 import { Link } from 'react-router-dom';
 
 const AdminDashboard: React.FC = () => {

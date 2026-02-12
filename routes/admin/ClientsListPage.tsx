@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import TopBar from '../../components/common/TopBar';
 import { Client, PlanType } from '../../types';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 
 const ClientsListPage: React.FC = () => {
   const data = getStorage();

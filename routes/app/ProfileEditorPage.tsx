@@ -29,12 +29,13 @@ import LinksTab from '../../components/editor/LinksTab';
 import TemplatesTab from '../../components/editor/TemplatesTab';
 import FontsTab from '../../components/editor/FontsTab';
 import ShareTab from '../../components/editor/ShareTab';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 
 const ProfileEditorPage: React.FC = () => {
   const { profileId } = useParams();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('profile');
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -50,6 +51,7 @@ const ProfileEditorPage: React.FC = () => {
     } else {
       navigate('/app/profiles');
     }
+    setLoading(false);
   }, [profileId, navigate]);
 
   const handleUpdateProfile = (updates: Partial<Profile>) => {
@@ -91,7 +93,28 @@ const ProfileEditorPage: React.FC = () => {
     setHasUnsavedChanges(true);
   };
 
-  if (!profile) return null;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="text-2xl font-black mb-2">Perfil não encontrado</h1>
+        <p className="text-zinc-500 mb-8">Esse perfil pode ter sido removido ou você não tem acesso.</p>
+        <button
+          onClick={() => navigate('/app/profiles')}
+          className="bg-white text-black px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest"
+        >
+          Voltar para Perfis
+        </button>
+      </div>
+    );
+  }
 
   const editorTabs = [
     { id: 'profile', label: 'Perfil', icon: <User size={16} /> },

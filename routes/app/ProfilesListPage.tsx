@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCurrentUser, getStorage, updateStorage, copyStyleToClipboard, getStyleFromClipboard, StyleConfig } from '../../lib/storage';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 import { 
   Plus, 
   ExternalLink, 

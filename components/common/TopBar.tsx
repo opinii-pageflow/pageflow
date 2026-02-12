@@ -3,7 +3,7 @@ import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LogOut, ChevronLeft, Layout, BarChart3, Settings, Shield } from 'lucide-react';
 import { logout, getCurrentUser, getStorage } from '../../lib/storage';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 
 interface TopBarProps {
   title: string;

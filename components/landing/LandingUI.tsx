@@ -1,6 +1,6 @@
 import React, { memo, useId, useState } from 'react';
 import { Check, Minus, Plus, type LucideIcon } from 'lucide-react';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 
 type FeatureCardProps = {
   icon: LucideIcon;

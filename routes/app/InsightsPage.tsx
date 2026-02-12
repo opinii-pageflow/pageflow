@@ -15,7 +15,7 @@ import {
   Zap,
   ChevronRight
 } from 'lucide-react';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 import { Link } from 'react-router-dom';
 
 // Gráficos Simplificados

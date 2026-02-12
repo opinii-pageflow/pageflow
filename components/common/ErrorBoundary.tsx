@@ -1,5 +1,5 @@
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { ErrorInfo, ReactNode } from 'react';
 import { AlertCircle, RefreshCcw, Home } from 'lucide-react';
 
 interface Props {
@@ -11,10 +11,17 @@ interface State {
   error?: Error;
 }
 
-class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false
-  };
+class ErrorBoundary extends React.Component<Props, State> {
+  // NOTE: Alguns setups de TS+React (especialmente com moduleResolution=bundler)
+  // podem perder a tipagem do Component base em tempo de compilação. Declaramos
+  // explicitamente para garantir acesso tipado a props/state e evitar tela branca.
+  declare props: Readonly<Props>;
+  declare state: Readonly<State>;
+
+  constructor(props: Props) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
   public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
@@ -29,7 +36,8 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleGoHome = () => {
-    window.location.href = '/';
+    // HashRouter: garantir que o deploy estático caia na rota correta
+    window.location.href = '/#/';
   };
 
   public render() {

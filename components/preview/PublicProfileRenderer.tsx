@@ -4,7 +4,7 @@ import { Profile } from '../../types';
 import { formatLink, getIconColor } from '../../lib/linkHelpers';
 import { trackEvent } from '../../lib/analytics';
 import * as LucideIcons from 'lucide-react';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 
 interface Props {
   profile: Profile;

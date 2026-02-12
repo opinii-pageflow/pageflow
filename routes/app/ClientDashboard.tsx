@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { getProfileSummary } from '../../lib/analytics';
 import TopBar from '../../components/common/TopBar';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 
 const ClientDashboard: React.FC = () => {
   const navigate = useNavigate();

@@ -18,7 +18,7 @@ import {
   ClipboardPaste,
   Check
 } from 'lucide-react';
-import { clsx } from 'clsx';
+import clsx from 'clsx';
 
 const PRESET_PALETTE = [
   '#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF', 

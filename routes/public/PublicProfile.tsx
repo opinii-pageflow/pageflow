@@ -42,7 +42,7 @@ const PublicProfile: React.FC = () => {
       <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-center">
         <h1 className="text-4xl font-bold mb-4">404</h1>
         <p className="text-gray-400 mb-8">O perfil que você está procurando não existe ou foi removido.</p>
-        <a href="/" className="bg-white text-black px-8 py-3 rounded-full font-bold">Voltar ao Início</a>
+        <a href="/#/" className="bg-white text-black px-8 py-3 rounded-full font-bold">Voltar ao Início</a>
       </div>
     );
   }
