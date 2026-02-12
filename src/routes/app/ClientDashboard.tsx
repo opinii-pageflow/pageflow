@@ -21,6 +21,7 @@ import {
 import { getProfileSummary } from '../../lib/analytics';
 import TopBar from '../../components/common/TopBar';
 import NpsDashboard from '../../components/analytics/NpsDashboard';
+import LeadsDashboard from '../../components/analytics/LeadsDashboard';
 import clsx from 'clsx';
 
 const ClientDashboard: React.FC = () => {
@@ -43,7 +44,6 @@ const ClientDashboard: React.FC = () => {
       .filter(l => l.clientId === user?.clientId)
       .filter(l => now - new Date(l.createdAt).getTime() <= ms)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5)
   , [data.leads, user?.clientId, days]);
 
   const npsRecent = useMemo(() =>
@@ -239,48 +239,15 @@ const ClientDashboard: React.FC = () => {
              </div>
           </div>
 
-          {/* Leads (Pro) */}
-          <div className="md:col-span-3 lg:col-span-6 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between shadow-2xl group animate-in fade-in zoom-in-95 duration-500 delay-200">
-            <div className="flex items-center justify-between mb-8">
-              <div className={clsx(
-                "p-4 rounded-2xl group-hover:scale-110 transition-transform",
-                isPro ? "text-blue-400 bg-blue-500/10" : "text-zinc-500 bg-white/5"
-              )}><ExternalLink size={24} /></div>
-              <div className="text-right">
-                <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Leads</div>
-                <div className="text-3xl font-black tracking-tighter">{isPro ? leadsRecent.length : '—'}</div>
-              </div>
-            </div>
-            {isPro ? (
-              <div className="space-y-2">
-                {leadsRecent.length === 0 ? (
-                  <div className="text-xs text-zinc-500">Nenhum lead neste período.</div>
-                ) : (
-                  leadsRecent.map((l) => (
-                    <div key={l.id} className="flex items-center justify-between gap-3 text-xs">
-                      <div className="min-w-0">
-                        <div className="font-bold truncate">{l.name}</div>
-                        <div className="text-[10px] text-zinc-500 truncate">{l.contact}</div>
-                      </div>
-                      <div className="text-[10px] text-zinc-600 whitespace-nowrap">{new Date(l.createdAt).toLocaleDateString('pt-BR')}</div>
-                    </div>
-                  ))
-                )}
-              </div>
-            ) : (
-              <div className="text-xs text-zinc-500 flex items-center gap-2"><Lock size={14} /> Disponível no Pro</div>
-            )}
-          </div>
-
           {/* NPS (Pro Quick Stats) */}
-          <div className="md:col-span-3 lg:col-span-6 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between shadow-2xl group animate-in fade-in zoom-in-95 duration-500 delay-300">
+          <div className="md:col-span-3 lg:col-span-12 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between shadow-2xl group animate-in fade-in zoom-in-95 duration-500 delay-300">
             <div className="flex items-center justify-between mb-8">
               <div className={clsx(
                 "p-4 rounded-2xl group-hover:scale-110 transition-transform",
                 isPro ? "text-emerald-400 bg-emerald-500/10" : "text-zinc-500 bg-white/5"
               )}><TrendingUp size={24} /></div>
               <div className="text-right">
-                <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">NPS</div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Net Promoter Score</div>
                 <div className="text-3xl font-black tracking-tighter">{isPro ? Math.round(npsScore) : '—'}</div>
               </div>
             </div>
@@ -298,9 +265,10 @@ const ClientDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Detailed NPS Dashboard (Pro Only) */}
+        {/* Detailed Analytics Dashboard (Pro Only) */}
         {isPro && (
-          <div className="mb-20">
+          <div className="space-y-20 mb-20">
+            <LeadsDashboard leads={leadsRecent} />
             <NpsDashboard npsEntries={npsRecent} />
           </div>
         )}
