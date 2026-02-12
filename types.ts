@@ -15,10 +15,10 @@ export interface CatalogItem {
   kind: CatalogItemKind;
   title: string;
   description?: string;
-  priceText?: string; // ex: "R$ 149" ou "Sob consulta"
+  priceText?: string;
   imageUrl?: string;
-  ctaLabel?: string; // ex: "Comprar" / "Agendar"
-  ctaLink?: string;  // link externo (whatsapp, site etc.)
+  ctaLabel?: string;
+  ctaLink?: string;
   sortOrder: number;
   isActive: boolean;
 }
@@ -36,7 +36,7 @@ export interface YoutubeVideoItem {
   id: string;
   profileId: string;
   title?: string;
-  url: string; // qualquer url válida do YouTube
+  url: string;
   sortOrder: number;
   isActive: boolean;
 }
@@ -49,7 +49,8 @@ export interface LeadCapture {
   phone?: string;
   email?: string;
   message?: string;
-  createdAt: string; // ISO
+  status: 'novo' | 'respondido' | 'arquivado';
+  createdAt: string;
   source: AnalyticsSource;
 }
 
@@ -57,9 +58,9 @@ export interface NpsEntry {
   id: string;
   clientId: string;
   profileId: string;
-  score: number; // 0..10
+  score: number;
   comment?: string;
-  createdAt: string; // ISO
+  createdAt: string;
   source: AnalyticsSource;
 }
 
@@ -80,8 +81,8 @@ export interface Client {
   maxTemplates?: number;
   createdAt: string;
   isActive: boolean;
-  password?: string; // autenticação do cliente
-  email?: string;    // e-mail de login do cliente
+  password?: string;
+  email?: string;
 }
 
 export interface ProfileButton {
@@ -136,7 +137,6 @@ export interface Profile {
   createdAt: string;
   updatedAt: string;
 
-  // ===== Pro Fields (opcionais) =====
   pixKey?: string;
   catalogItems?: CatalogItem[];
   portfolioItems?: PortfolioItem[];
@@ -171,10 +171,7 @@ export interface AppData {
   clients: Client[];
   profiles: Profile[];
   events: AnalyticsEvent[];
-
-  // ===== Pro Data (multi-tenant) =====
   leads: LeadCapture[];
   nps: NpsEntry[];
-
   currentUser: UserAuth | null;
 }
