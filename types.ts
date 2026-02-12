@@ -46,8 +46,9 @@ export interface LeadCapture {
   clientId: string;
   profileId: string;
   name: string;
-  phone?: string;
-  email?: string;
+  contact: string; // Novo campo unificado
+  phone?: string; // Mantido para compatibilidade
+  email?: string; // Mantido para compatibilidade
   message?: string;
   status: 'novo' | 'respondido' | 'arquivado';
   createdAt: string;

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { LeadCapture } from '../../types';
-import { Mail, Phone, MessageSquare, Calendar, Trash2, CheckCircle2 } from 'lucide-react';
+import { Mail, Phone, MessageSquare, Calendar, Trash2, CheckCircle2, User } from 'lucide-react';
 
 interface Props {
   leads: LeadCapture[];
@@ -32,16 +32,12 @@ const CrmManager: React.FC<Props> = ({ leads }) => {
                 <div>
                   <h4 className="font-black text-lg">{lead.name}</h4>
                   <div className="flex flex-wrap items-center gap-4 mt-1">
-                    {lead.email && (
-                      <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-medium">
-                        <Mail size={12} /> {lead.email}
-                      </div>
-                    )}
-                    {lead.phone && (
-                      <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-medium">
-                        <Phone size={12} /> {lead.phone}
-                      </div>
-                    )}
+                    {/* Exibe o novo campo 'contact' ou fallback para phone/email antigos */}
+                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-medium">
+                      <User size={12} /> 
+                      {lead.contact || lead.email || lead.phone || 'Sem contato'}
+                    </div>
+                    
                     <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-medium">
                       <Calendar size={12} /> {new Date(lead.createdAt).toLocaleDateString()}
                     </div>
@@ -57,7 +53,11 @@ const CrmManager: React.FC<Props> = ({ leads }) => {
 
               <div className="flex items-center gap-2">
                 <a 
-                  href={lead.phone ? `https://wa.me/${lead.phone.replace(/\D/g, '')}` : lead.email ? `mailto:${lead.email}` : '#'}
+                  href={
+                    lead.contact?.includes('@') || lead.email 
+                      ? `mailto:${lead.contact || lead.email}` 
+                      : `https://wa.me/${(lead.contact || lead.phone || '').replace(/\D/g, '')}`
+                  }
                   target="_blank"
                   className="bg-white text-black px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95"
                 >
