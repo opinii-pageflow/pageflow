@@ -17,12 +17,14 @@ interface Props {
 const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, source = 'direct' }) => {
   const { theme, fonts, buttons, layoutTemplate } = profile;
 
-  const canUseProBlocks = !!isPro && !isPreview;
+  // No editor (isPreview), mostramos os blocos Pro para feedback visual,
+  // mas na página pública, apenas se for realmente Pro.
+  const canUseProBlocks = isPreview || !!isPro;
 
-  const proCardClass = "mt-4 w-full rounded-[1.6rem] border border-white/10 bg-white/5 backdrop-blur-2xl p-4";
+  const proCardClass = "mt-6 w-full rounded-[2rem] border border-white/10 bg-white/5 backdrop-blur-2xl p-5 overflow-hidden shadow-2xl";
 
   const pushLead = (payload: { name: string; phone?: string; email?: string; message?: string }) => {
-    if (!canUseProBlocks) return;
+    if (isPreview || !isPro) return;
     updateStorage(prev => ({
       ...prev,
       leads: [
@@ -43,7 +45,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, sou
   };
 
   const pushNps = (score: number, comment?: string) => {
-    if (!canUseProBlocks) return;
+    if (isPreview || !isPro) return;
     updateStorage(prev => ({
       ...prev,
       nps: [
@@ -365,37 +367,38 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, sou
 
               {/* Vídeos */}
               {(profile.youtubeVideos || []).filter(i => i.isActive).length > 0 && (
-                <div className={proCardClass}>
-                  <div className="flex items-center justify-between mb-3">
+                <div className="w-full mt-8">
+                  <div className="flex items-center justify-between mb-4 px-2">
                     <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Vídeos</div>
-                    <LucideIcons.Youtube size={16} className="opacity-50" />
+                    <LucideIcons.Youtube size={16} className="text-red-500" />
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {(profile.youtubeVideos as YoutubeVideoItem[])
                       .filter(i => i.isActive)
                       .sort((a, b) => a.sortOrder - b.sortOrder)
-                      .slice(0, 3)
                       .map((vid) => {
                         const id = extractYouTubeId(vid.url);
-                        if (!id) {
-                          return (
-                            <a key={vid.id} href={vid.url} target="_blank" rel="noopener noreferrer" className="block rounded-2xl border border-white/10 bg-black/20 p-4 text-xs">
-                              {vid.title || 'Abrir vídeo'}
-                            </a>
-                          );
-                        }
+                        if (!id) return null;
+                        
                         return (
-                          <div key={vid.id} className="rounded-2xl border border-white/10 overflow-hidden bg-black/20">
-                            <div className="aspect-video w-full">
+                          <div key={vid.id} className="rounded-[2rem] border border-white/10 overflow-hidden bg-black/40 shadow-xl group">
+                            <div className="aspect-video w-full relative">
                               <iframe
-                                className="w-full h-full"
-                                src={`https://www.youtube.com/embed/${id}`}
+                                className="absolute inset-0 w-full h-full"
+                                src={`https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`}
                                 title={vid.title || 'YouTube video'}
+                                frameBorder="0"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 allowFullScreen
                               />
                             </div>
-                            {vid.title && <div className="p-3 text-[10px] font-bold opacity-70">{vid.title}</div>}
+                            {vid.title && (
+                              <div className="p-4 border-t border-white/5">
+                                <h4 className="text-xs font-bold truncate opacity-80" style={{ fontFamily: fonts.headingFont }}>
+                                  {vid.title}
+                                </h4>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
