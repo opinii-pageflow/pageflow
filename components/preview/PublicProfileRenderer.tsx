@@ -21,7 +21,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, sou
 
   const canUseProBlocks = !!isPro && !isPreview;
 
-  const proCardClass = "mt-4 w-full rounded-[1.6rem] border border-white/10 bg-white/5 backdrop-blur-2xl p-4";
+  const proCardClass = "mt-6 w-full rounded-[2.5rem] border border-white/5 bg-white/5 backdrop-blur-2xl p-6 shadow-2xl";
 
   const pushLead = (payload: { name: string; phone?: string; email?: string; message?: string }) => {
     if (!canUseProBlocks) return;
@@ -297,40 +297,40 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, sou
                 </div>
               )}
 
-              {/* Catálogo */}
+              {/* Catálogo com Grid Responsivo */}
               {(profile.catalogItems || []).filter(i => i.isActive).length > 0 && (
                 <div className={proCardClass}>
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Catálogo</div>
                     <LucideIcons.ShoppingBag size={16} className="opacity-50" />
                   </div>
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {(profile.catalogItems as CatalogItem[])
                       .filter(i => i.isActive)
                       .sort((a, b) => a.sortOrder - b.sortOrder)
-                      .slice(0, 12)
                       .map((item) => (
-                        <div key={item.id} className="flex gap-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+                        <div key={item.id} className="flex flex-col gap-3 rounded-[1.8rem] border border-white/10 bg-black/20 p-4 transition-all hover:bg-black/30 group">
                           {item.imageUrl ? (
-                            <img src={item.imageUrl} alt={item.title} className="w-16 h-16 rounded-xl object-cover border border-white/10" />
+                            <img src={item.imageUrl} alt={item.title} className="w-full aspect-square rounded-2xl object-cover border border-white/10 group-hover:scale-[1.02] transition-transform duration-500" />
                           ) : (
-                            <div className="w-16 h-16 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                              <LucideIcons.Package size={18} className="opacity-50" />
+                            <div className="w-full aspect-square rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                              <LucideIcons.Package size={24} className="opacity-30" />
                             </div>
                           )}
-                          <div className="flex-1 min-w-0">
+                          <div className="flex-1 flex flex-col min-w-0">
                             <div className="font-black text-sm truncate" style={{ fontFamily: fonts.headingFont }}>{item.title}</div>
-                            {item.description && <div className="text-[10px] opacity-60 line-clamp-2">{item.description}</div>}
-                            <div className="mt-2 flex items-center justify-between gap-2">
-                              <div className="text-[10px] font-black uppercase tracking-widest opacity-70">{item.priceText || (item.kind === 'service' ? 'Serviço' : 'Produto')}</div>
+                            {item.description && <div className="text-[10px] opacity-60 line-clamp-2 mt-1 mb-2 leading-relaxed">{item.description}</div>}
+                            
+                            <div className="mt-auto pt-3 border-t border-white/5 flex items-center justify-between gap-2">
+                              <div className="text-[11px] font-black text-emerald-400 whitespace-nowrap">{item.priceText || 'Consultar'}</div>
                               {item.ctaLink && (
                                 <a
                                   href={item.ctaLink}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="px-3 py-1.5 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest"
+                                  className="px-3 py-1.5 rounded-xl bg-white text-black text-[9px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-colors"
                                 >
-                                  {item.ctaLabel || 'Abrir'}
+                                  {item.ctaLabel || 'Ver'}
                                 </a>
                               )}
                             </div>
