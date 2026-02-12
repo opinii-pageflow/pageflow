@@ -51,7 +51,8 @@ const ProfileEditorPage: React.FC = () => {
     if (found) {
       setProfile({ ...found });
       const client = data.clients.find(c => c.id === found.clientId);
-      setIsPro(client?.plan !== 'free');
+      // REGRA: Starter não tem acesso ao ProTab. Pro, Business e Enterprise sim.
+      setIsPro(client?.plan !== 'starter');
     } else {
       navigate('/app/profiles');
     }
@@ -154,7 +155,6 @@ const ProfileEditorPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 lg:gap-4">
-          {/* Style Replicator Tools */}
           <div className="hidden md:flex items-center gap-2 border-r border-white/10 pr-4 mr-2">
             <button 
               onClick={handleCopyStyle}
@@ -162,7 +162,6 @@ const ProfileEditorPage: React.FC = () => {
                 "p-3 rounded-xl transition-all flex items-center gap-2 text-[9px] font-black uppercase tracking-widest",
                 justCopied ? "bg-emerald-500/10 text-emerald-500" : "bg-white/5 text-zinc-400 hover:text-white"
               )}
-              title="Copiar configurações de estilo deste perfil"
             >
               {justCopied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
               <span className="hidden xl:inline">{justCopied ? "Copiado" : "Copiar Estilo"}</span>
@@ -172,7 +171,6 @@ const ProfileEditorPage: React.FC = () => {
               <button 
                 onClick={handlePasteStyle}
                 className="p-3 bg-blue-600/10 hover:bg-blue-600 text-blue-500 hover:text-white rounded-xl transition-all flex items-center gap-2 text-[9px] font-black uppercase tracking-widest border border-blue-600/30"
-                title="Colar configurações de estilo vindas de outro perfil"
               >
                 <ClipboardPaste size={16} />
                 <span className="hidden xl:inline">Colar Estilo</span>
