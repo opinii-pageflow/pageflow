@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   User, 
@@ -16,7 +16,8 @@ import {
   Eye,
   Copy,
   ClipboardPaste,
-  Zap
+  Zap,
+  ChevronDown
 } from 'lucide-react';
 import { getStorage, updateStorage, copyStyleToClipboard, getStyleFromClipboard, StyleConfig } from '../../lib/storage';
 import { Profile, PlanType } from '../../types';
@@ -35,6 +36,8 @@ import clsx from 'clsx';
 const ProfileEditorPage: React.FC = () => {
   const { profileId } = useParams();
   const navigate = useNavigate();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('profile');
@@ -44,6 +47,7 @@ const ProfileEditorPage: React.FC = () => {
   const [clipboard, setClipboard] = useState<StyleConfig | null>(getStyleFromClipboard());
   const [justCopied, setJustCopied] = useState(false);
   const [clientPlan, setClientPlan] = useState<PlanType | undefined>();
+  const [showScrollArrow, setShowScrollArrow] = useState(false);
 
   useEffect(() => {
     const data = getStorage();
@@ -57,6 +61,36 @@ const ProfileEditorPage: React.FC = () => {
     }
     setLoading(false);
   }, [profileId, navigate]);
+
+  // Lógica para detectar se precisa de scroll e mostrar a seta
+  useEffect(() => {
+    const checkScroll = () => {
+      if (!scrollContainerRef.current) return;
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      // Mostra a seta se estiver no topo e houver conteúdo escondido abaixo
+      setShowScrollArrow(scrollTop < 50 && scrollHeight > clientHeight + 100);
+    };
+
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', checkScroll);
+      // Pequeno delay para garantir que o conteúdo da tab carregou
+      const timer = setTimeout(checkScroll, 300);
+      return () => {
+        container.removeEventListener('scroll', checkScroll);
+        clearTimeout(timer);
+      };
+    }
+  }, [activeTab, profile]);
+
+  const handleScrollToBottom = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   const handleUpdateProfile = (updates: Partial<Profile>) => {
     if (!profile) return;
@@ -254,7 +288,10 @@ const ProfileEditorPage: React.FC = () => {
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto custom-scrollbar bg-black">
+          <div 
+            ref={scrollContainerRef}
+            className="flex-1 overflow-y-auto custom-scrollbar bg-black relative"
+          >
             <div className="p-6 lg:p-10 max-w-2xl mx-auto pb-40">
               {activeTab === 'profile' && <ProfileTab profile={profile} onUpdate={handleUpdateProfile} />}
               {activeTab === 'design' && <DesignTab profile={profile} onUpdate={handleUpdateProfile} />}
@@ -264,6 +301,17 @@ const ProfileEditorPage: React.FC = () => {
               {activeTab === 'share' && <ShareTab profile={profile} />}
               {activeTab === 'pro' && <ProTab profile={profile} clientPlan={clientPlan} onUpdate={handleUpdateProfile} />}
             </div>
+
+            {/* Scroll Indicator Arrow */}
+            {showScrollArrow && (
+              <button 
+                onClick={handleScrollToBottom}
+                className="fixed bottom-10 left-[21%] -translate-x-1/2 z-[100] bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-full text-white/40 hover:text-white hover:bg-white/20 transition-all animate-bounce"
+                title="Rolar para o final"
+              >
+                <ChevronDown size={24} />
+              </button>
+            )}
           </div>
         </div>
 
