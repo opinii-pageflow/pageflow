@@ -6,6 +6,7 @@ export type FeatureKey =
   | 'videos' 
   | 'pix' 
   | 'nps' 
+  | 'leads_capture'
   | 'crm' 
   | 'analytics' 
   | 'white_label';
@@ -23,13 +24,15 @@ const FEATURE_REQUIREMENTS: Record<FeatureKey, PlanType> = {
   videos: 'pro',
   pix: 'pro',
   analytics: 'pro',
-  nps: 'business',
-  crm: 'business',
+  nps: 'pro',           // Movido de Business para Pro
+  leads_capture: 'pro', // Movido de Business para Pro
+  crm: 'business',      // Gestão avançada (CRM) requer Business+
   white_label: 'enterprise'
 };
 
 /**
  * Verifica se um plano tem acesso a um determinado recurso.
+ * O sistema de ranking garante que planos superiores herdem permissões dos inferiores.
  */
 export const canAccessFeature = (clientPlan: PlanType | undefined, feature: FeatureKey): boolean => {
   if (!clientPlan) return false;

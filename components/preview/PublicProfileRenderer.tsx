@@ -25,13 +25,13 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   const hasPortfolioAccess = canAccessFeature(clientPlan, 'portfolio');
   const hasVideosAccess = canAccessFeature(clientPlan, 'videos');
   const hasPixAccess = canAccessFeature(clientPlan, 'pix');
-  const hasCrmAccess = canAccessFeature(clientPlan, 'crm');
+  const hasLeadAccess = canAccessFeature(clientPlan, 'leads_capture');
   const hasNpsAccess = canAccessFeature(clientPlan, 'nps');
 
   const proCardClass = "mt-6 w-full rounded-[2.5rem] border border-white/5 bg-white/5 backdrop-blur-2xl p-6 shadow-2xl";
 
   const pushLead = (payload: { name: string; contact: string; message?: string }) => {
-    if (!hasCrmAccess || isPreview) return;
+    if (!hasLeadAccess || isPreview) return;
     updateStorage(prev => ({
       ...prev,
       leads: [
@@ -404,7 +404,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
           )}
 
           {/* Leads */}
-          {hasCrmAccess && profile.enableLeadCapture && (
+          {hasLeadAccess && profile.enableLeadCapture && (
             <LeadBlock onSubmit={pushLead} className={proCardClass} />
           )}
 
