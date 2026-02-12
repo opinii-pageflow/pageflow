@@ -4,7 +4,7 @@ export interface Plan {
   id: PlanType;
   name: string;
   maxProfiles: number;
-  price: string;
+  monthlyPrice: number;
   features: string[];
 }
 
@@ -13,29 +13,29 @@ export const PLANS: Record<PlanType, Plan> = {
     id: 'starter',
     name: 'Starter',
     maxProfiles: 1,
-    price: 'Grátis',
-    features: ['1 Perfil Ativo', 'QR Code Básico', 'Templates Essenciais'],
+    monthlyPrice: 0,
+    features: ['1 Perfil Ativo', 'QR Code Básico', 'Templates Essenciais', 'Suporte via E-mail'],
   },
   pro: {
     id: 'pro',
     name: 'Pro',
     maxProfiles: 3,
-    price: 'R$ 19',
-    features: ['3 Perfis Ativos', 'Analytics Avançado', 'Catálogo & Portfólio', 'Chave Pix', 'Sem Anúncios'],
+    monthlyPrice: 19,
+    features: ['Até 3 Perfis Ativos', 'Analytics Avançado', 'Catálogo & Portfólio', 'Chave Pix', 'Sem Anúncios'],
   },
   business: {
     id: 'business',
     name: 'Business',
     maxProfiles: 10,
-    price: 'R$ 49',
-    features: ['10 Perfis Ativos', 'Gestão de Leads (CRM)', 'Dashboard de NPS', 'Múltiplos Usuários'],
+    monthlyPrice: 49,
+    features: ['Até 10 Perfis Ativos', 'Gestão de Leads (CRM)', 'Dashboard de NPS', 'Múltiplos Usuários'],
   },
   enterprise: {
     id: 'enterprise',
     name: 'Enterprise',
     maxProfiles: 25,
-    price: 'R$ 99',
-    features: ['25 Perfis Ativos', 'Suporte Prioritário', 'Domínio Próprio', 'Remoção Total da Marca'],
+    monthlyPrice: 99,
+    features: ['Até 25 Perfis Ativos', 'Suporte Prioritário', 'Domínio Próprio', 'Remoção Total da Marca'],
   },
 };
 

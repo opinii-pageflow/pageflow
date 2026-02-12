@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentUser, getStorage } from '../../lib/storage';
 import { PLANS, PLAN_TYPES } from '../../lib/plans';
@@ -11,12 +11,24 @@ const UpgradePage: React.FC = () => {
   const user = getCurrentUser();
   const data = getStorage();
   const client = data.clients.find(c => c.id === user?.clientId);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
 
   const planIcons: Record<string, any> = {
     starter: Shield,
     pro: Zap,
     business: Rocket,
     enterprise: Crown
+  };
+
+  const getDisplayPrice = (planId: keyof typeof PLANS) => {
+    const plan = PLANS[planId];
+    if (plan.monthlyPrice === 0) return 'Grátis';
+    
+    if (billingCycle === 'annual') {
+      const discounted = plan.monthlyPrice * 0.8;
+      return `R$ ${Math.floor(discounted)}`;
+    }
+    return `R$ ${plan.monthlyPrice}`;
   };
 
   return (
@@ -28,18 +40,28 @@ const UpgradePage: React.FC = () => {
       </div>
 
       <main className="max-w-7xl mx-auto p-6 lg:p-10 pt-32 relative z-10">
-        <header className="text-center mb-16 space-y-4 animate-in fade-in slide-in-from-top-8 duration-1000">
+        <header className="text-center mb-12 space-y-4 animate-in fade-in slide-in-from-top-8 duration-1000">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full">
             <Star size={14} className="text-blue-400 fill-blue-400" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Impulsione seu Alcance</span>
           </div>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none">
-            Escolha o Próximo <span className="text-zinc-600">Nível</span>
-          </h1>
-          <p className="text-zinc-500 text-lg md:text-xl font-medium max-w-2xl mx-auto">
-            Desbloqueie recursos premium, aumente seus slots de perfis e domine sua presença digital.
-          </p>
+          <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none">Escolha o Próximo <span className="text-zinc-600">Nível</span></h1>
         </header>
+
+        {/* BILLING TOGGLE */}
+        <div className="flex items-center justify-center gap-4 mb-16 animate-in fade-in duration-1000 delay-200">
+          <span className={clsx("text-xs font-bold transition-colors", billingCycle === 'monthly' ? "text-white" : "text-zinc-500")}>Pagamento Mensal</span>
+          <button 
+            onClick={() => setBillingCycle(prev => prev === 'monthly' ? 'annual' : 'monthly')}
+            className="w-12 h-6 bg-zinc-800 rounded-full relative p-1 transition-all"
+          >
+            <div className={clsx("w-4 h-4 bg-white rounded-full transition-transform duration-300", billingCycle === 'annual' ? "translate-x-6" : "translate-x-0")} />
+          </button>
+          <div className="flex items-center gap-2">
+            <span className={clsx("text-xs font-bold transition-colors", billingCycle === 'annual' ? "text-white" : "text-zinc-500")}>Anual</span>
+            <span className="bg-emerald-500/10 text-emerald-500 text-[9px] font-black px-2 py-0.5 rounded-full border border-emerald-500/20 uppercase tracking-widest">Economize 20%</span>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {PLAN_TYPES.map((planId, idx) => {
@@ -60,46 +82,28 @@ const UpgradePage: React.FC = () => {
                 style={{ animationDelay: `${idx * 150}ms` }}
               >
                 {isFeatured && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-blue-600 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl">
-                    Mais Popular
-                  </div>
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-blue-600 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl">Mais Popular</div>
                 )}
 
                 <div className="mb-8">
-                  <div className={clsx(
-                    "w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-2xl",
-                    isFeatured ? "bg-white text-blue-600" : "bg-white/5 text-zinc-400"
-                  )}>
+                  <div className={clsx("w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-2xl", isFeatured ? "bg-white text-blue-600" : "bg-white/5 text-zinc-400")}>
                     <Icon size={28} />
                   </div>
-                  <h3 className={clsx("text-2xl font-black tracking-tight", isFeatured ? "text-white" : "text-zinc-100")}>
-                    {plan.name}
-                  </h3>
+                  <h3 className={clsx("text-2xl font-black tracking-tight", isFeatured ? "text-white" : "text-zinc-100")}>{plan.name}</h3>
                   <div className="mt-2 flex items-baseline gap-1">
-                    <span className={clsx("text-4xl font-black", isFeatured ? "text-white" : "text-white")}>
-                      {plan.price}
-                    </span>
+                    <span className="text-4xl font-black">{getDisplayPrice(planId)}</span>
                     {planId !== 'starter' && (
-                      <span className={clsx("text-xs font-bold uppercase", isFeatured ? "text-blue-100/60" : "text-zinc-500")}>
-                        /mês
-                      </span>
+                      <span className={clsx("text-xs font-bold uppercase", isFeatured ? "text-blue-100/60" : "text-zinc-500")}>/mês</span>
                     )}
                   </div>
                 </div>
 
                 <div className="flex-1 space-y-4 mb-10">
-                  <div className={clsx("text-[10px] font-black uppercase tracking-widest opacity-60", isFeatured ? "text-blue-100" : "text-zinc-500")}>
-                    O que está incluído:
-                  </div>
                   <ul className="space-y-3">
                     {plan.features.map((feature, fIdx) => (
                       <li key={fIdx} className="flex items-center gap-3">
-                        <div className={clsx("p-1 rounded-full", isFeatured ? "bg-white/20" : "bg-white/5")}>
-                          <Check size={12} className={isFeatured ? "text-white" : "text-blue-500"} />
-                        </div>
-                        <span className={clsx("text-xs font-medium", isFeatured ? "text-blue-50" : "text-zinc-400")}>
-                          {feature}
-                        </span>
+                        <Check size={12} className={isFeatured ? "text-white" : "text-blue-500"} />
+                        <span className={clsx("text-xs font-medium", isFeatured ? "text-blue-50" : "text-zinc-400")}>{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -112,9 +116,7 @@ const UpgradePage: React.FC = () => {
                     "w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-2",
                     isCurrent 
                       ? "bg-white/5 text-zinc-600 border border-white/5 cursor-default" 
-                      : isFeatured
-                        ? "bg-white text-blue-600 hover:bg-zinc-100 shadow-xl"
-                        : "bg-zinc-800 text-white hover:bg-zinc-700 border border-white/5"
+                      : isFeatured ? "bg-white text-blue-600 hover:bg-zinc-100 shadow-xl" : "bg-zinc-800 text-white hover:bg-zinc-700 border border-white/5"
                   )}
                 >
                   {isCurrent ? 'Plano Atual' : 'Fazer Upgrade'}
@@ -124,12 +126,6 @@ const UpgradePage: React.FC = () => {
             );
           })}
         </div>
-
-        <footer className="mt-20 text-center">
-          <p className="text-zinc-600 text-xs font-medium">
-            Precisa de mais? Entre em contato para planos <span className="text-white">Custom Enterprise</span>.
-          </p>
-        </footer>
       </main>
     </div>
   );
