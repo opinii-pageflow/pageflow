@@ -14,11 +14,11 @@ export interface CatalogItem {
   profileId: string;
   kind: CatalogItemKind;
   title: string;
-  description?: string;
-  priceText?: string; // ex: "R$ 149" ou "Sob consulta"
-  imageUrl?: string;
-  ctaLabel?: string; // ex: "Comprar" / "Agendar"
-  ctaLink?: string;  // link externo (whatsapp, site etc.)
+  description: string;
+  price?: string; // Alterado de priceText para price
+  image?: string; // Alterado de imageUrl para image
+  ctaLabel?: string;
+  ctaLink?: string;
   sortOrder: number;
   isActive: boolean;
 }

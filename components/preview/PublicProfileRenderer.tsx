@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Profile, AnalyticsSource, CatalogItem, PortfolioItem, YoutubeVideoItem } from '../../types';
 import { formatLink, getIconColor } from '../../lib/linkHelpers';
@@ -297,38 +296,42 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, sou
 
               {/* Catálogo */}
               {(profile.catalogItems || []).filter(i => i.isActive).length > 0 && (
-                <div className={proCardClass}>
-                  <div className="flex items-center justify-between mb-3">
+                <div className="w-full mt-8">
+                  <div className="flex items-center justify-between mb-4 px-2">
                     <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Catálogo</div>
-                    <LucideIcons.ShoppingBag size={16} className="opacity-50" />
+                    <LucideIcons.ShoppingBag size={14} className="opacity-50" />
                   </div>
-                  <div className="grid grid-cols-1 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {(profile.catalogItems as CatalogItem[])
                       .filter(i => i.isActive)
                       .sort((a, b) => a.sortOrder - b.sortOrder)
-                      .slice(0, 12)
                       .map((item) => (
-                        <div key={item.id} className="flex gap-3 rounded-2xl border border-white/10 bg-black/20 p-3">
-                          {item.imageUrl ? (
-                            <img src={item.imageUrl} alt={item.title} className="w-16 h-16 rounded-xl object-cover border border-white/10" />
+                        <div key={item.id} className="flex flex-col bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[1.8rem] overflow-hidden group">
+                          {item.image ? (
+                            <div className="w-full aspect-square overflow-hidden border-b border-white/10">
+                              <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500" />
+                            </div>
                           ) : (
-                            <div className="w-16 h-16 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                              <LucideIcons.Package size={18} className="opacity-50" />
+                            <div className="w-full aspect-square bg-white/5 flex items-center justify-center border-b border-white/10">
+                              <LucideIcons.Package size={24} className="opacity-20" />
                             </div>
                           )}
-                          <div className="flex-1 min-w-0">
-                            <div className="font-black text-sm truncate" style={{ fontFamily: fonts.headingFont }}>{item.title}</div>
-                            {item.description && <div className="text-[10px] opacity-60 line-clamp-2">{item.description}</div>}
-                            <div className="mt-2 flex items-center justify-between gap-2">
-                              <div className="text-[10px] font-black uppercase tracking-widest opacity-70">{item.priceText || (item.kind === 'service' ? 'Serviço' : 'Produto')}</div>
+                          <div className="p-4 flex flex-col flex-1">
+                            <div className="font-black text-sm mb-1 leading-tight line-clamp-2" style={{ fontFamily: fonts.headingFont }}>{item.title}</div>
+                            {item.description && <div className="text-[10px] opacity-60 line-clamp-2 mb-3 leading-relaxed flex-1">{item.description}</div>}
+                            
+                            <div className="mt-auto pt-3 border-t border-white/5 flex flex-col gap-3">
+                              {item.price && (
+                                <div className="text-xs font-black text-white">{item.price}</div>
+                              )}
                               {item.ctaLink && (
                                 <a
                                   href={item.ctaLink}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="px-3 py-1.5 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest"
+                                  className="w-full py-2.5 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest text-center active:scale-95 transition-all"
                                 >
-                                  {item.ctaLabel || 'Abrir'}
+                                  {item.ctaLabel || 'Ver Detalhes'}
                                 </a>
                               )}
                             </div>
@@ -548,258 +551,6 @@ const LeadBlock: React.FC<{ className: string; onSubmit: (data: { name: string; 
         Enviar
       </button>
     </div>
-  );
-};
-
-// ===== Pro blocks (small, safe & self-contained) =====
-
-const Card: React.FC<{ title: string; children: React.ReactNode; icon?: React.ReactNode }> = ({ title, children, icon }) => (
-  <div className="bg-black/25 backdrop-blur-xl border border-white/5 rounded-2xl p-4">
-    <div className="flex items-center gap-2 mb-3">
-      <div className="opacity-70">{icon}</div>
-      <div className="text-[10px] font-black uppercase tracking-widest opacity-60">{title}</div>
-    </div>
-    {children}
-  </div>
-);
-
-const PixSection: React.FC<{ pixKey?: string; primary: string; text: string; muted: string }> = ({ pixKey, primary }) => {
-  const key = (pixKey || '').trim();
-  if (!key) return null;
-  const onCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(key);
-      alert('PIX copiado!');
-    } catch {
-      alert('Não consegui copiar automaticamente. Selecione e copie.');
-    }
-  };
-  return (
-    <Card title="PIX" icon={<LucideIcons.CreditCard size={14} />}>
-      <div className="flex items-center gap-2">
-        <input
-          value={key}
-          readOnly
-          className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none"
-        />
-        <button
-          onClick={onCopy}
-          style={{ backgroundColor: primary }}
-          className="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white active:scale-95"
-        >
-          Copiar
-        </button>
-      </div>
-    </Card>
-  );
-};
-
-const CatalogSection: React.FC<{ items: CatalogItem[]; primary: string }> = ({ items, primary }) => {
-  const active = (items || []).filter(i => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
-  if (active.length === 0) return null;
-  return (
-    <Card title="Catálogo" icon={<LucideIcons.ShoppingBag size={14} />}>
-      <div className="space-y-3">
-        {active.map((it) => (
-          <div key={it.id} className="flex gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-            {it.imageUrl ? (
-              <img src={it.imageUrl} className="w-16 h-16 rounded-lg object-cover" alt={it.title} />
-            ) : (
-              <div className="w-16 h-16 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center opacity-50">
-                <LucideIcons.Image size={18} />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <div className="font-bold text-sm truncate">{it.title}</div>
-                {it.priceText && <div className="text-[10px] font-black opacity-70">{it.priceText}</div>}
-              </div>
-              {it.description && <div className="text-[11px] opacity-60 mt-1 line-clamp-2">{it.description}</div>}
-              {it.ctaLink && (
-                <a
-                  href={it.ctaLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ backgroundColor: primary }}
-                  className="inline-flex mt-2 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-white active:scale-95"
-                >
-                  {it.ctaLabel || (it.kind === 'product' ? 'Comprar' : 'Agendar')}
-                </a>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-};
-
-const PortfolioSection: React.FC<{ items: PortfolioItem[] }> = ({ items }) => {
-  const active = (items || []).filter(i => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
-  if (active.length === 0) return null;
-  return (
-    <Card title="Portfólio" icon={<LucideIcons.LayoutGrid size={14} />}>
-      <div className="grid grid-cols-3 gap-2">
-        {active.slice(0, 12).map((it) => (
-          <div key={it.id} className="relative aspect-square overflow-hidden rounded-xl bg-white/5 border border-white/10">
-            <img src={it.imageUrl} className="w-full h-full object-cover hover:scale-105 transition-transform" alt={it.title || 'Portfolio'} />
-          </div>
-        ))}
-      </div>
-    </Card>
-  );
-};
-
-const YoutubeSection: React.FC<{ items: YoutubeVideoItem[] }> = ({ items }) => {
-  const active = (items || []).filter(i => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
-  if (active.length === 0) return null;
-  return (
-    <Card title="Vídeos" icon={<LucideIcons.Youtube size={14} />}>
-      <div className="space-y-3">
-        {active.slice(0, 4).map((it) => {
-          const vid = extractYouTubeId(it.url);
-          if (!vid) {
-            return (
-              <div key={it.id} className="p-3 rounded-xl bg-white/5 border border-white/10 text-[11px] opacity-70">
-                URL inválida: {it.url}
-              </div>
-            );
-          }
-          return (
-            <div key={it.id} className="overflow-hidden rounded-2xl border border-white/10 bg-black/30">
-              <div className="aspect-video">
-                <iframe
-                  className="w-full h-full"
-                  src={`https://www.youtube.com/embed/${vid}`}
-                  title={it.title || 'YouTube video'}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                />
-              </div>
-              {it.title && <div className="p-3 text-[11px] font-bold opacity-80">{it.title}</div>}
-            </div>
-          );
-        })}
-      </div>
-    </Card>
-  );
-};
-
-const NpsSection: React.FC<{ enabled: boolean; profileId: string; clientId: string; primary: string; source: AnalyticsSource }> = ({ enabled, profileId, clientId, primary, source }) => {
-  const [score, setScore] = React.useState<number | null>(null);
-  const [comment, setComment] = React.useState('');
-  const [sent, setSent] = React.useState(false);
-  if (!enabled) return null;
-
-  const submit = () => {
-    if (score === null) return;
-    updateStorage(prev => ({
-      ...prev,
-      nps: [...prev.nps, {
-        id: Math.random().toString(36).slice(2),
-        clientId,
-        profileId,
-        score,
-        comment: comment.trim() || undefined,
-        createdAt: new Date().toISOString(),
-        source
-      }]
-    }));
-    setSent(true);
-  };
-
-  return (
-    <Card title="Avalie este perfil" icon={<LucideIcons.Star size={14} />}>
-      {sent ? (
-        <div className="text-[11px] opacity-70">Obrigado! Sua avaliação foi registrada.</div>
-      ) : (
-        <>
-          <div className="grid grid-cols-11 gap-1 mb-3">
-            {Array.from({ length: 11 }).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setScore(i)}
-                className={clsx(
-                  "py-2 rounded-lg text-[10px] font-black transition-all border",
-                  score === i ? "text-black" : "text-white/70",
-                  score === i ? "border-transparent" : "border-white/10 bg-white/5"
-                )}
-                style={score === i ? { backgroundColor: primary } : undefined}
-              >
-                {i}
-              </button>
-            ))}
-          </div>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Quer deixar um comentário? (opcional)"
-            className="w-full min-h-[72px] bg-white/5 border border-white/10 rounded-xl p-3 text-xs outline-none"
-          />
-          <button
-            onClick={submit}
-            disabled={score === null}
-            style={{ backgroundColor: primary }}
-            className="mt-3 w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-30 active:scale-95"
-          >
-            Enviar avaliação
-          </button>
-        </>
-      )}
-    </Card>
-  );
-};
-
-const LeadSection: React.FC<{ enabled: boolean; profileId: string; clientId: string; primary: string; source: AnalyticsSource }> = ({ enabled, profileId, clientId, primary, source }) => {
-  const [name, setName] = React.useState('');
-  const [phone, setPhone] = React.useState('');
-  const [email, setEmail] = React.useState('');
-  const [message, setMessage] = React.useState('');
-  const [sent, setSent] = React.useState(false);
-  if (!enabled) return null;
-
-  const submit = () => {
-    if (!name.trim()) return;
-    updateStorage(prev => ({
-      ...prev,
-      leads: [...prev.leads, {
-        id: Math.random().toString(36).slice(2),
-        clientId,
-        profileId,
-        name: name.trim(),
-        phone: phone.trim() || undefined,
-        email: email.trim() || undefined,
-        message: message.trim() || undefined,
-        createdAt: new Date().toISOString(),
-        source
-      }]
-    }));
-    setSent(true);
-  };
-
-  return (
-    <Card title="Deixe seus dados" icon={<LucideIcons.UserPlus size={14} />}>
-      {sent ? (
-        <div className="text-[11px] opacity-70">Perfeito! Seus dados foram enviados.</div>
-      ) : (
-        <div className="space-y-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome*" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none" />
-          <div className="grid grid-cols-2 gap-2">
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="WhatsApp" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none" />
-            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs outline-none" />
-          </div>
-          <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Mensagem (opcional)" className="w-full min-h-[64px] bg-white/5 border border-white/10 rounded-xl p-3 text-xs outline-none" />
-          <button
-            onClick={submit}
-            disabled={!name.trim()}
-            style={{ backgroundColor: primary }}
-            className="w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white disabled:opacity-30 active:scale-95"
-          >
-            Enviar
-          </button>
-        </div>
-      )}
-    </Card>
   );
 };
 
