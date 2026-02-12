@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 
@@ -19,6 +18,7 @@ import ProfilesListPage from './routes/app/ProfilesListPage';
 import ProfileEditorPage from './routes/app/ProfileEditorPage';
 import InsightsPage from './routes/app/InsightsPage';
 import SettingsPage from './routes/app/SettingsPage';
+import UpgradePage from './routes/app/UpgradePage';
 
 import ProtectedRoute from './components/common/ProtectedRoute';
 
@@ -46,6 +46,7 @@ const App: React.FC = () => {
           <Route path="/app/profiles" element={<ProfilesListPage />} />
           <Route path="/app/profiles/:profileId/editor" element={<ProfileEditorPage />} />
           <Route path="/app/settings" element={<SettingsPage />} />
+          <Route path="/app/upgrade" element={<UpgradePage />} />
         </Route>
 
         {/* Fallback */}

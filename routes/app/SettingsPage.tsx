@@ -1,9 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getCurrentUser, getStorage } from '../../lib/storage';
 import TopBar from '../../components/common/TopBar';
 import { Shield, Zap, Mail, Trash2 } from 'lucide-react';
+import { PLANS } from '../../lib/plans';
 
 const SettingsPage: React.FC = () => {
+  const navigate = useNavigate();
   const user = getCurrentUser();
   const data = getStorage();
   const client = data.clients.find(c => c.id === user?.clientId);
@@ -39,10 +42,15 @@ const SettingsPage: React.FC = () => {
             </div>
             <div className="flex items-center justify-between p-6 bg-gradient-to-r from-purple-900/20 to-blue-900/20 rounded-2xl border border-purple-500/20">
               <div>
-                <div className="text-lg font-bold">Plano {client?.plan.toUpperCase()}</div>
+                <div className="text-lg font-bold">Plano {PLANS[client?.plan || 'starter'].name}</div>
                 <div className="text-sm text-gray-400">Ativo até {new Date(new Date().getTime() + 30*24*60*60*1000).toLocaleDateString()}</div>
               </div>
-              <button className="bg-white text-black px-6 py-2 rounded-xl font-bold text-sm">Fazer Upgrade</button>
+              <button 
+                onClick={() => navigate('/app/upgrade')}
+                className="bg-white text-black px-6 py-2 rounded-xl font-bold text-sm hover:bg-zinc-200 transition-all active:scale-95"
+              >
+                Alterar Plano
+              </button>
             </div>
           </section>
 

@@ -20,22 +20,22 @@ export const PLANS: Record<PlanType, Plan> = {
     id: 'pro',
     name: 'Pro',
     maxProfiles: 3,
-    price: 'R$ 29',
-    features: ['3 Perfis Ativos', 'Analytics Avançado', 'Recursos Pro'],
+    price: 'R$ 19',
+    features: ['3 Perfis Ativos', 'Analytics Avançado', 'Catálogo & Portfólio', 'Chave Pix', 'Sem Anúncios'],
   },
   business: {
     id: 'business',
     name: 'Business',
     maxProfiles: 10,
-    price: 'R$ 89',
-    features: ['10 Perfis Ativos', 'Gestão de Leads (CRM)', 'Múltiplos Usuários'],
+    price: 'R$ 49',
+    features: ['10 Perfis Ativos', 'Gestão de Leads (CRM)', 'Dashboard de NPS', 'Múltiplos Usuários'],
   },
   enterprise: {
     id: 'enterprise',
     name: 'Enterprise',
     maxProfiles: 25,
-    price: 'Contato',
-    features: ['Perfis Ilimitados', 'Suporte Dedicado', 'Domínio Próprio'],
+    price: 'R$ 99',
+    features: ['25 Perfis Ativos', 'Suporte Prioritário', 'Domínio Próprio', 'Remoção Total da Marca'],
   },
 };
 

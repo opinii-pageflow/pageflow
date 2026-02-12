@@ -11,7 +11,8 @@ import {
   X,
   Copy,
   ClipboardPaste,
-  Check
+  Check,
+  ChevronRight
 } from 'lucide-react';
 import TopBar from '../../components/common/TopBar';
 import { Profile } from '../../types';
@@ -27,7 +28,6 @@ const ProfilesListPage: React.FC = () => {
   const client = data.clients.find(c => c.id === user?.clientId);
 
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
-  const [quantity, setQuantity] = useState(1);
   const [clipboard, setClipboard] = useState<StyleConfig | null>(getStyleFromClipboard());
   const [justCopiedId, setJustCopiedId] = useState<string | null>(null);
 
@@ -132,11 +132,11 @@ const ProfilesListPage: React.FC = () => {
           
           <div className="flex flex-wrap items-center gap-4">
             <button 
-              onClick={() => setIsBuyModalOpen(true)}
+              onClick={() => navigate('/app/upgrade')}
               className="px-10 py-5 rounded-[2rem] border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 transition-all text-[11px] font-black uppercase tracking-widest text-amber-500 flex items-center gap-4 active:scale-95"
             >
               <Zap size={20} />
-              Expandir Limite
+              Ver Planos
             </button>
             <button 
               onClick={createNewProfile}
@@ -233,26 +233,26 @@ const ProfilesListPage: React.FC = () => {
         )}
       </main>
 
-      {/* Modal Slots */}
+      {/* Modal Upgrade Redirect */}
       {isBuyModalOpen && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl animate-in fade-in duration-500">
            <div className="bg-zinc-900 border border-white/10 w-full max-w-md rounded-[4rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-500">
               <button onClick={() => setIsBuyModalOpen(false)} className="absolute top-10 right-10 text-zinc-500 hover:text-white bg-white/5 p-3 rounded-full transition-all"><X size={24} /></button>
               <div className="p-12 text-center space-y-10">
-                 <div className="w-24 h-24 bg-amber-500/10 text-amber-500 rounded-[3rem] flex items-center justify-center mx-auto border border-amber-500/20 shadow-2xl shadow-amber-500/10">
+                 <div className="w-24 h-24 bg-blue-500/10 text-blue-500 rounded-[3rem] flex items-center justify-center mx-auto border border-blue-500/20 shadow-2xl shadow-blue-500/10">
                     <Zap size={48} />
                  </div>
                  <div className="space-y-3">
                    <h2 className="text-3xl font-black tracking-tighter">Limite Atingido</h2>
-                   <p className="text-zinc-500 text-base font-medium px-4">Você atingiu seu limite de {client?.maxProfiles} perfis. Adicione novos slots agora mesmo.</p>
+                   <p className="text-zinc-500 text-base font-medium px-4">Você atingiu seu limite de {client?.maxProfiles} perfis. Faça um upgrade para liberar mais slots e recursos premium.</p>
                  </div>
-                 <div className="bg-black/40 p-8 rounded-[2.5rem] border border-white/5 flex items-center justify-between gap-6">
-                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="w-16 h-16 rounded-2xl border border-white/10 text-3xl font-bold hover:bg-white/5 transition-all">-</button>
-                    <span className="text-6xl font-black text-amber-500 tabular-nums">{quantity}</span>
-                    <button onClick={() => setQuantity(quantity + 1)} className="w-16 h-16 rounded-2xl border border-white/10 text-3xl font-bold hover:bg-white/5 transition-all">+</button>
-                 </div>
-                 <button className="w-full bg-amber-500 text-black py-6 rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-amber-400 transition-all active:scale-95 shadow-2xl shadow-amber-500/20">
-                    Comprar {quantity} Novo(s) Slot(s)
+                 
+                 <button 
+                   onClick={() => navigate('/app/upgrade')}
+                   className="w-full bg-white text-black py-6 rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-2xl shadow-white/5 flex items-center justify-center gap-3"
+                 >
+                    Ver Planos de Upgrade
+                    <ChevronRight size={18} />
                  </button>
               </div>
            </div>
