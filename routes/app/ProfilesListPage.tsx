@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCurrentUser, getStorage, updateStorage, copyStyleToClipboard, getStyleFromClipboard, StyleConfig } from '../../lib/storage';
@@ -40,7 +39,10 @@ const ProfilesListPage: React.FC = () => {
 
   const createNewProfile = () => {
     if (!client || !user?.clientId) return;
+
+    // VALIDAÇÃO DE LIMITE SOLICITADA
     if (profiles.length >= client.maxProfiles) {
+      alert("Você atingiu o limite do seu plano. Faça upgrade para continuar.");
       setIsBuyModalOpen(true);
       return;
     }
