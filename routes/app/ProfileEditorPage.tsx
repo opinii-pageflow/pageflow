@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -16,7 +15,8 @@ import {
   PanelLeft,
   Eye,
   Copy,
-  ClipboardPaste
+  ClipboardPaste,
+  Zap
 } from 'lucide-react';
 import { getStorage, updateStorage, copyStyleToClipboard, getStyleFromClipboard, StyleConfig } from '../../lib/storage';
 import { Profile } from '../../types';
