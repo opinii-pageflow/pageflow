@@ -1,5 +1,5 @@
-import React from 'react';
-import { Plus, Trash2, Lock, Sparkles, ArrowUp, ArrowDown, Image, Youtube, QrCode } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Plus, Trash2, Lock, Sparkles, ArrowUp, ArrowDown, Image, Youtube, QrCode, Upload } from 'lucide-react';
 import clsx from 'clsx';
 import { CatalogItem, PortfolioItem, Profile, YoutubeVideoItem } from '../../types';
 
@@ -10,6 +10,8 @@ type Props = {
 };
 
 const ProTab: React.FC<Props> = ({ profile, isPro, onUpdate }) => {
+  const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+
   if (!isPro) {
     return (
       <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-10 text-center">
@@ -31,6 +33,17 @@ const ProTab: React.FC<Props> = ({ profile, isPro, onUpdate }) => {
   const updateCatalog = (items: CatalogItem[]) => onUpdate({ catalogItems: items });
   const updatePortfolio = (items: PortfolioItem[]) => onUpdate({ portfolioItems: items });
   const updateVideos = (items: YoutubeVideoItem[]) => onUpdate({ youtubeVideos: items });
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, itemId: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateCatalog(catalog.map(c => c.id === itemId ? { ...c, imageUrl: reader.result as string } : c));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const move = <T,>(arr: T[], from: number, to: number): T[] => {
     const next = [...arr];
@@ -142,7 +155,7 @@ const ProTab: React.FC<Props> = ({ profile, isPro, onUpdate }) => {
           </button>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {catalog.length === 0 && (
             <div className="text-zinc-500 text-sm">Nenhum item ainda. Adicione produtos ou serviços para vender direto do perfil.</div>
           )}
@@ -151,24 +164,22 @@ const ProTab: React.FC<Props> = ({ profile, isPro, onUpdate }) => {
             .slice()
             .sort((a, b) => a.sortOrder - b.sortOrder)
             .map((item, idx) => (
-              <div key={item.id} className="rounded-[1.8rem] border border-white/10 bg-black/20 p-5">
-                <div className="flex items-center justify-between gap-3 mb-4">
+              <div key={item.id} className="rounded-[1.8rem] border border-white/10 bg-black/20 p-6">
+                <div className="flex items-center justify-between gap-3 mb-6">
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => idx > 0 && updateCatalog(move(catalog, idx, idx - 1).map((x, i) => ({ ...x, sortOrder: i })))}
                       className="p-2 rounded-xl bg-white/5 border border-white/10 text-zinc-400 active:scale-95"
-                      title="Subir"
                     >
                       <ArrowUp size={14} />
                     </button>
                     <button
                       onClick={() => idx < catalog.length - 1 && updateCatalog(move(catalog, idx, idx + 1).map((x, i) => ({ ...x, sortOrder: i })))}
                       className="p-2 rounded-xl bg-white/5 border border-white/10 text-zinc-400 active:scale-95"
-                      title="Descer"
                     >
                       <ArrowDown size={14} />
                     </button>
-                    <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">#{idx + 1}</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-2">Item {idx + 1}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -182,84 +193,103 @@ const ProTab: React.FC<Props> = ({ profile, isPro, onUpdate }) => {
                     </button>
                     <button
                       onClick={() => updateCatalog(catalog.filter(c => c.id !== item.id).map((x, i) => ({ ...x, sortOrder: i })))}
-                      className="p-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 active:scale-95"
-                      title="Remover"
+                      className="p-2 rounded-xl bg-red-500/5 text-red-500/40 hover:text-red-500 transition-all"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Título</label>
-                    <input
-                      value={item.title}
-                      onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, title: e.target.value } : c))}
-                      className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Tipo</label>
-                    <select
-                      value={item.kind}
-                      onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, kind: e.target.value as any } : c))}
-                      className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
+                <div className="flex flex-col md:flex-row gap-6">
+                  {/* Image Upload Area */}
+                  <div className="flex-shrink-0">
+                    <div 
+                      onClick={() => fileInputRefs.current[item.id]?.click()}
+                      className="relative w-32 h-32 rounded-3xl bg-black/40 border border-white/10 flex flex-col items-center justify-center cursor-pointer group overflow-hidden hover:border-white/30 transition-all"
                     >
-                      <option value="service">Serviço</option>
-                      <option value="product">Produto</option>
-                    </select>
+                      {item.imageUrl ? (
+                        <>
+                          <img src={item.imageUrl} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <Upload size={20} className="text-white" />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-zinc-600 flex flex-col items-center gap-1 group-hover:text-zinc-400">
+                          <Image size={24} />
+                          <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
+                        </div>
+                      )}
+                      <input 
+                        type="file" 
+                        ref={el => fileInputRefs.current[item.id] = el}
+                        className="hidden" 
+                        accept="image/*" 
+                        onChange={(e) => handleImageUpload(e, item.id)}
+                      />
+                    </div>
                   </div>
 
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Descrição</label>
-                    <textarea
-                      value={item.description || ''}
-                      onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, description: e.target.value } : c))}
-                      rows={2}
-                      className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
-                    />
-                  </div>
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-zinc-600 ml-1">Título do Item</label>
+                      <input
+                        value={item.title}
+                        onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, title: e.target.value } : c))}
+                        className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
+                      />
+                    </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Preço (texto)</label>
-                    <input
-                      value={item.priceText || ''}
-                      onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, priceText: e.target.value } : c))}
-                      placeholder="Ex: R$ 149 / Sob consulta"
-                      className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
-                    />
-                  </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-zinc-600 ml-1">Tipo</label>
+                      <select
+                        value={item.kind}
+                        onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, kind: e.target.value as any } : c))}
+                        className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none appearance-none"
+                      >
+                        <option value="service">Serviço</option>
+                        <option value="product">Produto</option>
+                      </select>
+                    </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Imagem (URL)</label>
-                    <input
-                      value={item.imageUrl || ''}
-                      onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, imageUrl: e.target.value } : c))}
-                      placeholder="https://..."
-                      className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
-                    />
-                  </div>
+                    <div className="md:col-span-2 space-y-1.5">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-zinc-600 ml-1">Descrição Curta</label>
+                      <input
+                        value={item.description || ''}
+                        onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, description: e.target.value } : c))}
+                        className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
+                      />
+                    </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Botão (label)</label>
-                    <input
-                      value={item.ctaLabel || ''}
-                      onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, ctaLabel: e.target.value } : c))}
-                      placeholder="Ex: Comprar / Agendar"
-                      className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
-                    />
-                  </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-zinc-600 ml-1">Preço ou Condição</label>
+                      <input
+                        value={item.priceText || ''}
+                        onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, priceText: e.target.value } : c))}
+                        placeholder="Ex: R$ 99,00"
+                        className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
+                      />
+                    </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Botão (link)</label>
-                    <input
-                      value={item.ctaLink || ''}
-                      onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, ctaLink: e.target.value } : c))}
-                      placeholder="Ex: https://wa.me/55..."
-                      className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
-                    />
+                    <div className="space-y-1.5">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-zinc-600 ml-1">Rótulo do Botão</label>
+                      <input
+                        value={item.ctaLabel || ''}
+                        onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, ctaLabel: e.target.value } : c))}
+                        placeholder="Ex: Comprar"
+                        className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2 space-y-1.5">
+                      <label className="text-[9px] font-black uppercase tracking-widest text-zinc-600 ml-1">Link de Ação</label>
+                      <input
+                        value={item.ctaLink || ''}
+                        onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, ctaLink: e.target.value } : c))}
+                        placeholder="Ex: https://wa.me/..."
+                        className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
