@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Profile, AnalyticsSource, CatalogItem, PortfolioItem, YoutubeVideoItem } from '../../types';
 import { formatLink, getIconColor } from '../../lib/linkHelpers';
 import { trackEvent } from '../../lib/analytics';
@@ -16,6 +16,7 @@ interface Props {
 
 const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, source = 'direct' }) => {
   const { theme, fonts, buttons, layoutTemplate } = profile;
+  const [pixCopied, setPixCopied] = useState(false);
 
   // No editor (isPreview), mostramos os blocos Pro para feedback visual,
   // mas na página pública, apenas se for realmente Pro.
@@ -71,6 +72,17 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, sou
       type: 'click',
       linkId: btnId
     });
+  };
+
+  const handleCopyPix = async () => {
+    if (!profile.pixKey) return;
+    try {
+      await navigator.clipboard.writeText(profile.pixKey);
+      setPixCopied(true);
+      setTimeout(() => setPixCopied(false), 2000);
+    } catch (err) {
+      console.error('Falha ao copiar:', err);
+    }
   };
 
   const isSplit = layoutTemplate === 'Split Header';
@@ -281,16 +293,17 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, isPro, sou
                 <div className={proCardClass}>
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Pix</div>
+                      <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Apoie via Pix</div>
                       <div className="font-bold text-sm truncate" style={{ fontFamily: fonts.headingFont }}>{profile.pixKey}</div>
                     </div>
                     <button
-                      onClick={async () => {
-                        try { await navigator.clipboard.writeText(profile.pixKey || ''); } catch {}
-                      }}
-                      className="px-3 py-2 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest active:scale-95"
+                      onClick={handleCopyPix}
+                      className={clsx(
+                        "px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
+                        pixCopied ? "bg-emerald-500 text-white" : "bg-white text-black"
+                      )}
                     >
-                      Copiar
+                      {pixCopied ? 'Copiado!' : 'Copiar'}
                     </button>
                   </div>
                 </div>
