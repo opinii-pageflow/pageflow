@@ -1,4 +1,3 @@
-
 import { AppData, Profile, UserAuth, Theme, Fonts } from '../types';
 import { themePresets } from './themePresets';
 
@@ -38,8 +37,8 @@ export const INITIAL_DATA: AppData = {
       headline: 'Fullstack Engineer & Designer',
       bioShort: 'Criando o futuro da web com React e IA.',
       bioLong: 'Especialista em interfaces modernas e SaaS escaláveis.',
-      avatarUrl: 'https://picsum.photos/200/200',
-      coverUrl: 'https://picsum.photos/800/400',
+      avatarUrl: 'https://picsum.photos/seed/israel/200/200',
+      coverUrl: 'https://picsum.photos/seed/cover/800/400',
       layoutTemplate: 'Minimal Card',
       visibilityMode: 'public',
       createdAt: new Date().toISOString(),
@@ -53,40 +52,37 @@ export const INITIAL_DATA: AppData = {
       buttons: [
         { id: 'b1', profileId: 'profile-1', type: 'whatsapp', label: 'WhatsApp', value: '5511999999999', enabled: true, visibility: 'public', pinned: true, sortOrder: 0 },
         { id: 'b2', profileId: 'profile-1', type: 'instagram', label: 'Instagram', value: 'israel.tech', enabled: true, visibility: 'public', pinned: false, sortOrder: 1 },
-        { id: 'b3', profileId: 'profile-1', type: 'tiktok', label: 'TikTok', value: 'israel.tech', enabled: true, visibility: 'public', pinned: false, sortOrder: 2 },
-        { id: 'b4', profileId: 'profile-1', type: 'youtube', label: 'YouTube', value: 'israeltech', enabled: true, visibility: 'public', pinned: false, sortOrder: 3 },
-        { id: 'b5', profileId: 'profile-1', type: 'linkedin', label: 'LinkedIn', value: 'israel-tech', enabled: true, visibility: 'public', pinned: false, sortOrder: 4 },
-        { id: 'b6', profileId: 'profile-1', type: 'discord', label: 'Comunidade Discord', value: 'invite-link', enabled: true, visibility: 'public', pinned: false, sortOrder: 5 },
-      ]
-      ,
-      // Pro fields (opcionais)
-      pixKey: '',
-      catalogItems: [],
-      portfolioItems: [],
-      youtubeVideos: [],
+        { id: 'b3', profileId: 'profile-1', type: 'linkedin', label: 'LinkedIn', value: 'israel-tech', enabled: true, visibility: 'public', pinned: false, sortOrder: 4 },
+      ],
+      pixKey: 'israel@email.com',
+      catalogItems: [
+        {
+          id: 'cat-1',
+          profileId: 'profile-1',
+          kind: 'service',
+          title: 'Consultoria SaaS',
+          description: 'Desenvolvimento e estratégia para seu produto digital.',
+          priceText: 'R$ 499,00',
+          imageUrl: 'https://picsum.photos/seed/service/400/400',
+          ctaLabel: 'Contratar',
+          ctaLink: 'https://wa.me/5511999999999',
+          sortOrder: 0,
+          isActive: true
+        }
+      ],
+      portfolioItems: [
+        { id: 'p1', profileId: 'profile-1', imageUrl: 'https://picsum.photos/seed/p1/400/400', sortOrder: 0, isActive: true },
+        { id: 'p2', profileId: 'profile-1', imageUrl: 'https://picsum.photos/seed/p2/400/400', sortOrder: 1, isActive: true },
+        { id: 'p3', profileId: 'profile-1', imageUrl: 'https://picsum.photos/seed/p3/400/400', sortOrder: 2, isActive: true },
+      ],
+      youtubeVideos: [
+        { id: 'v1', profileId: 'profile-1', title: 'Como criar seu SaaS', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', sortOrder: 0, isActive: true }
+      ],
       enableLeadCapture: true,
       enableNps: true
     }
   ],
-  events: [
-    ...Array.from({ length: 20 }).map((_, i) => ({
-      id: `ev-${i}`,
-      clientId: 'client-1',
-      profileId: 'profile-1',
-      type: 'view' as const,
-      source: 'direct' as const,
-      ts: Date.now() - (Math.random() * 7 * 24 * 60 * 60 * 1000)
-    })),
-    ...Array.from({ length: 12 }).map((_, i) => ({
-      id: `ck-${i}`,
-      clientId: 'client-1',
-      profileId: 'profile-1',
-      type: 'click' as const,
-      linkId: 'b1',
-      source: 'qr' as const,
-      ts: Date.now() - (Math.random() * 7 * 24 * 60 * 60 * 1000)
-    }))
-  ],
+  events: [],
   leads: [],
   nps: [],
   currentUser: null
@@ -100,13 +96,11 @@ export const getStorage = (): AppData => {
   }
   try {
     const data = JSON.parse(stored) as AppData;
-
-    // ===== Migration (campos novos) =====
-    // AppData roots
+    
+    // Migrations e inicialização de campos Pro se necessário
     if (!Array.isArray((data as any).leads)) (data as any).leads = [];
     if (!Array.isArray((data as any).nps)) (data as any).nps = [];
 
-    // Profiles pro fields
     (data.profiles || []).forEach((p: any) => {
       if (p.pixKey === undefined) p.pixKey = '';
       if (!Array.isArray(p.catalogItems)) p.catalogItems = [];
@@ -115,14 +109,7 @@ export const getStorage = (): AppData => {
       if (p.enableLeadCapture === undefined) p.enableLeadCapture = true;
       if (p.enableNps === undefined) p.enableNps = true;
     });
-    const demo = data.clients.find(c => c.id === 'client-1');
-    if (demo && demo.email !== 'israel.cruzeiro@gmail.com') {
-      demo.email = 'israel.cruzeiro@gmail.com';
-      demo.password = '602387';
-      saveStorage(data);
-    }
-    // Persist migrations (sem quebrar)
-    saveStorage(data);
+
     return data;
   } catch {
     return INITIAL_DATA;
@@ -150,7 +137,6 @@ export const loginAs = (user: UserAuth) => {
   updateStorage(prev => ({ ...prev, currentUser: user }));
 };
 
-// Funções de Clipboard de Estilo
 export interface StyleConfig {
   theme: Theme;
   fonts: Fonts;

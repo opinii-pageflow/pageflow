@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { getStorage } from '../../lib/storage';
 import { trackEvent } from '../../lib/analytics';
-import { Profile, AnalyticsSource } from '../../types';
+import { Profile, AnalyticsSource, PlanType } from '../../types';
 import PublicProfileRenderer from '../../components/preview/PublicProfileRenderer';
 
 const PublicProfile: React.FC = () => {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [isPro, setIsPro] = useState(false);
+  const [clientPlan, setClientPlan] = useState<PlanType | undefined>();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,8 +19,9 @@ const PublicProfile: React.FC = () => {
     if (found) {
       setProfile(found);
       const client = data.clients.find(c => c.id === found.clientId);
-      // REGRA: Starter não tem acesso a blocos Pro (Catálogo, etc). Pro, Business e Enterprise sim.
-      setIsPro(client?.plan !== 'starter');
+      // Armazena o plano real para validar permissões Pro no renderer
+      setClientPlan(client?.plan);
+      
       const source = (searchParams.get('src') as AnalyticsSource) || 'direct';
       trackEvent({
         profileId: found.id,
@@ -50,7 +51,14 @@ const PublicProfile: React.FC = () => {
     );
   }
 
-  return <PublicProfileRenderer profile={profile} isPreview={false} isPro={isPro} source={(searchParams.get('src') as AnalyticsSource) || 'direct'} />;
+  return (
+    <PublicProfileRenderer 
+      profile={profile} 
+      isPreview={false} 
+      clientPlan={clientPlan} 
+      source={(searchParams.get('src') as AnalyticsSource) || 'direct'} 
+    />
+  );
 };
 
 export default PublicProfile;
