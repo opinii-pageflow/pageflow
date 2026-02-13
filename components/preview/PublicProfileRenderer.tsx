@@ -741,21 +741,24 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                 ) : (
                   <>
                     <div className="grid grid-cols-11 gap-1">
-                      {Array.from({ length: 11 }).map((_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setNpsScore(i)}
-                          className="rounded-lg py-2 text-[10px] font-black transition-all"
-                          style={{
-                            border: `${borderWidth} solid ${theme.border}`,
-                            background: npsScore === i ? theme.primary : 'transparent',
-                            color: npsScore === i ? primaryTextOnPrimary : theme.text,
-                            fontFamily: buttonFont,
-                          }}
-                        >
-                          {i}
-                        </button>
-                      ))}
+                      {Array.from({ length: 11 }).map((_, i) => {
+                        const npsColor = i <= 6 ? '#ef4444' : i <= 8 ? '#f59e0b' : '#10b981';
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => setNpsScore(i)}
+                            className="rounded-lg py-2 text-[10px] font-black transition-all"
+                            style={{
+                              border: `${borderWidth} solid ${theme.border}`,
+                              background: npsScore === i ? npsColor : 'transparent',
+                              color: npsScore === i ? pickReadableOn(npsColor) : theme.text,
+                              fontFamily: buttonFont,
+                            }}
+                          >
+                            {i}
+                          </button>
+                        );
+                      })}
                     </div>
                     <textarea
                       value={npsComment}
