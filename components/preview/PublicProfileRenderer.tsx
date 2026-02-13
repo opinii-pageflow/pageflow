@@ -77,6 +77,15 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   const isMagazine = layoutTemplate === 'Magazine';
   const isMinimal = layoutTemplate === 'Minimal Card';
 
+  // Templates adicionais (novos)
+  const isFullBleed = layoutTemplate === 'Full Bleed';
+  const isHeroBanner = layoutTemplate === 'Hero Banner';
+  const isAvatarLeft = layoutTemplate === 'Avatar Left';
+  const isRoundedPills = layoutTemplate === 'Rounded Pills';
+  const isCompact = layoutTemplate === 'Compact';
+  const isButtonGrid = layoutTemplate === 'Button Grid';
+  const isStackedCards = layoutTemplate === 'Stacked Cards';
+
   const headingFont = normalizeFontStack(fonts?.headingFont || 'Poppins');
   const bodyFont = normalizeFontStack(fonts?.bodyFont || 'Inter');
   const buttonFont = normalizeFontStack(fonts?.buttonFont || fonts?.bodyFont || 'Inter');
@@ -116,10 +125,14 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   };
 
   const shellCardStyle: React.CSSProperties = {
-    borderRadius: isLightClean ? `calc(${theme.radius} + 6px)` : `calc(${theme.radius} + 14px)`,
-    border: `1px solid ${theme.border}`,
-    background: theme.cardBg,
-    boxShadow: isMinimal ? 'none' : theme.shadow,
+    borderRadius: isFullBleed
+      ? '0px'
+      : isLightClean
+        ? `calc(${theme.radius} + 6px)`
+        : `calc(${theme.radius} + 14px)`,
+    border: isFullBleed ? '1px solid transparent' : `1px solid ${theme.border}`,
+    background: isFullBleed ? 'transparent' : theme.cardBg,
+    boxShadow: (isMinimal || isFullBleed) ? 'none' : theme.shadow,
     backdropFilter: (isGlass || theme.buttonStyle === 'glass' || isNeon || isCreator) ? 'blur(26px)' : undefined,
     position: 'relative',
     overflow: 'hidden',
@@ -212,32 +225,56 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
     const wantsSolid = theme.buttonStyle === 'solid' || isBoldList;
 
     const base: React.CSSProperties = {
-      borderRadius: isBoldList ? `calc(${theme.radius} + 10px)` : theme.radius,
+      borderRadius: isRoundedPills
+        ? '999px'
+        : isButtonGrid
+          ? `calc(${theme.radius} + 12px)`
+          : isBoldList
+            ? `calc(${theme.radius} + 10px)`
+            : isStackedCards
+              ? `calc(${theme.radius} + 14px)`
+              : theme.radius,
       fontFamily: buttonFont,
       transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
       borderWidth: wantsOutline ? '2px' : '1px',
       borderColor: wantsOutline ? theme.primary : theme.border,
       display: 'flex',
       alignItems: 'center',
-      justifyContent: isIconGrid ? 'center' : 'flex-start',
-      gap: isIconGrid ? '0.45rem' : isSplit ? '0.55rem' : '0.85rem',
-      padding: isIconGrid ? '0.85rem' : isBoldList ? '1.15rem 1.4rem' : isSplit ? '0.55rem 0.75rem' : '0.95rem 1.15rem',
+      justifyContent: (isIconGrid || isButtonGrid) ? 'center' : 'flex-start',
+      gap: (isIconGrid || isButtonGrid) ? '0.45rem' : isSplit ? '0.55rem' : '0.85rem',
+      padding: isIconGrid
+        ? '0.85rem'
+        : isButtonGrid
+          ? '0.95rem'
+          : isCompact
+            ? '0.65rem 0.85rem'
+            : isBoldList
+              ? '1.15rem 1.4rem'
+              : isSplit
+                ? '0.55rem 0.75rem'
+                : isStackedCards
+                  ? '1.05rem 1.15rem'
+                  : '0.95rem 1.15rem',
       width: '100%',
-      boxShadow: isBoldList ? theme.shadow : 'none',
+      boxShadow: (isBoldList || isStackedCards) ? theme.shadow : 'none',
       backdropFilter: wantsGlass ? 'blur(20px)' : undefined,
-      fontSize: isSplit ? '0.78rem' : '0.92rem',
-      fontWeight: isBoldList ? 900 : 800,
+      fontSize: isCompact ? '0.82rem' : isSplit ? '0.78rem' : '0.92rem',
+      fontWeight: isBoldList ? 900 : isCompact ? 800 : 800,
     };
 
     if (wantsSolid) {
       base.backgroundColor = theme.primary;
       base.color = primaryTextOnPrimary;
     } else if (wantsGlass) {
-      base.backgroundColor = 'rgba(255,255,255,0.08)';
+      base.backgroundColor = isStackedCards ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.08)';
       base.color = theme.text;
     } else {
-      base.backgroundColor = 'transparent';
+      base.backgroundColor = isStackedCards ? 'rgba(255,255,255,0.04)' : 'transparent';
       base.color = theme.text;
+    }
+
+    if (isStackedCards) {
+      base.borderColor = theme.border;
     }
 
     if (isBoldList) {
@@ -277,9 +314,11 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
     const wrapperClass = clsx(
       'w-full transition-all duration-700',
       isIconGrid && 'grid grid-cols-2 gap-2',
+      isButtonGrid && 'grid grid-cols-2 gap-2',
       !isIconGrid && isSplit && 'space-y-1.5',
       !isIconGrid && !isSplit && isMagazine && 'grid grid-cols-2 gap-2',
-      !isIconGrid && !isSplit && !isMagazine && 'space-y-3',
+      isStackedCards && 'space-y-2',
+      !isIconGrid && !isButtonGrid && !isSplit && !isMagazine && !isStackedCards && 'space-y-3',
     );
 
     return (
@@ -296,8 +335,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
               style={getButtonStyle(btn, idx)}
               className={clsx(
                 'group relative overflow-hidden',
-                !isIconGrid && 'hover:translate-x-1',
-                isIconGrid && 'aspect-square flex-col text-center hover:scale-[1.03]',
+                !isIconGrid && !isButtonGrid && !isStackedCards && 'hover:translate-x-1',
+                (isIconGrid || isButtonGrid) && 'flex-col text-center hover:scale-[1.03]',
+                isIconGrid && 'aspect-square',
               )}
             >
               <div
@@ -315,9 +355,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                 </div>
               )}
 
-              {isIconGrid && (
-                <div className="text-[7px] font-black uppercase tracking-widest opacity-70">{btn.label}</div>
-              )}
+              {isIconGrid && <div className="text-[7px] font-black uppercase tracking-widest opacity-70">{btn.label}</div>}
 
               {!isIconGrid && !isBoldList && !isSplit && (
                 <LucideIcons.ChevronRight
@@ -333,40 +371,41 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   };
 
   const renderHeader = () => {
+    const isSplitLike = isSplit || isAvatarLeft;
     const avatarClass = clsx(
       'object-cover border-2 transition-all duration-700',
-      isSplit && 'w-20 h-20 rounded-2xl',
-      !isSplit && isCorporate && 'w-16 h-16 rounded-2xl',
-      !isSplit && isBigAvatar && 'w-36 h-36 rounded-full',
-      !isSplit && !isCorporate && !isBigAvatar && 'w-28 h-28 rounded-full',
+      isSplitLike && 'w-20 h-20 rounded-2xl',
+      !isSplitLike && isCorporate && 'w-16 h-16 rounded-2xl',
+      !isSplitLike && isBigAvatar && 'w-36 h-36 rounded-full',
+      !isSplitLike && !isCorporate && !isBigAvatar && 'w-28 h-28 rounded-full',
     );
 
     const headerClass = clsx(
       'w-full flex transition-all duration-700',
-      isSplit ? 'flex-row items-center text-left gap-4 mb-4' : 'flex-col',
+      isSplitLike ? 'flex-row items-center text-left gap-4 mb-4' : 'flex-col',
       (isCorporate || isMagazine) ? 'items-start text-left' : 'items-center text-center',
     );
 
-    const headlineClass = clsx(
-      'font-medium truncate',
-      isSplit ? 'text-xs' : 'text-sm',
-    );
+    const headlineClass = clsx('font-medium truncate', isSplitLike ? 'text-xs' : 'text-sm');
 
     const nameClass = clsx(
       'font-black tracking-tighter leading-tight truncate',
-      isSplit ? 'text-lg' : isBigAvatar ? 'text-3xl' : isMagazine ? 'text-2xl' : 'text-2xl',
+      isSplitLike ? 'text-lg' : isBigAvatar ? 'text-3xl' : isMagazine ? 'text-2xl' : 'text-2xl',
     );
 
     return (
       <header className={headerClass}>
-        <div className={clsx('relative', isSplit ? 'flex-shrink-0' : (isCorporate || isMagazine) ? 'mb-3' : 'mb-4')}>
+        <div className={clsx('relative', isSplitLike ? 'flex-shrink-0' : (isCorporate || isMagazine) ? 'mb-3' : 'mb-4')}>
           <img
             src={profile.avatarUrl}
             className={avatarClass}
-            style={{ borderColor: theme.border, boxShadow: isNeon ? `0 0 0 1px ${theme.border}, 0 0 25px rgba(0,0,0,0.25)` : undefined }}
+            style={{
+              borderColor: theme.border,
+              boxShadow: isNeon ? `0 0 0 1px ${theme.border}, 0 0 25px rgba(0,0,0,0.25)` : undefined,
+            }}
             alt={profile.displayName}
           />
-          {isCreator && !isSplit && (
+          {isCreator && !isSplitLike && (
             <div
               className="absolute inset-0 rounded-full pointer-events-none"
               style={{ boxShadow: `0 0 0 2px ${theme.primary}55, 0 0 28px ${theme.primary}33` }}
@@ -374,7 +413,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
           )}
         </div>
 
-        <div className={clsx('flex-1 min-w-0', (isCorporate || isMagazine) && !isSplit ? 'w-full' : '')}>
+        <div className={clsx('flex-1 min-w-0', (isCorporate || isMagazine) && !isSplitLike ? 'w-full' : '')}>
           <h1 className={nameClass} style={{ fontFamily: headingFont }}>
             {profile.displayName}
           </h1>
@@ -387,31 +426,52 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   };
 
   // Cover: aparece em quase todos, mas com regras específicas
-  const shouldShowCover = Boolean(profile.coverUrl) && !isMinimal;
-  const coverHeightClass = isPreview ? (isMagazine ? 'h-40' : 'h-28') : (isMagazine ? 'h-56' : 'h-44');
+  // - Full Bleed: deixa tudo “solto” no background (sem cover grudado)
+  // - Hero Banner: mostra banner mesmo sem coverUrl (usa gradiente)
+  const shouldShowCover = !isMinimal && !isFullBleed && (Boolean(profile.coverUrl) || isHeroBanner);
+  const coverHeightClass = isPreview ? (isMagazine || isHeroBanner ? 'h-44' : 'h-28') : (isMagazine || isHeroBanner ? 'h-64' : 'h-44');
 
-  const shellWrapClass = clsx(
-    'relative z-10 w-full px-4 flex flex-col items-center',
-    shouldShowCover ? (isMagazine ? '-mt-16' : '-mt-12') : 'pt-8',
-  );
+  const shellWrapClass = clsx('relative z-10 w-full px-4 flex flex-col items-center', shouldShowCover ? (isMagazine ? '-mt-16' : '-mt-12') : 'pt-8');
 
-  const shellMaxWidth = isSplit ? 'max-w-[94%]' : isMagazine ? 'max-w-[560px]' : isBigAvatar ? 'max-w-[520px]' : 'max-w-[520px]';
-  const shellPaddingClass = isSplit ? 'p-4' : isLightClean ? 'p-7' : isMagazine ? 'p-6' : isCorporate ? 'p-6' : isCreator ? 'p-7' : 'p-6';
+  const isSplitLike = isSplit || isAvatarLeft;
+  const shellMaxWidth = isSplitLike ? 'max-w-[94%]' : isMagazine ? 'max-w-[560px]' : 'max-w-[520px]';
+
+  const shellPaddingClass = isFullBleed
+    ? 'px-2 pt-8 pb-10'
+    : isSplitLike
+      ? 'p-4'
+      : isCompact
+        ? 'p-4'
+        : isLightClean
+          ? 'p-7'
+          : isMagazine
+            ? 'p-6'
+            : isCorporate
+              ? 'p-6'
+              : isCreator
+                ? 'p-7'
+                : 'p-6';
 
   return (
     <div style={bgStyle} className="w-full flex flex-col items-center overflow-x-hidden no-scrollbar">
       {shouldShowCover && (
         <div className={clsx('w-full overflow-hidden sticky top-0 z-0 relative', coverHeightClass)}>
-          <img src={profile.coverUrl} className="w-full h-full object-cover" alt="Cover" />
+          {profile.coverUrl ? (
+            <img src={profile.coverUrl} className="w-full h-full object-cover" alt="Cover" />
+          ) : (
+            <div
+              className="w-full h-full"
+              style={{
+                background: `linear-gradient(135deg, ${theme.primary}55, rgba(0,0,0,0.75))`,
+              }}
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60" />
         </div>
       )}
 
       <div className={shellWrapClass}>
-        <main
-          className={clsx('w-full transition-all duration-700 mb-12', shellMaxWidth, shellPaddingClass)}
-          style={shellCardStyle}
-        >
+        <main className={clsx('w-full transition-all duration-700 mb-12', shellMaxWidth, shellPaddingClass)} style={shellCardStyle}>
           {shellDecor}
 
           {isMagazine && profile.coverUrl && (
@@ -437,7 +497,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
             <div
               className={clsx(
                 'mb-5 leading-relaxed',
-                isSplit ? 'text-[10px] text-left line-clamp-3' : (isCorporate ? 'text-xs text-left' : 'text-xs text-center'),
+                isSplit ? 'text-[10px] text-left line-clamp-3' : isCorporate ? 'text-xs text-left' : 'text-xs text-center',
               )}
               style={{ color: theme.muted }}
             >
@@ -501,7 +561,10 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                           style={{ borderColor: theme.border }}
                         />
                       ) : (
-                        <div className="w-full aspect-square rounded-2xl border flex items-center justify-center" style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.05)' }}>
+                        <div
+                          className="w-full aspect-square rounded-2xl border flex items-center justify-center"
+                          style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.05)' }}
+                        >
                           <LucideIcons.Package size={24} className="opacity-30" />
                         </div>
                       )}
@@ -514,7 +577,10 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                             {item.description}
                           </div>
                         )}
-                        <div className="mt-auto pt-3 border-t flex items-center justify-between gap-2" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                        <div
+                          className="mt-auto pt-3 border-t flex items-center justify-between gap-2"
+                          style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+                        >
                           <div className="text-[11px] font-black whitespace-nowrap" style={{ color: theme.primary }}>
                             {item.priceText || 'Consultar'}
                           </div>
@@ -583,7 +649,11 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                     const id = extractYouTubeId(vid.url);
                     if (!id) return null;
                     return (
-                      <div key={vid.id} className="rounded-2xl border overflow-hidden" style={{ borderColor: theme.border, background: 'rgba(0,0,0,0.18)' }}>
+                      <div
+                        key={vid.id}
+                        className="rounded-2xl border overflow-hidden"
+                        style={{ borderColor: theme.border, background: 'rgba(0,0,0,0.18)' }}
+                      >
                         <div className="aspect-video w-full">
                           <iframe
                             className="w-full h-full"
@@ -593,11 +663,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                             allowFullScreen
                           />
                         </div>
-                        {vid.title && (
-                          <div className="p-3 text-[10px] font-bold" style={{ color: theme.muted }}>
-                            {vid.title}
-                          </div>
-                        )}
+                        {vid.title && <div className="p-3 text-[10px] font-bold" style={{ color: theme.muted }}>{vid.title}</div>}
                       </div>
                     );
                   })}
@@ -607,7 +673,13 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
           {/* NPS */}
           {hasNpsAccess && profile.enableNps && (
-            <NpsBlock onSubmit={pushNps} styleObj={proCardStyle} theme={theme} primaryTextOnPrimary={primaryTextOnPrimary} headingFont={headingFont} />
+            <NpsBlock
+              onSubmit={pushNps}
+              styleObj={proCardStyle}
+              theme={theme}
+              primaryTextOnPrimary={primaryTextOnPrimary}
+              headingFont={headingFont}
+            />
           )}
 
           {/* Leads */}
