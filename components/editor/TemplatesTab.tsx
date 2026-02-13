@@ -1,331 +1,406 @@
 import React from 'react';
 import { Profile } from '../../types';
-import { Check } from 'lucide-react';
+import {
+  Check,
+  Layout,
+  Sparkles,
+  Shield,
+  Briefcase,
+  UserCircle2,
+  Grid3X3,
+  Rows3,
+  Newspaper,
+  RectangleHorizontal,
+  PanelLeft,
+  Layers,
+  Grip,
+  Image as ImageIcon,
+} from 'lucide-react';
 
 interface Props {
   profile: Profile;
   onUpdate: (updates: Partial<Profile>) => void;
 }
 
-const TemplateThumb: React.FC<{ type: string; active: boolean }> = ({ type, active }) => {
-  const renderMockup = () => {
-    switch (type) {
-      case 'Full Bleed':
-        return (
-          <div className="w-full h-full flex flex-col p-1.5">
-            <div className="w-full h-3 rounded-md bg-current/10" />
-            <div className="mt-1 flex items-center gap-1">
-              <div className="w-4 h-4 rounded-full bg-current/20" />
-              <div className="flex-1">
-                <div className="w-3/4 h-0.5 bg-current/20 rounded-full" />
-                <div className="w-1/2 h-0.5 bg-current/10 rounded-full mt-0.5" />
-              </div>
-            </div>
-            <div className="mt-2 space-y-0.5">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="w-full h-1 bg-current/10 rounded-sm" />
-              ))}
-            </div>
-          </div>
-        );
+type Tpl = {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+  preview: React.ReactNode;
+};
 
-      case 'Rounded Pills':
-        return (
-          <div className="w-full h-full flex flex-col p-1.5">
-            <div className="w-5 h-5 rounded-full bg-current/18 mx-auto" />
-            <div className="mt-1 w-2/3 h-0.5 bg-current/22 rounded-full mx-auto" />
-            <div className="mt-2 space-y-1">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="w-full h-1.5 bg-current/10 rounded-full" />
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'Hero Banner':
-        return (
-          <div className="w-full h-full p-1.5 flex flex-col">
-            <div className="w-full h-10 rounded-md bg-current/10" />
-            <div className="-mt-3 w-6 h-6 rounded-full bg-current/18 mx-auto border border-current/10" />
-            <div className="mt-1 w-2/3 h-0.5 bg-current/22 rounded-full mx-auto" />
-            <div className="mt-2 space-y-0.5">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="w-full h-1 bg-current/10 rounded-sm" />
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'Avatar Left':
-        return (
-          <div className="w-full h-full p-1.5">
-            <div className="flex gap-1">
-              <div className="w-7 h-7 rounded-xl bg-current/18" />
-              <div className="flex-1 pt-1">
-                <div className="w-3/4 h-0.5 bg-current/22 rounded-full" />
-                <div className="w-1/2 h-0.5 bg-current/10 rounded-full mt-0.5" />
-              </div>
-            </div>
-            <div className="mt-2 space-y-0.5">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="w-full h-1 bg-current/10 rounded-sm" />
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'Compact':
-        return (
-          <div className="w-full h-full p-1.5 flex flex-col">
-            <div className="w-4 h-4 rounded-full bg-current/18 mx-auto" />
-            <div className="mt-1 w-3/5 h-0.5 bg-current/22 rounded-full mx-auto" />
-            <div className="mt-2 space-y-0.5">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="w-full h-0.5 bg-current/10 rounded-full" />
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'Button Grid':
-        return (
-          <div className="w-full h-full p-1.5 flex flex-col">
-            <div className="w-4 h-4 rounded-full bg-current/18 mx-auto" />
-            <div className="mt-1 w-2/3 h-0.5 bg-current/22 rounded-full mx-auto" />
-            <div className="mt-2 grid grid-cols-2 gap-0.5 flex-1">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="bg-current/10 rounded-[2px]" />
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'Stacked Cards':
-        return (
-          <div className="w-full h-full p-1.5 flex flex-col">
-            <div className="w-4 h-4 rounded-full bg-current/18 mx-auto" />
-            <div className="mt-1 w-2/3 h-0.5 bg-current/22 rounded-full mx-auto" />
-            <div className="mt-2 space-y-1">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="w-full h-3 bg-current/8 rounded-md border border-current/10" />
-              ))}
-            </div>
-          </div>
-        );
-
-      case 'Minimal Card':
-        return (
-          <div className="w-full h-full flex flex-col gap-0.5 p-1.5">
-            <div className="w-3 h-3 rounded-full bg-current/20 mx-auto" />
-            <div className="w-2/3 h-0.5 bg-current/25 rounded-full mx-auto" />
-            <div className="w-1/2 h-0.5 bg-current/10 rounded-full mx-auto mb-1" />
-            <div className="space-y-0.5">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="w-full h-1 bg-current/10 rounded-sm" />
-              ))}
-            </div>
-          </div>
-        );
-      case 'Glassmorphism':
-        return (
-          <div className="w-full h-full p-1.5">
-            <div className="w-full h-full rounded-md border border-current/15 bg-current/5 backdrop-blur-sm p-1.5 flex flex-col gap-0.5">
-              <div className="w-3 h-3 rounded-full bg-current/20 mx-auto" />
-              <div className="w-3/4 h-0.5 bg-current/25 rounded-full mx-auto" />
-              <div className="w-1/2 h-0.5 bg-current/10 rounded-full mx-auto" />
-              <div className="mt-1 space-y-0.5">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="w-full h-1 bg-current/10 rounded-sm" />
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      case 'Neon':
-        return (
-          <div className="w-full h-full p-1.5">
-            <div className="w-full h-full rounded-md border border-current/25 bg-current/5 p-1.5 relative overflow-hidden">
-              <div className="absolute -top-2 -left-2 w-6 h-6 rounded-full bg-current/10 blur-md" />
-              <div className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full bg-current/10 blur-md" />
-              <div className="w-3 h-3 rounded-full bg-current/25 mx-auto mb-1" />
-              <div className="w-full h-1 bg-current/15 rounded-sm" />
-              <div className="w-full h-1 bg-current/15 rounded-sm" />
-              <div className="w-full h-1 bg-current/15 rounded-sm" />
-            </div>
-          </div>
-        );
-      case 'Corporate':
-        return (
-          <div className="w-full h-full flex flex-col gap-0.5 p-1.5">
-            <div className="flex gap-0.5 items-center">
-              <div className="w-3 h-3 rounded-sm bg-current/20" />
-              <div className="flex-1">
-                <div className="w-2/3 h-0.5 bg-current/25 rounded-full" />
-                <div className="w-1/2 h-0.5 bg-current/10 rounded-full mt-0.5" />
-              </div>
-            </div>
-            <div className="mt-1 space-y-0.5">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="w-full h-1 bg-current/10 rounded-sm" />
-              ))}
-            </div>
-          </div>
-        );
-      case 'Creator':
-        return (
-          <div className="w-full h-full flex flex-col gap-0.5 p-1.5">
-            <div className="w-full h-2 rounded-sm bg-current/10" />
-            <div className="w-3 h-3 rounded-full bg-current/20 mx-auto -mt-1" />
-            <div className="w-3/4 h-0.5 bg-current/25 rounded-full mx-auto" />
-            <div className="grid grid-cols-2 gap-0.5 mt-1">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-2 bg-current/10 rounded-[2px]" />
-              ))}
-            </div>
-          </div>
-        );
-      case 'Dark Elegant':
-        return (
-          <div className="w-full h-full flex flex-col gap-0.5 p-1.5">
-            <div className="w-3 h-3 rounded-full bg-current/15 mx-auto" />
-            <div className="w-3/5 h-0.5 bg-current/20 rounded-full mx-auto" />
-            <div className="w-2/5 h-0.5 bg-current/10 rounded-full mx-auto" />
-            <div className="mt-1 flex-1 flex flex-col justify-end gap-0.5">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="w-full h-1 bg-current/8 rounded-sm" />
-              ))}
-            </div>
-          </div>
-        );
-      case 'Light Clean':
-        return (
-          <div className="w-full h-full p-1.5">
-            <div className="w-full h-full rounded-md border border-current/10 bg-current/5 p-1.5 flex flex-col gap-0.5">
-              <div className="w-3 h-3 rounded-full bg-current/15 mx-auto" />
-              <div className="w-2/3 h-0.5 bg-current/20 rounded-full mx-auto" />
-              <div className="w-full h-0.5 bg-current/10 rounded-full mt-1" />
-              <div className="w-full h-0.5 bg-current/10 rounded-full" />
-              <div className="w-full h-0.5 bg-current/10 rounded-full" />
-            </div>
-          </div>
-        );
-      case 'Icon Grid':
-        return (
-          <div className="w-full h-full flex flex-col gap-0.5 p-1.5">
-            <div className="w-3 h-3 rounded-full bg-current/20 mx-auto mb-1" />
-            <div className="grid grid-cols-3 gap-0.5 flex-1">
-              {Array.from({ length: 9 }).map((_, i) => <div key={i} className="bg-current/10 rounded-[1px]" />)}
-            </div>
-          </div>
-        );
-      case 'Button List Bold':
-        return (
-          <div className="w-full h-full flex flex-col gap-0.5 p-1.5">
-            <div className="w-3 h-3 rounded-full bg-current/20 mx-auto mb-1" />
-            <div className="space-y-0.5">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-full h-1.5 bg-current/12 rounded-[2px] ${i % 2 === 0 ? 'rotate-[1deg]' : '-rotate-[1deg]'}`}
-                />
-              ))}
-            </div>
-          </div>
-        );
-      case 'Big Avatar':
-        return (
-          <div className="w-full h-full flex flex-col gap-0.5 p-1.5">
-            <div className="w-6 h-6 rounded-full bg-current/20 mx-auto" />
-            <div className="w-3/4 h-0.5 bg-current/25 rounded-full mx-auto" />
-            <div className="w-1/2 h-0.5 bg-current/10 rounded-full mx-auto mb-1" />
-            <div className="space-y-0.5">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="w-full h-1 bg-current/10 rounded-sm" />
-              ))}
-            </div>
-          </div>
-        );
-      case 'Magazine':
-        return (
-          <div className="w-full h-full flex flex-col gap-0.5 p-1.5">
-            <div className="w-full h-1/4 bg-current/10 rounded-sm mb-0.5" />
-            <div className="w-3/4 h-0.5 bg-current/20 mb-0.5" />
-            <div className="w-full h-0.5 bg-current/5" />
-            <div className="w-full h-0.5 bg-current/5" />
-          </div>
-        );
-      case 'Split Header':
-        return (
-          <div className="w-full h-full flex gap-0.5 p-1.5">
-            <div className="w-1/3 h-2/3 bg-current/10 rounded-sm" />
-            <div className="flex-1 flex flex-col gap-0.5 pt-1">
-              <div className="h-1 bg-current/20 rounded-full w-2/3" />
-              <div className="h-0.5 bg-current/5 rounded-full" />
-              <div className="h-0.5 bg-current/5 rounded-full" />
-            </div>
-          </div>
-        );
-      default:
-        return (
-          <div className="w-full h-full flex flex-col gap-0.5 p-1.5">
-            <div className="w-3 h-3 rounded-full bg-current/20 mx-auto mb-1" />
-            <div className="w-full h-1 bg-current/20 rounded-full" />
-            <div className="w-full h-1 bg-current/20 rounded-full" />
-            <div className="w-full h-1 bg-current/20 rounded-full" />
-          </div>
-        );
-    }
-  };
-
+const ThumbShell: React.FC<{ active: boolean; label: string; icon: React.ReactNode; children: React.ReactNode }> = ({
+  active,
+  label,
+  icon,
+  children,
+}) => {
   return (
     <div
-      className={`w-full aspect-[4/5] rounded-lg border transition-all relative overflow-hidden flex flex-col ${
+      className={[
+        'w-full aspect-[4/5] rounded-xl border transition-all relative overflow-hidden flex flex-col',
         active
-          ? 'border-blue-500 bg-blue-500/10 text-blue-300 shadow-lg shadow-blue-500/10'
-          : 'border-white/8 bg-zinc-900/60 text-zinc-300 group-hover:border-white/20'
-      }`}
+          ? 'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/10'
+          : 'border-white/10 bg-zinc-950/40 hover:border-white/25',
+      ].join(' ')}
     >
-      <div className="flex-1">{renderMockup()}</div>
-      <div
-        className={`py-1 px-0.5 text-[6px] font-black uppercase tracking-tighter text-center border-t ${
-          active ? 'border-blue-500/20' : 'border-white/5'
-        }`}
-      >
-        {type}
-      </div>
-      {active && (
-        <div className="absolute top-1 right-1 bg-blue-500 text-white rounded-full p-0.5 shadow-sm">
-          <Check size={6} />
+      {/* Header (icon) */}
+      <div className="px-2 pt-2 flex items-center justify-between">
+        <div
+          className={[
+            'w-6 h-6 rounded-lg flex items-center justify-center',
+            active ? 'bg-blue-500/20 text-blue-200' : 'bg-white/5 text-white/70',
+          ].join(' ')}
+        >
+          {icon}
         </div>
-      )}
+        {active && (
+          <div className="bg-blue-500 text-white rounded-full p-0.5 shadow-sm">
+            <Check size={10} />
+          </div>
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 px-2 pb-2 pt-1">{children}</div>
+
+      {/* Footer label */}
+      <div
+        className={[
+          'py-1 px-1 text-[8px] font-black uppercase tracking-[0.18em] text-center border-t',
+          active ? 'border-blue-500/20 text-blue-200' : 'border-white/10 text-white/40',
+        ].join(' ')}
+      >
+        {label}
+      </div>
     </div>
   );
 };
 
 const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
-  const templates = [
-    // Novos
-    'Full Bleed',
-    'Hero Banner',
-    'Avatar Left',
-    'Rounded Pills',
-    'Compact',
-    'Button Grid',
-    'Stacked Cards',
+  const templates: Tpl[] = [
+    {
+      id: 'Cover Clean',
+      label: 'Cover Clean',
+      icon: <ImageIcon size={14} />,
+      preview: (
+        <div className="h-full flex flex-col">
+          <div className="h-10 rounded-lg bg-white/10 border border-white/10" />
+          <div className="-mt-4 mx-auto w-10 h-10 rounded-full bg-white/10 border border-white/15" />
+          <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
+          <div className="mt-1 w-1/2 h-1 rounded-full bg-white/8 mx-auto" />
+          <div className="mt-3 space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Hero Banner',
+      label: 'Hero Banner',
+      icon: <RectangleHorizontal size={14} />,
+      preview: (
+        <div className="h-full flex flex-col">
+          <div className="h-12 rounded-lg bg-white/10 border border-white/10" />
+          <div className="-mt-3 mx-auto w-8 h-8 rounded-full bg-white/10 border border-white/15" />
+          <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
+          <div className="mt-3 space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Avatar Left',
+      label: 'Avatar Left',
+      icon: <PanelLeft size={14} />,
+      preview: (
+        <div className="h-full">
+          <div className="flex items-start gap-2 mt-2">
+            <div className="w-9 h-9 rounded-2xl bg-white/10 border border-white/15" />
+            <div className="flex-1 pt-1">
+              <div className="w-3/4 h-1 rounded-full bg-white/15" />
+              <div className="w-1/2 h-1 rounded-full bg-white/8 mt-1" />
+            </div>
+          </div>
+          <div className="mt-3 space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Rounded Pills',
+      label: 'Rounded Pills',
+      icon: <Sparkles size={14} />,
+      preview: (
+        <div className="h-full flex flex-col">
+          <div className="mx-auto mt-2 w-10 h-10 rounded-full bg-white/10 border border-white/15" />
+          <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
+          <div className="mt-4 space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-3 rounded-full bg-white/8 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Button Grid',
+      label: 'Button Grid',
+      icon: <Grid3X3 size={14} />,
+      preview: (
+        <div className="h-full flex flex-col">
+          <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+          <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-6 rounded-xl bg-white/8 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Stacked Cards',
+      label: 'Stacked Cards',
+      icon: <Layers size={14} />,
+      preview: (
+        <div className="h-full flex flex-col">
+          <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+          <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
+          <div className="mt-3 space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-6 rounded-2xl bg-white/8 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
 
-    // Existentes
-    'Minimal Card',
-    'Glassmorphism',
-    'Neon',
-    'Corporate',
-    'Creator',
-    'Dark Elegant',
-    'Light Clean',
-    'Split Header',
-    'Big Avatar',
-    'Icon Grid',
-    'Button List Bold',
-    'Magazine',
+    // Existentes (com thumbs mais visíveis)
+    {
+      id: 'Minimal Card',
+      label: 'Minimal Card',
+      icon: <Layout size={14} />,
+      preview: (
+        <div className="h-full flex flex-col">
+          <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+          <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
+          <div className="mt-1 w-1/2 h-1 rounded-full bg-white/8 mx-auto" />
+          <div className="mt-4 space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Glassmorphism',
+      label: 'Glassmorphism',
+      icon: <Shield size={14} />,
+      preview: (
+        <div className="h-full p-2 rounded-xl bg-white/5 border border-white/10">
+          <div className="mx-auto mt-1 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+          <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
+          <div className="mt-4 space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Neon',
+      label: 'Neon',
+      icon: <Sparkles size={14} />,
+      preview: (
+        <div className="h-full relative">
+          <div className="absolute -top-4 -left-4 w-20 h-20 rounded-full bg-blue-400/10 blur-2xl" />
+          <div className="absolute -bottom-4 -right-4 w-20 h-20 rounded-full bg-blue-400/10 blur-2xl" />
+          <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-blue-400/20" />
+          <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
+          <div className="mt-4 space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-3 rounded-xl bg-white/8 border border-blue-400/15" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Corporate',
+      label: 'Corporate',
+      icon: <Briefcase size={14} />,
+      preview: (
+        <div className="h-full">
+          <div className="flex items-center gap-2 mt-2">
+            <div className="w-9 h-9 rounded-2xl bg-white/10 border border-white/15" />
+            <div className="flex-1">
+              <div className="w-3/4 h-1 rounded-full bg-white/15" />
+              <div className="w-1/2 h-1 rounded-full bg-white/8 mt-1" />
+            </div>
+          </div>
+          <div className="mt-3 space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Creator',
+      label: 'Creator',
+      icon: <UserCircle2 size={14} />,
+      preview: (
+        <div className="h-full">
+          <div className="h-6 rounded-lg bg-white/10 border border-white/10 mt-2" />
+          <div className="-mt-3 mx-auto w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+          <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-7 rounded-xl bg-white/8 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Dark Elegant',
+      label: 'Dark Elegant',
+      icon: <Shield size={14} />,
+      preview: (
+        <div className="h-full">
+          <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/8 border border-white/10" />
+          <div className="mt-2 w-2/3 h-1 rounded-full bg-white/10 mx-auto" />
+          <div className="mt-1 w-1/2 h-1 rounded-full bg-white/6 mx-auto" />
+          <div className="mt-4 space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-3 rounded-xl bg-white/6 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Light Clean',
+      label: 'Light Clean',
+      icon: <Layout size={14} />,
+      preview: (
+        <div className="h-full p-2 rounded-xl bg-white/4 border border-white/10">
+          <div className="mx-auto mt-1 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+          <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
+          <div className="mt-4 space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Split Header',
+      label: 'Split Header',
+      icon: <PanelLeft size={14} />,
+      preview: (
+        <div className="h-full">
+          <div className="flex gap-2 mt-2">
+            <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/15" />
+            <div className="flex-1 pt-1">
+              <div className="h-1 w-3/4 rounded-full bg-white/15" />
+              <div className="h-1 w-1/2 rounded-full bg-white/8 mt-1" />
+            </div>
+          </div>
+          <div className="mt-3 space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Big Avatar',
+      label: 'Big Avatar',
+      icon: <UserCircle2 size={14} />,
+      preview: (
+        <div className="h-full">
+          <div className="mx-auto mt-1 w-14 h-14 rounded-full bg-white/10 border border-white/15" />
+          <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
+          <div className="mt-1 w-1/2 h-1 rounded-full bg-white/8 mx-auto" />
+          <div className="mt-3 space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Icon Grid',
+      label: 'Icon Grid',
+      icon: <Grip size={14} />,
+      preview: (
+        <div className="h-full flex flex-col">
+          <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className="h-6 rounded-lg bg-white/8 border border-white/10" />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Button List Bold',
+      label: 'Button List Bold',
+      icon: <Rows3 size={14} />,
+      preview: (
+        <div className="h-full">
+          <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+          <div className="mt-3 space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className={[
+                  'h-4 rounded-2xl bg-white/10 border border-white/12',
+                  i % 2 === 0 ? 'rotate-[1deg]' : '-rotate-[1deg]',
+                ].join(' ')}
+              />
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'Magazine',
+      label: 'Magazine',
+      icon: <Newspaper size={14} />,
+      preview: (
+        <div className="h-full">
+          <div className="h-10 rounded-lg bg-white/10 border border-white/10 mt-2" />
+          <div className="mt-3 w-3/4 h-1 rounded-full bg-white/15" />
+          <div className="mt-2 space-y-1">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="h-1 rounded-full bg-white/6" />
+            ))}
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="h-8 rounded-xl bg-white/8 border border-white/10" />
+            <div className="h-8 rounded-xl bg-white/8 border border-white/10" />
+          </div>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -338,11 +413,21 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
       </header>
 
       <div className="grid grid-cols-4 gap-2">
-        {templates.map(tpl => (
-          <button key={tpl} onClick={() => onUpdate({ layoutTemplate: tpl })} className="group active:scale-95 transition-transform">
-            <TemplateThumb type={tpl} active={profile.layoutTemplate === tpl} />
-          </button>
-        ))}
+        {templates.map((tpl) => {
+          const active = profile.layoutTemplate === tpl.id;
+          return (
+            <button
+              key={tpl.id}
+              onClick={() => onUpdate({ layoutTemplate: tpl.id })}
+              className="group active:scale-95 transition-transform text-left"
+              title={tpl.label}
+            >
+              <ThumbShell active={active} label={tpl.label} icon={tpl.icon}>
+                {tpl.preview}
+              </ThumbShell>
+            </button>
+          );
+        })}
       </div>
 
       <div className="p-3 bg-zinc-950/30 border border-white/5 rounded-xl">
