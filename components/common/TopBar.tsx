@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, ChevronLeft, Layout, BarChart3, Settings, Shield, Target } from 'lucide-react';
+import { LogOut, ChevronLeft, Layout, BarChart3, Settings, Shield, Target, Users } from 'lucide-react';
 import { logout, getCurrentUser, getStorage } from '../../lib/storage';
 import { PLANS } from '../../lib/plans';
 import clsx from 'clsx';
