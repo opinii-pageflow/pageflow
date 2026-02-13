@@ -339,7 +339,7 @@ const LandingPage: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           <div className="mb-16 text-center">
             <div className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">FAQ</div>
-            <h2 className="text-4xl font-black tracking-tight">Perguntas <span className="text-zinc-700">Frequentes</span></h2>
+            <h2 className="text-4xl font-black tracking-tight">Perguntas <span className="text-lime-400">Frequentes</span></h2>
           </div>
           <div className="space-y-2 mb-20 bg-zinc-900/20 p-8 rounded-[3rem] border border-white/5">
             <FAQItem 
