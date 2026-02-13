@@ -3,7 +3,7 @@ export type PlanType = 'starter' | 'pro' | 'business' | 'enterprise';
 export type BackgroundType = 'solid' | 'gradient' | 'image';
 export type ButtonStyle = 'solid' | 'outline' | 'glass';
 export type VisibilityMode = 'public' | 'private' | 'password';
-export type AnalyticsSource = 'direct' | 'qr' | 'nfc';
+export type AnalyticsSource = 'direct' | 'qr' | 'nfc' | string; // Permitir strings customizadas (UTMs)
 export type EventType = 'view' | 'click';
 
 // ===== Pro Modules =====
@@ -157,6 +157,14 @@ export interface Profile {
   hideBranding?: boolean;
 }
 
+export interface UtmParams {
+  source?: string;
+  medium?: string;
+  campaign?: string;
+  content?: string;
+  term?: string;
+}
+
 export interface AnalyticsEvent {
   id: string;
   clientId: string;
@@ -164,6 +172,9 @@ export interface AnalyticsEvent {
   type: EventType;
   linkId?: string;
   source: AnalyticsSource;
+  utm?: UtmParams;
+  referrer?: string;
+  landingPath?: string;
   ts: number;
 }
 
@@ -176,6 +187,11 @@ export interface AnalyticsSummary {
   sources: { name: string; value: number }[];
   topLinks: { label: string; clicks: number; percentage: number }[];
   peakHours: { hour: number; value: number }[];
+  utmSummary: {
+    sources: { name: string; value: number }[];
+    mediums: { name: string; value: number }[];
+    campaigns: { name: string; value: number }[];
+  };
 }
 
 export interface AppData {

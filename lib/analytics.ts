@@ -1,15 +1,87 @@
-
-import { AnalyticsEvent, AnalyticsSummary, AppData, EventType, AnalyticsSource } from '../types';
+import { AnalyticsEvent, AnalyticsSummary, EventType, AnalyticsSource, UtmParams } from '../types';
 import { updateStorage, getStorage } from './storage';
 
-export const trackEvent = (params: { profileId: string; clientId: string; type: EventType; linkId?: string; source?: AnalyticsSource }) => {
+const SESSION_KEY = 'pageflow_session_origin';
+const SESSION_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 dias
+
+interface SessionOrigin {
+  source: AnalyticsSource;
+  utm: UtmParams;
+  referrer: string;
+  landingPath: string;
+  ts: number;
+}
+
+export const getSessionOrigin = (): SessionOrigin | null => {
+  const stored = localStorage.getItem(SESSION_KEY);
+  if (!stored) return null;
+  try {
+    const session = JSON.parse(stored) as SessionOrigin;
+    if (Date.now() - session.ts > SESSION_EXPIRY) {
+      localStorage.removeItem(SESSION_KEY);
+      return null;
+    }
+    return session;
+  } catch {
+    return null;
+  }
+};
+
+export const captureSessionOrigin = (urlParams: URLSearchParams, referrer: string, path: string) => {
+  const utm: UtmParams = {
+    source: urlParams.get('utm_source') || undefined,
+    medium: urlParams.get('utm_medium') || undefined,
+    campaign: urlParams.get('utm_campaign') || undefined,
+    content: urlParams.get('utm_content') || undefined,
+    term: urlParams.get('utm_term') || undefined,
+  };
+
+  const directSource = urlParams.get('src') as AnalyticsSource;
+  
+  // Prioridade: UTM Source > Direct Source (src=qr/nfc) > Referrer > Direct
+  let source: AnalyticsSource = 'direct';
+  if (utm.source) source = utm.source;
+  else if (directSource) source = directSource;
+  else if (referrer && !referrer.includes(window.location.hostname)) {
+    try {
+      source = new URL(referrer).hostname;
+    } catch {
+      source = 'referrer';
+    }
+  }
+
+  const session: SessionOrigin = {
+    source,
+    utm,
+    referrer,
+    landingPath: path,
+    ts: Date.now()
+  };
+
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  return session;
+};
+
+export const trackEvent = (params: { 
+  profileId: string; 
+  clientId: string; 
+  type: EventType; 
+  linkId?: string; 
+  source?: AnalyticsSource;
+  utm?: UtmParams;
+}) => {
+  const session = getSessionOrigin();
+  
   const event: AnalyticsEvent = {
     id: Math.random().toString(36).substring(7),
     clientId: params.clientId,
     profileId: params.profileId,
     type: params.type,
     linkId: params.linkId,
-    source: params.source || 'direct',
+    source: params.source || session?.source || 'direct',
+    utm: params.utm || session?.utm,
+    referrer: session?.referrer,
+    landingPath: session?.landingPath,
     ts: Date.now()
   };
 
@@ -77,11 +149,25 @@ export const getProfileSummary = (profileId: string | 'all', days: number = 7): 
     hourMap[hour]++;
   });
 
-  // Sources
-  const sourceMap: Record<string, number> = { direct: 0, qr: 0, nfc: 0 };
+  // Sources & UTMs
+  const sourceMap: Record<string, number> = {};
+  const utmSourceMap: Record<string, number> = {};
+  const utmMediumMap: Record<string, number> = {};
+  const utmCampaignMap: Record<string, number> = {};
+
   filteredEvents.forEach(e => {
-    sourceMap[e.source] = (sourceMap[e.source] || 0) + 1;
+    const s = e.source || 'direct';
+    sourceMap[s] = (sourceMap[s] || 0) + 1;
+
+    if (e.utm?.source) utmSourceMap[e.utm.source] = (utmSourceMap[e.utm.source] || 0) + 1;
+    if (e.utm?.medium) utmMediumMap[e.utm.medium] = (utmMediumMap[e.utm.medium] || 0) + 1;
+    if (e.utm?.campaign) utmCampaignMap[e.utm.campaign] = (utmCampaignMap[e.utm.campaign] || 0) + 1;
   });
+
+  const sortMap = (map: Record<string, number>) => 
+    Object.entries(map)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
 
   return {
     totalViews: views.length,
@@ -89,8 +175,13 @@ export const getProfileSummary = (profileId: string | 'all', days: number = 7): 
     ctr: views.length > 0 ? (clicks.length / views.length) * 100 : 0,
     viewsByDate: Object.entries(dateMap).map(([date, val]) => ({ date, value: val.views })),
     clicksByDate: Object.entries(dateMap).map(([date, val]) => ({ date, value: val.clicks })),
-    sources: Object.entries(sourceMap).map(([name, value]) => ({ name, value })),
+    sources: sortMap(sourceMap),
     topLinks,
     peakHours: Object.entries(hourMap).map(([hour, value]) => ({ hour: parseInt(hour), value })),
+    utmSummary: {
+      sources: sortMap(utmSourceMap).slice(0, 5),
+      mediums: sortMap(utmMediumMap).slice(0, 5),
+      campaigns: sortMap(utmCampaignMap).slice(0, 5),
+    }
   };
 };

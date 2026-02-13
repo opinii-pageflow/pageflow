@@ -12,7 +12,11 @@ import {
   Layout,
   Zap,
   ChevronRight,
-  Clock
+  Clock,
+  Globe,
+  Tag,
+  Layers,
+  Megaphone
 } from 'lucide-react';
 import clsx from 'clsx';
 import { Link } from 'react-router-dom';
@@ -51,7 +55,6 @@ const InsightsPage: React.FC = () => {
   const clientProfiles = useMemo(() => data.profiles.filter(p => p.clientId === user?.clientId), [data.profiles, user?.clientId]);
   const summary = useMemo(() => getProfileSummary('all', days), [days]);
 
-  // Usando permissões centralizadas
   const hasAnalyticsAccess = canAccessFeature(client?.plan, 'analytics');
 
   if (!hasAnalyticsAccess) {
@@ -64,23 +67,9 @@ const InsightsPage: React.FC = () => {
           </div>
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-6">Acesso Restrito</h1>
           <p className="text-zinc-500 text-lg md:text-xl max-w-2xl mb-12 leading-relaxed">
-            As métricas de engajamento em tempo real são exclusivas do <b>Plano Pro</b>. 
-            Saiba quem visitou seu perfil e quais links estão convertendo mais agora mesmo.
+            As métricas de engajamento em tempo real e rastreamento de UTMs são exclusivas do <b>Plano Pro</b>.
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl mb-16">
-            <div className="bg-zinc-900/40 p-10 rounded-[3rem] border border-white/5 flex flex-col items-center text-center group">
-               <Users className="text-zinc-700 group-hover:text-blue-500 transition-colors mb-4" size={32} />
-               <h3 className="font-bold text-lg mb-2">Visitas Únicas</h3>
-               <p className="text-zinc-600 text-sm">Controle exato de quanto tráfego você está gerando.</p>
-            </div>
-            <div className="bg-zinc-900/40 p-10 rounded-[3rem] border border-white/5 flex flex-col items-center text-center group">
-               <TrendingUp className="text-zinc-700 group-hover:text-emerald-500 transition-colors mb-4" size={32} />
-               <h3 className="font-bold text-lg mb-2">Taxa de Conversão</h3>
-               <p className="text-zinc-600 text-sm">Descubra a eficácia do seu cartão digital.</p>
-            </div>
-          </div>
-
           <Link to="/app/settings" className="bg-white text-black px-12 py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest flex items-center gap-4 hover:bg-zinc-200 transition-all active:scale-95 shadow-2xl">
             <Zap size={20} />
             Fazer Upgrade para o Pro
@@ -92,20 +81,20 @@ const InsightsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#020202] text-white pb-20">
+    <div className="min-h-screen bg-[#020202] text-white pb-20 overflow-x-hidden">
       <TopBar title="Análise de Performance" />
       
       <main className="max-w-7xl mx-auto p-6 lg:p-10 pt-44">
         <header className="flex flex-col xl:flex-row xl:items-end justify-between gap-10 mb-20 relative z-10">
           <div className="space-y-4">
-            <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-tight">Olá, {user?.name.split(' ')[0]} 👋</h1>
-            <p className="text-zinc-500 text-lg md:text-xl font-medium">Relatórios avançados de engajamento e alcance.</p>
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-tight">Telemetria de <span className="text-blue-500">Fluxo</span></h1>
+            <p className="text-zinc-500 text-lg md:text-xl font-medium">Origens, campanhas e comportamento em tempo real.</p>
           </div>
           
           <div className="flex items-center gap-4 bg-zinc-900/60 p-3 rounded-[2.5rem] border border-white/5 backdrop-blur-2xl shadow-2xl">
             <div className="p-3 text-zinc-500 border-r border-white/5 pr-6 flex items-center gap-3">
                <Filter size={18} className="opacity-40" />
-               <span className="text-[11px] font-black uppercase tracking-[0.3em]">Timeline</span>
+               <span className="text-[11px] font-black uppercase tracking-[0.3em]">Período</span>
             </div>
             <div className="flex gap-2">
               {[7, 30, 90].map((d) => (
@@ -126,10 +115,10 @@ const InsightsPage: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
           {[
-            { label: 'Visitas Totais', value: summary.totalViews, icon: Users, color: 'text-blue-500' },
-            { label: 'Interações', value: summary.totalClicks, icon: MousePointer2, color: 'text-purple-500' },
-            { label: 'Conversão', value: `${summary.ctr.toFixed(1)}%`, icon: BarChart, color: 'text-emerald-500' },
-            { label: 'Ativos', value: clientProfiles.length, icon: Layout, color: 'text-orange-500' },
+            { label: 'Visitas Reais', value: summary.totalViews, icon: Users, color: 'text-blue-500' },
+            { label: 'Cliques Únicos', value: summary.totalClicks, icon: MousePointer2, color: 'text-purple-500' },
+            { label: 'Conversão (CTR)', value: `${summary.ctr.toFixed(1)}%`, icon: TrendingUp, color: 'text-emerald-500' },
+            { label: 'Top Fonte', value: summary.sources[0]?.name || 'Direct', icon: Globe, color: 'text-orange-500' },
           ].map((card, i) => (
             <div key={i} className="bg-zinc-900/40 backdrop-blur-md border border-white/5 p-10 rounded-[3rem] hover:bg-zinc-800/40 transition-all group shadow-xl">
               <div className="flex items-center gap-5 mb-8">
@@ -138,64 +127,102 @@ const InsightsPage: React.FC = () => {
                 </div>
                 <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-500">{card.label}</div>
               </div>
-              <div className="text-5xl font-black tracking-tighter text-white">{card.value}</div>
+              <div className="text-4xl font-black tracking-tighter text-white truncate">{card.value}</div>
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          <div className="lg:col-span-2 space-y-10">
-            <div className="bg-zinc-900/40 border border-white/5 p-12 rounded-[4rem] shadow-2xl">
-              <div className="flex items-center justify-between mb-12">
-                <h3 className="text-2xl font-black tracking-tight text-white">Evolução de Cliques</h3>
-                <div className="flex items-center gap-3">
-                   <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.4)]"></div>
-                   <span className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-600">Cliques Reais</span>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* Gráfico Principal */}
+          <div className="lg:col-span-8 bg-zinc-900/40 border border-white/5 p-12 rounded-[4rem] shadow-2xl overflow-hidden relative group">
+             <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
+                <ActivityIcon size={300} className="text-blue-500" />
+             </div>
+             <div className="relative z-10">
+                <div className="flex items-center justify-between mb-12">
+                  <h3 className="text-2xl font-black tracking-tight text-white">Engajamento Temporal</h3>
+                  <div className="flex items-center gap-6">
+                     <div className="flex items-center gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Views</span>
+                     </div>
+                     <div className="flex items-center gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-purple-500"></div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Clicks</span>
+                     </div>
+                  </div>
                 </div>
-              </div>
-              <div className="h-72">
-                <AreaChart data={summary.clicksByDate} color="#3b82f6" />
-              </div>
-            </div>
+                <div className="h-80 relative">
+                  <div className="absolute inset-0 opacity-40">
+                    <AreaChart data={summary.viewsByDate} color="#3b82f6" />
+                  </div>
+                  <div className="absolute inset-0">
+                    <AreaChart data={summary.clicksByDate} color="#a855f7" />
+                  </div>
+                </div>
+             </div>
+          </div>
 
-            <div className="bg-zinc-900/40 border border-white/5 p-12 rounded-[4rem] flex items-center gap-10 relative overflow-hidden group shadow-2xl">
-               <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <Clock size={160} />
-               </div>
-               <div className="w-24 h-24 bg-blue-500/10 text-blue-500 rounded-[2.5rem] flex items-center justify-center border border-blue-500/20 shadow-inner">
-                  <TrendingUp size={48} />
-               </div>
-               <div className="relative z-10">
-                  <div className="text-[11px] font-black uppercase text-gray-500 mb-2 tracking-[0.3em]">Horário Nobre</div>
-                  <div className="text-5xl font-black tracking-tighter text-white">{summary.peakHours.sort((a,b) => b.value - a.value)[0]?.hour}:00h</div>
-                  <p className="text-sm text-zinc-600 mt-4 font-medium leading-relaxed">Momento de maior engajamento identificado nos últimos {days} dias.</p>
-               </div>
+          {/* Distribuição de Fontes */}
+          <div className="lg:col-span-4 bg-zinc-900/40 backdrop-blur-md border border-white/5 p-12 rounded-[4rem] shadow-2xl">
+            <div className="flex items-center gap-3 mb-10">
+               <Globe className="text-blue-500" size={20} />
+               <h3 className="text-2xl font-black tracking-tight text-white">Canais de Entrada</h3>
+            </div>
+            <div className="space-y-6">
+              {summary.sources.slice(0, 6).map((source, i) => (
+                <div key={i} className="group">
+                  <div className="flex justify-between text-xs font-black uppercase tracking-widest text-zinc-400 mb-3">
+                    <span className="truncate max-w-[140px] group-hover:text-white transition-colors">{source.name}</span>
+                    <span className="text-blue-500">{source.value}</span>
+                  </div>
+                  <div className="h-1.5 bg-black/60 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full transition-all duration-1000" 
+                      style={{ width: `${(source.value / (summary.totalViews || 1)) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              ))}
+              {summary.sources.length === 0 && <p className="text-[10px] font-black uppercase text-zinc-700 tracking-[0.3em] text-center py-20">Aguardando tráfego...</p>}
             </div>
           </div>
 
-          <div className="space-y-10">
-            <div className="bg-zinc-900/40 backdrop-blur-md border border-white/5 p-12 rounded-[4rem] shadow-2xl">
-              <h3 className="text-2xl font-black mb-10 tracking-tight text-white">Top 5 Links</h3>
-              <div className="space-y-8">
-                {summary.topLinks.map((link, i) => (
-                  <div key={i} className="space-y-4">
-                    <div className="flex justify-between text-xs font-black uppercase tracking-widest text-zinc-400">
-                      <span className="truncate max-w-[160px]">{link.label}</span>
-                      <span className="text-blue-500">{link.clicks}</span>
-                    </div>
-                    <div className="h-2 bg-black/60 rounded-full overflow-hidden border border-white/5 shadow-inner">
-                      <div className="h-full bg-gradient-to-r from-blue-600 to-indigo-500 rounded-full transition-all duration-1000" style={{ width: `${link.percentage}%` }}></div>
-                    </div>
+          {/* Resumo UTM */}
+          <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+             {[
+               { title: 'Top UTM Sources', data: summary.utmSummary.sources, icon: Tag, color: 'text-blue-400' },
+               { title: 'Top UTM Mediums', data: summary.utmSummary.mediums, icon: Layers, color: 'text-purple-400' },
+               { title: 'Campanhas Ativas', data: summary.utmSummary.campaigns, icon: Megaphone, color: 'text-emerald-400' },
+             ].map((section, i) => (
+               <div key={i} className="bg-zinc-900/40 border border-white/5 p-10 rounded-[3rem] shadow-xl">
+                  <div className="flex items-center gap-3 mb-8">
+                    <section.icon size={18} className={section.color} />
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-500">{section.title}</h4>
                   </div>
-                ))}
-                {summary.topLinks.length === 0 && <p className="text-[11px] font-black uppercase text-zinc-700 tracking-[0.3em] text-center py-10">Sem interações registradas</p>}
-              </div>
-            </div>
+                  <div className="space-y-4">
+                    {section.data.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0 group">
+                         <span className="text-sm font-bold text-zinc-400 group-hover:text-white transition-colors truncate pr-4">{item.name}</span>
+                         <span className="text-xs font-black text-white bg-white/5 px-2.5 py-1 rounded-lg border border-white/5">{item.value}</span>
+                      </div>
+                    ))}
+                    {section.data.length === 0 && <div className="py-10 text-center text-[9px] font-black uppercase text-zinc-800 tracking-widest">Sem dados de campanha</div>}
+                  </div>
+               </div>
+             ))}
           </div>
         </div>
       </main>
     </div>
   );
 };
+
+// Helper Icon para não precisar de import novo
+const ActivityIcon = ({ size, className }: { size: number, className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+  </svg>
+);
 
 export default InsightsPage;

@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { getStorage } from '../../lib/storage';
-import { trackEvent } from '../../lib/analytics';
-import { Profile, AnalyticsSource, PlanType } from '../../types';
+import { trackEvent, captureSessionOrigin } from '../../lib/analytics';
+import { Profile, PlanType } from '../../types';
 import PublicProfileRenderer from '../../components/preview/PublicProfileRenderer';
 
 const PublicProfile: React.FC = () => {
@@ -19,15 +19,22 @@ const PublicProfile: React.FC = () => {
     if (found) {
       setProfile(found);
       const client = data.clients.find(c => c.id === found.clientId);
-      // Armazena o plano real para validar permissões Pro no renderer
       setClientPlan(client?.plan);
       
-      const source = (searchParams.get('src') as AnalyticsSource) || 'direct';
+      // Captura UTMs e origem da sessão
+      const session = captureSessionOrigin(
+        searchParams, 
+        document.referrer, 
+        window.location.pathname
+      );
+
+      // Registra o VIEW com os dados capturados
       trackEvent({
         profileId: found.id,
         clientId: found.clientId,
         type: 'view',
-        source
+        source: session.source,
+        utm: session.utm
       });
     }
     setLoading(false);
@@ -56,7 +63,6 @@ const PublicProfile: React.FC = () => {
       profile={profile} 
       isPreview={false} 
       clientPlan={clientPlan} 
-      source={(searchParams.get('src') as AnalyticsSource) || 'direct'} 
     />
   );
 };
