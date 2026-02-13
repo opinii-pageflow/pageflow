@@ -342,9 +342,26 @@ const LandingPage: React.FC = () => {
             <h2 className="text-4xl font-black tracking-tight">Perguntas <span className="text-zinc-700">Frequentes</span></h2>
           </div>
           <div className="space-y-2 mb-20 bg-zinc-900/20 p-8 rounded-[3rem] border border-white/5">
-            <FAQItem question="A tecnologia NFC está inclusa?" answer="Sim! Nossos cartões físicos premium (vendidos separadamente) utilizam a tecnologia NFC. No plano digital, você recebe o QR Code inteligente imediatamente." />
-            <FAQItem question="Consigo usar meu próprio domínio?" answer="Sim. O plano Enterprise oferece suporte total para domínios personalizados (ex: card.suaempresa.com.br)." />
-            <FAQItem question="Posso cancelar quando quiser?" answer="Com certeza. Não temos fidelidade em nenhum dos planos. Você pode cancelar ou alterar seu plano diretamente pelo seu painel de controle." />
+            <FAQItem 
+              question="Como funciona o compartilhamento via NFC?" 
+              answer="Nossos cartões físicos premium utilizam tecnologia NFC de ponta. Basta aproximar o cartão de qualquer smartphone compatível para abrir seu perfil instantaneamente, sem necessidade de aplicativos ou leitura de câmera." 
+            />
+            <FAQItem 
+              question="Posso personalizar as cores e fontes do meu perfil?" 
+              answer="Com certeza! O PageFlow oferece liberdade total de design. Você pode ajustar paletas de cores, escolher entre dezenas de fontes premium e até criar fundos com gradientes exclusivos para que seu cartão seja único." 
+            />
+            <FAQItem 
+              question="Existe um limite de links no meu cartão digital?" 
+              answer="Não há limite de botões! Adicione quantos links desejar para suas redes sociais, sites, portfólios e canais de atendimento. Você ainda pode organizar a ordem dos links com facilidade." 
+            />
+            <FAQItem 
+              question="Meus dados e métricas de visitantes são privados?" 
+              answer="Sim. Valorizamos a sua privacidade e a dos seus clientes. Todas as métricas de acesso e cliques são acessíveis apenas por você através do seu painel administrativo protegido." 
+            />
+            <FAQItem 
+              question="Posso cancelar ou alterar meu plano quando quiser?" 
+              answer="Sim. O PageFlow não possui contratos de fidelidade. Você pode fazer o upgrade, downgrade ou cancelar sua assinatura a qualquer momento diretamente pelas configurações da sua conta." 
+            />
           </div>
           
           <footer className="mt-40 pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-10">
