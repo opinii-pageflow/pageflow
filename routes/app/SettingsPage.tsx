@@ -2,10 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCurrentUser, getStorage } from '../../lib/storage';
 import TopBar from '../../components/common/TopBar';
-import { Shield, Zap, Trash2, Mail, Copy, Check, Code, FileText } from 'lucide-react';
+import { Shield, Zap, Trash2, Mail, Copy, Check, Code, FileText, LayoutTemplate } from 'lucide-react';
 import { PLANS } from '../../lib/plans';
 import { Profile } from '../../types';
 import clsx from 'clsx';
+
+type SignatureTheme = 'classic' | 'modern' | 'minimal' | 'compact';
 
 const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
@@ -17,13 +19,14 @@ const SettingsPage: React.FC = () => {
   const myProfiles = data.profiles.filter(p => p.clientId === user?.clientId);
   
   const [selectedProfileId, setSelectedProfileId] = useState<string>(myProfiles[0]?.id || '');
+  const [signatureTheme, setSignatureTheme] = useState<SignatureTheme>('classic');
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const signatureRef = useRef<HTMLDivElement>(null);
 
   const selectedProfile = myProfiles.find(p => p.id === selectedProfileId);
 
   // Helper para gerar o HTML da assinatura (inline styles para email)
-  const getSignatureHtml = (profile: Profile) => {
+  const getSignatureHtml = (profile: Profile, theme: SignatureTheme = 'classic') => {
     if (!profile) return '';
     
     const themeColor = profile.theme.primary || '#3B82F6';
@@ -35,38 +38,109 @@ const SettingsPage: React.FC = () => {
       .filter(b => b.enabled)
       .slice(0, 3);
 
-    return `
-      <table cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.4; color: #333333; max-width: 500px;">
-        <tr>
-          <td valign="top" style="padding-right: 20px;">
-            <img src="${avatar}" alt="${profile.displayName}" width="70" height="70" style="border-radius: 50%; display: block; object-fit: cover;" />
-          </td>
-          <td valign="top" style="border-left: 2px solid ${themeColor}; padding-left: 20px;">
-            <strong style="font-size: 18px; color: #000000; display: block; margin-bottom: 4px;">${profile.displayName}</strong>
-            <span style="font-size: 14px; color: #666666; display: block; margin-bottom: 8px;">${profile.headline || 'Profissional Digital'}</span>
-            
-            <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px; margin-bottom: 8px;">
-              <tr>
-                ${topLinks.map(link => `
-                  <td style="padding-right: 10px;">
-                    <a href="${profileUrl}" style="text-decoration: none; color: ${themeColor}; font-size: 12px; font-weight: bold;">${link.label}</a>
-                  </td>
-                `).join('')}
-              </tr>
-            </table>
+    const containerStyle = "font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; line-height: 1.4; color: #333333; max-width: 500px;";
+    
+    switch (theme) {
+      case 'modern':
+        return `
+          <table cellpadding="0" cellspacing="0" border="0" style="${containerStyle}">
+            <tr>
+              <td width="70" valign="top" style="padding-right: 15px;">
+                <img src="${avatar}" alt="${profile.displayName}" width="70" height="70" style="border-radius: 12px; display: block; object-fit: cover;" />
+              </td>
+              <td valign="top">
+                <strong style="font-size: 18px; color: #111111; display: block; margin-bottom: 2px;">${profile.displayName}</strong>
+                <span style="font-size: 13px; color: ${themeColor}; font-weight: bold; display: block; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">${profile.headline || 'Profissional Digital'}</span>
+                
+                <div style="font-size: 12px; margin-bottom: 8px;">
+                  ${topLinks.map(link => `
+                    <a href="${profileUrl}" style="text-decoration: none; color: #555555; margin-right: 10px;">${link.label}</a>
+                  `).join(' ')}
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="padding-top: 10px;">
+                <a href="${profileUrl}" style="background-color: ${themeColor}; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: bold; display: block; text-align: center;">Acessar Perfil Completo</a>
+              </td>
+            </tr>
+          </table>
+        `.trim();
 
-            <div style="margin-top: 8px;">
-              <a href="${profileUrl}" style="background-color: ${themeColor}; color: #ffffff; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block;">Ver meu Perfil Completo</a>
-            </div>
-          </td>
-        </tr>
-      </table>
-    `.trim();
+      case 'minimal':
+        return `
+          <table cellpadding="0" cellspacing="0" border="0" style="${containerStyle}">
+            <tr>
+              <td valign="middle">
+                <strong style="font-size: 16px; color: #000000;">${profile.displayName}</strong>
+                <span style="margin: 0 8px; color: #ccc;">|</span>
+                <span style="font-size: 14px; color: #666666;">${profile.headline || 'Profissional'}</span>
+              </td>
+            </tr>
+            <tr>
+              <td valign="top" style="padding-top: 6px;">
+                ${topLinks.map(link => `
+                  <a href="${profileUrl}" style="text-decoration: none; color: ${themeColor}; font-size: 12px; font-weight: bold; margin-right: 12px;">${link.label}</a>
+                `).join('')}
+                <a href="${profileUrl}" style="text-decoration: underline; color: #000000; font-size: 12px; margin-left: 4px;">+ Ver mais</a>
+              </td>
+            </tr>
+          </table>
+        `.trim();
+
+      case 'compact':
+        return `
+          <table cellpadding="0" cellspacing="0" border="0" style="${containerStyle}">
+            <tr>
+              <td width="40" valign="middle" style="padding-right: 10px;">
+                <img src="${avatar}" alt="${profile.displayName}" width="40" height="40" style="border-radius: 50%; display: block; object-fit: cover;" />
+              </td>
+              <td valign="middle" style="border-right: 2px solid #eee; padding-right: 15px;">
+                <strong style="font-size: 14px; color: #000000; display: block;">${profile.displayName}</strong>
+                <span style="font-size: 11px; color: #888888;">${profile.headline || 'Profissional'}</span>
+              </td>
+              <td valign="middle" style="padding-left: 15px;">
+                <a href="${profileUrl}" style="border: 1px solid ${themeColor}; color: ${themeColor}; text-decoration: none; padding: 4px 10px; border-radius: 50px; font-size: 11px; font-weight: bold; display: inline-block;">Ver Links</a>
+              </td>
+            </tr>
+          </table>
+        `.trim();
+
+      case 'classic':
+      default:
+        return `
+          <table cellpadding="0" cellspacing="0" border="0" style="${containerStyle}">
+            <tr>
+              <td valign="top" style="padding-right: 20px;">
+                <img src="${avatar}" alt="${profile.displayName}" width="70" height="70" style="border-radius: 50%; display: block; object-fit: cover;" />
+              </td>
+              <td valign="top" style="border-left: 2px solid ${themeColor}; padding-left: 20px;">
+                <strong style="font-size: 18px; color: #000000; display: block; margin-bottom: 4px;">${profile.displayName}</strong>
+                <span style="font-size: 14px; color: #666666; display: block; margin-bottom: 8px;">${profile.headline || 'Profissional Digital'}</span>
+                
+                <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px; margin-bottom: 8px;">
+                  <tr>
+                    ${topLinks.map(link => `
+                      <td style="padding-right: 10px;">
+                        <a href="${profileUrl}" style="text-decoration: none; color: ${themeColor}; font-size: 12px; font-weight: bold;">${link.label}</a>
+                      </td>
+                    `).join('')}
+                  </tr>
+                </table>
+
+                <div style="margin-top: 8px;">
+                  <a href="${profileUrl}" style="background-color: ${themeColor}; color: #ffffff; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block;">Ver meu Perfil Completo</a>
+                </div>
+              </td>
+            </tr>
+          </table>
+        `.trim();
+    }
   };
 
   const handleCopyHtml = async () => {
     if (!selectedProfile) return;
-    const html = getSignatureHtml(selectedProfile);
+    const html = getSignatureHtml(selectedProfile, signatureTheme);
     try {
       await navigator.clipboard.writeText(html);
       setCopyFeedback('html');
@@ -107,7 +181,7 @@ const SettingsPage: React.FC = () => {
     } catch (e) {
       // Fallback moderno
       if (selectedProfile) {
-        const html = getSignatureHtml(selectedProfile);
+        const html = getSignatureHtml(selectedProfile, signatureTheme);
         const blobHtml = new Blob([html], { type: 'text/html' });
         const blobText = new Blob([selectedProfile.displayName], { type: 'text/plain' });
         const data = [new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })];
@@ -172,11 +246,36 @@ const SettingsPage: React.FC = () => {
                 </div>
 
                 {selectedProfile && (
-                  <div className="space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                  <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                    
+                    {/* Seletor de Tema */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <LayoutTemplate size={14} className="text-zinc-500" />
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Estilo da Assinatura</label>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {['classic', 'modern', 'minimal', 'compact'].map((theme) => (
+                          <button
+                            key={theme}
+                            onClick={() => setSignatureTheme(theme as SignatureTheme)}
+                            className={clsx(
+                              "py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all",
+                              signatureTheme === theme 
+                                ? "bg-white text-black border-white shadow-lg" 
+                                : "bg-black/30 text-zinc-500 border-white/10 hover:border-white/30 hover:text-white"
+                            )}
+                          >
+                            {theme === 'classic' ? 'Clássico' : theme === 'modern' ? 'Moderno' : theme === 'minimal' ? 'Minimal' : 'Compacto'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="bg-white rounded-xl p-6 overflow-x-auto border border-white/10 shadow-inner">
                       <div 
                         ref={signatureRef}
-                        dangerouslySetInnerHTML={{ __html: getSignatureHtml(selectedProfile) }} 
+                        dangerouslySetInnerHTML={{ __html: getSignatureHtml(selectedProfile, signatureTheme) }} 
                       />
                     </div>
 
