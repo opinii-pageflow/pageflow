@@ -28,10 +28,10 @@ const FEATURE_REQUIREMENTS: Record<FeatureKey, PlanType> = {
   analytics: 'pro',
   nps: 'pro',
   leads_capture: 'pro',
-  leads_export: 'enterprise', // Apenas o plano mais caro
-  leads_full_details: 'enterprise', // Apenas o plano mais caro
+  leads_export: 'enterprise',
+  leads_full_details: 'enterprise',
   crm: 'business',
-  white_label: 'enterprise'
+  white_label: 'pro' // Alterado de enterprise para pro conforme solicitado
 };
 
 /**

@@ -154,6 +154,7 @@ export interface Profile {
   youtubeVideos?: YoutubeVideoItem[];
   enableLeadCapture?: boolean;
   enableNps?: boolean;
+  hideBranding?: boolean;
 }
 
 export interface AnalyticsEvent {
@@ -184,9 +185,7 @@ export interface AppData {
   events: AnalyticsEvent[];
   leads: LeadCapture[];
   nps: NpsEntry[];
-  /** Configurações de marketing/landing (editável no Admin) */
   landing?: {
-    /** Lista (em ordem) de perfis exibidos como vitrine na landing */
     showcaseProfileIds: string[];
   };
   currentUser: UserAuth | null;

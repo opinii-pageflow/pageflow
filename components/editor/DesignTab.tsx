@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Profile, BackgroundType, ButtonStyle } from '../../types';
+import { Profile, BackgroundType, ButtonStyle, PlanType } from '../../types';
 import { themePresets } from '../../lib/themePresets';
-import { getStyleFromClipboard, copyStyleToClipboard, StyleConfig } from '../../lib/storage';
+import { getStyleFromClipboard, copyStyleToClipboard, StyleConfig, getStorage, getCurrentUser } from '../../lib/storage';
+import { canAccessFeature } from '../../lib/permissions';
 import ColorPickerButton from '../common/ColorPickerButton';
 import { 
   ChevronDown, 
@@ -15,9 +16,13 @@ import {
   Link as LinkIcon,
   Copy,
   ClipboardPaste,
-  Check
+  Check,
+  ShieldAlert,
+  Lock,
+  Zap
 } from 'lucide-react';
 import clsx from 'clsx';
+import { useNavigate } from 'react-router-dom';
 
 interface Props {
   profile: Profile;
@@ -25,9 +30,15 @@ interface Props {
 }
 
 const DesignTab: React.FC<Props> = ({ profile, onUpdate }) => {
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [clipboard, setClipboard] = useState<StyleConfig | null>(getStyleFromClipboard());
   const [justCopied, setJustCopied] = useState(false);
+  
+  const user = getCurrentUser();
+  const data = getStorage();
+  const client = data.clients.find(c => c.id === user?.clientId);
+  const canHideBranding = canAccessFeature(client?.plan, 'white_label');
 
   useEffect(() => {
     const checkClipboard = () => setClipboard(getStyleFromClipboard());
@@ -107,6 +118,50 @@ const DesignTab: React.FC<Props> = ({ profile, onUpdate }) => {
            )}
         </div>
       </header>
+
+      {/* Branding / Marca d'água */}
+      <section className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-8 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-blue-400">
+              <ShieldAlert size={18} />
+            </div>
+            <div>
+              <h4 className="font-black text-base">Marca LinkFlow</h4>
+              <p className="text-zinc-500 text-xs">Exibe o selo oficial no rodapé do perfil.</p>
+            </div>
+          </div>
+          
+          {canHideBranding ? (
+            <button 
+              onClick={() => onUpdate({ hideBranding: !profile.hideBranding })}
+              className={clsx(
+                "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 border",
+                profile.hideBranding ? "bg-white text-black" : "bg-white/5 text-zinc-400 border-white/10"
+              )}
+            >
+              {profile.hideBranding ? 'Marca Oculta' : 'Marca Ativa'}
+            </button>
+          ) : (
+            <button 
+              onClick={() => navigate('/app/upgrade')}
+              className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-blue-600/10 text-blue-400 border border-blue-500/20 flex items-center gap-2 group hover:bg-blue-600 hover:text-white transition-all"
+            >
+              <Lock size={12} />
+              Remover Marca
+            </button>
+          )}
+        </div>
+        
+        {!canHideBranding && (
+          <div className="flex items-center gap-3 p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10">
+            <Zap size={14} className="text-blue-500 animate-pulse" />
+            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-relaxed">
+              A remoção da marca d'água está disponível a partir do <span className="text-white">Plano Pro</span>.
+            </p>
+          </div>
+        )}
+      </section>
 
       {/* Temas Rápidos */}
       <section>

@@ -63,6 +63,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   const hasPixAccess = canAccessFeature(clientPlan, 'pix');
   const hasLeadAccess = canAccessFeature(clientPlan, 'leads_capture');
   const hasNpsAccess = canAccessFeature(clientPlan, 'nps');
+  const canHideBranding = canAccessFeature(clientPlan, 'white_label');
 
   // Templates existentes
   const isSplit = layoutTemplate === 'Split Header';
@@ -353,7 +354,6 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
       isLeftHeader ? 'text-lg' : isBigAvatar ? 'text-3xl' : isMagazine ? 'text-2xl' : 'text-2xl',
     );
 
-    // Cover Clean: avatar “limpo” por cima do cover
     const coverCleanWrapClass = clsx(isCoverClean ? '-mt-14 mb-2' : (isCorporate || isMagazine) && !isLeftHeader ? 'mb-3' : 'mb-4');
 
     return (
@@ -373,7 +373,6 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
             <div
               className={clsx(
                 'absolute inset-0 rounded-full pointer-events-none',
-                // halo suave no modo clean
               )}
               style={{ boxShadow: `0 0 0 6px rgba(0,0,0,0.22), 0 0 0 1px ${theme.border}` }}
             />
@@ -399,10 +398,6 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
     );
   };
 
-  // Cover:
-  // - Minimal Card: não mostra cover
-  // - Cover Clean: sempre tenta mostrar cover quando existir
-  // - Hero Banner: mostra banner mesmo sem coverUrl (usa gradiente)
   const shouldShowCover =
     !isMinimal && (isCoverClean ? true : (Boolean(profile.coverUrl) || isHeroBanner));
 
@@ -431,6 +426,8 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
             : isCoverClean
               ? 'p-6 pt-8'
               : 'p-6';
+
+  const showBranding = !canHideBranding || !profile.hideBranding;
 
   return (
     <div style={bgStyle} className="w-full flex flex-col items-center overflow-x-hidden no-scrollbar">
@@ -646,10 +643,19 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
             <LeadBlock onSubmit={pushLead} styleObj={proCardStyle} theme={theme} primaryTextOnPrimary={primaryTextOnPrimary} />
           )}
 
-          <footer className="mt-7 flex flex-col items-center gap-1 opacity-30">
-            <div className="w-3 h-3 bg-current rounded-sm flex items-center justify-center font-black text-[5px]">LF</div>
-            <span className="text-[5px] font-black uppercase tracking-[0.3em]">LinkFlow</span>
-          </footer>
+          {showBranding && (
+            <footer className="mt-8 pt-4 border-t border-white/5 flex flex-col items-center gap-3">
+              <a 
+                href={isPreview ? "#" : "/#/"} 
+                target={isPreview ? "_self" : "_blank"}
+                rel="noopener noreferrer"
+                className="group flex flex-col items-center transition-all hover:scale-110 active:scale-95"
+              >
+                <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-blue-600/20 mb-1 group-hover:shadow-blue-600/40">L</div>
+                <span className="text-[7px] font-black uppercase tracking-[0.4em] opacity-40 group-hover:opacity-100">LinkFlow</span>
+              </a>
+            </footer>
+          )}
         </main>
       </div>
     </div>
