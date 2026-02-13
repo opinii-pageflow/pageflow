@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Profile, BackgroundType, ButtonStyle } from '../../types';
 import { themePresets } from '../../lib/themePresets';
 import { getStyleFromClipboard, copyStyleToClipboard, StyleConfig } from '../../lib/storage';
+import { canUseTheme, canAccessFeature } from '../../lib/permissions';
+import { getStorage, getCurrentUser } from '../../lib/storage';
 import ColorPickerButton from '../common/ColorPickerButton';
 import { 
   ChevronDown, 
@@ -15,7 +17,8 @@ import {
   Link as LinkIcon,
   Copy,
   ClipboardPaste,
-  Check
+  Check,
+  Lock
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -25,9 +28,14 @@ interface Props {
 }
 
 const DesignTab: React.FC<Props> = ({ profile, onUpdate }) => {
+  const user = getCurrentUser();
+  const data = getStorage();
+  const client = data.clients.find(c => c.id === user?.clientId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [clipboard, setClipboard] = useState<StyleConfig | null>(getStyleFromClipboard());
   const [justCopied, setJustCopied] = useState(false);
+
+  const canUseImages = canAccessFeature(client?.plan, 'background_image');
 
   useEffect(() => {
     const checkClipboard = () => setClipboard(getStyleFromClipboard());
@@ -46,6 +54,7 @@ const DesignTab: React.FC<Props> = ({ profile, onUpdate }) => {
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canUseImages) return;
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -59,55 +68,8 @@ const DesignTab: React.FC<Props> = ({ profile, onUpdate }) => {
     }
   };
 
-  const handleCopyStyle = () => {
-    copyStyleToClipboard(profile);
-    setClipboard(getStyleFromClipboard());
-    setJustCopied(true);
-    setTimeout(() => setJustCopied(false), 2000);
-  };
-
-  const handlePasteStyle = () => {
-    const config = getStyleFromClipboard();
-    if (!config) return;
-    onUpdate({
-      theme: config.theme,
-      fonts: config.fonts,
-      layoutTemplate: config.layoutTemplate
-    });
-  };
-
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h3 className="text-xl font-bold tracking-tight">Design & Estilo</h3>
-          <p className="text-xs text-gray-500">Personalize a aparência do seu cartão digital.</p>
-        </div>
-        
-        <div className="flex items-center gap-2">
-           <button 
-            onClick={handleCopyStyle}
-            className={clsx(
-              "px-4 py-2 rounded-xl flex items-center gap-2 text-[9px] font-black uppercase tracking-widest border transition-all",
-              justCopied ? "bg-emerald-500/10 border-emerald-500 text-emerald-500" : "bg-white/5 border-white/10 text-zinc-500 hover:text-white"
-            )}
-           >
-              {justCopied ? <Check size={14} /> : <Copy size={14} />}
-              {justCopied ? "Copiado!" : "Copiar Estilo"}
-           </button>
-           
-           {clipboard && clipboard.sourceProfileId !== profile.id && (
-             <button 
-              onClick={handlePasteStyle}
-              className="px-4 py-2 rounded-xl bg-blue-600/10 border border-blue-600 text-blue-500 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all animate-pulse"
-             >
-                <ClipboardPaste size={14} />
-                Colar Estilo
-             </button>
-           )}
-        </div>
-      </header>
-
       {/* Temas Rápidos */}
       <section>
         <div className="flex items-center gap-2 mb-4">
@@ -115,27 +77,37 @@ const DesignTab: React.FC<Props> = ({ profile, onUpdate }) => {
           <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Temas Rápidos</h3>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          {Object.keys(themePresets).map(name => (
-            <button
-              key={name}
-              onClick={() => applyPreset(name)}
-              className={`
-                group p-4 rounded-[1.8rem] border-2 text-xs font-bold transition-all text-left flex flex-col gap-3 relative overflow-hidden
-                ${profile.theme.backgroundValue === themePresets[name].backgroundValue 
-                  ? 'border-blue-600 bg-blue-600/10' 
-                  : 'border-white/5 bg-zinc-900/50 hover:border-white/20'}
-              `}
-            >
-              <div className="w-full h-10 rounded-xl shadow-inner overflow-hidden flex" style={{ background: themePresets[name].backgroundValue }}>
-                {themePresets[name].backgroundType === 'gradient' && (
-                   <div className="w-full h-full" style={{ background: `linear-gradient(${themePresets[name].backgroundDirection}, ${themePresets[name].backgroundValue}, ${themePresets[name].backgroundValueSecondary})` }}></div>
+          {Object.keys(themePresets).map(name => {
+            const isLocked = !canUseTheme(client?.plan, name);
+            const isActive = profile.theme.backgroundValue === themePresets[name].backgroundValue;
+            
+            return (
+              <button
+                key={name}
+                disabled={isLocked}
+                onClick={() => !isLocked && applyPreset(name)}
+                className={`
+                  group p-4 rounded-[1.8rem] border-2 text-xs font-bold transition-all text-left flex flex-col gap-3 relative overflow-hidden
+                  ${isActive ? 'border-blue-600 bg-blue-600/10' : 'border-white/5 bg-zinc-900/50 hover:border-white/20'}
+                  ${isLocked ? 'opacity-50 grayscale cursor-not-allowed' : ''}
+                `}
+              >
+                {isLocked && (
+                  <div className="absolute inset-0 bg-black/40 z-10 flex items-center justify-center">
+                    <Lock size={16} className="text-zinc-500" />
+                  </div>
                 )}
-              </div>
-              <span className={profile.theme.backgroundValue === themePresets[name].backgroundValue ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'}>
-                {name}
-              </span>
-            </button>
-          ))}
+                <div className="w-full h-10 rounded-xl shadow-inner overflow-hidden flex" style={{ background: themePresets[name].backgroundValue }}>
+                   {themePresets[name].backgroundType === 'gradient' && (
+                     <div className="w-full h-full" style={{ background: `linear-gradient(${themePresets[name].backgroundDirection}, ${themePresets[name].backgroundValue}, ${themePresets[name].backgroundValueSecondary})` }}></div>
+                   )}
+                </div>
+                <span className={isActive ? 'text-white' : 'text-zinc-500 group-hover:text-zinc-300'}>
+                  {name}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </section>
 
@@ -147,67 +119,29 @@ const DesignTab: React.FC<Props> = ({ profile, onUpdate }) => {
         </div>
         
         <div className="grid grid-cols-3 gap-2 p-1.5 bg-zinc-900/50 border border-white/5 rounded-2xl">
-          {(['solid', 'gradient', 'image'] as BackgroundType[]).map(type => (
-            <button
-              key={type}
-              onClick={() => updateTheme({ backgroundType: type })}
-              className={`
-                py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all
-                ${profile.theme.backgroundType === type 
-                  ? 'bg-white text-black shadow-lg' 
-                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}
-              `}
-            >
-              {type === 'solid' ? 'Sólido' : type === 'gradient' ? 'Gradiente' : 'Imagem'}
-            </button>
-          ))}
+          {(['solid', 'gradient', 'image'] as BackgroundType[]).map(type => {
+            const isImageLocked = type === 'image' && !canUseImages;
+            return (
+              <button
+                key={type}
+                disabled={isImageLocked}
+                onClick={() => !isImageLocked && updateTheme({ backgroundType: type })}
+                className={`
+                  py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5
+                  ${profile.theme.backgroundType === type ? 'bg-white text-black shadow-lg' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}
+                  ${isImageLocked ? 'opacity-40 cursor-not-allowed' : ''}
+                `}
+              >
+                {isImageLocked && <Lock size={10} />}
+                {type === 'solid' ? 'Sólido' : type === 'gradient' ? 'Gradiente' : 'Imagem'}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-          {profile.theme.backgroundType === 'solid' && (
-            <ColorPickerButton 
-              label="Cor do Fundo"
-              value={profile.theme.backgroundValue}
-              onChange={(hex) => updateTheme({ backgroundValue: hex })}
-            />
-          )}
-
-          {profile.theme.backgroundType === 'gradient' && (
-            <div className="space-y-6">
-              <ColorPickerButton 
-                label="Cor Inicial"
-                value={profile.theme.backgroundValue}
-                onChange={(hex) => updateTheme({ backgroundValue: hex })}
-              />
-              <ColorPickerButton 
-                label="Cor Final"
-                value={profile.theme.backgroundValueSecondary || '#000000'}
-                onChange={(hex) => updateTheme({ backgroundValueSecondary: hex })}
-              />
-              <div className="space-y-3">
-                <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">Direção do Fluxo</label>
-                <div className="relative">
-                  <select 
-                    value={profile.theme.backgroundDirection || 'to bottom'}
-                    onChange={(e) => updateTheme({ backgroundDirection: e.target.value })}
-                    className="w-full bg-zinc-900 border border-white/10 rounded-2xl px-5 py-4 text-xs font-bold outline-none appearance-none cursor-pointer focus:border-blue-500/50 transition-all"
-                  >
-                    <option value="to bottom">Vertical (Baixo)</option>
-                    <option value="to right">Horizontal (Direita)</option>
-                    <option value="to top">Vertical (Cima)</option>
-                    <option value="to left">Horizontal (Esquerda)</option>
-                    <option value="135deg">Diagonal (135°)</option>
-                    <option value="45deg">Diagonal (45°)</option>
-                  </select>
-                  <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500" size={16} />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {profile.theme.backgroundType === 'image' && (
-            <div className="space-y-4">
-              <div className="relative group h-48 w-full rounded-[2.5rem] overflow-hidden bg-zinc-900 border border-white/5 shadow-inner">
+        {profile.theme.backgroundType === 'image' && canUseImages && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+             <div className="relative group h-48 w-full rounded-[2.5rem] overflow-hidden bg-zinc-900 border border-white/5 shadow-inner">
                 {profile.theme.backgroundValue && (profile.theme.backgroundValue.startsWith('http') || profile.theme.backgroundValue.startsWith('data:')) ? (
                   <img src={profile.theme.backgroundValue} className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-700" alt="Background" />
                 ) : (
@@ -225,94 +159,9 @@ const DesignTab: React.FC<Props> = ({ profile, onUpdate }) => {
                   </button>
                 </div>
               </div>
-              <div className="relative flex items-center">
-                <div className="absolute left-5 text-zinc-600"><LinkIcon size={16} /></div>
-                <input 
-                  type="text" 
-                  value={profile.theme.backgroundValue}
-                  onChange={(e) => updateTheme({ backgroundValue: e.target.value })}
-                  className="w-full bg-zinc-900 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-xs font-medium focus:border-blue-500/50 transition-all outline-none"
-                  placeholder="Ou cole a URL da imagem..."
-                />
-              </div>
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Cores de Elementos */}
-      <section className="space-y-8">
-        <div className="flex items-center gap-2 mb-4">
-          <TypeIcon size={14} className="text-amber-500" />
-          <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Cores de Elementos</h3>
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-          <ColorPickerButton 
-            label="Cor Primária"
-            value={profile.theme.primary}
-            onChange={(hex) => updateTheme({ primary: hex })}
-          />
-          <ColorPickerButton 
-            label="Cor do Texto"
-            value={profile.theme.text}
-            onChange={(hex) => updateTheme({ text: hex })}
-          />
-        </div>
-      </section>
-
-      {/* Estilo e Curvatura */}
-      <section className="space-y-8">
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <MousePointer2 size={14} className="text-emerald-500" />
-            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Formato dos Botões</h3>
           </div>
-          <div className="grid grid-cols-3 gap-3 p-2 bg-zinc-900/50 border border-white/5 rounded-2xl">
-            {(['solid', 'outline', 'glass'] as ButtonStyle[]).map(style => (
-              <button
-                key={style}
-                onClick={() => updateTheme({ buttonStyle: style })}
-                className={`
-                  py-4 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all
-                  ${profile.theme.buttonStyle === style 
-                    ? 'bg-white text-black shadow-lg shadow-white/5' 
-                    : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}
-                `}
-              >
-                {style === 'solid' ? 'Sólido' : style === 'outline' ? 'Borda' : 'Vidro'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Raio de Curvatura</h3>
-            <span className="text-xs font-mono font-black text-blue-500 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">{profile.theme.radius}</span>
-          </div>
-          <div className="bg-zinc-900/40 p-10 rounded-[2.5rem] border border-white/5 shadow-inner">
-            <input 
-              type="range" 
-              min="0" 
-              max="40" 
-              value={parseInt(profile.theme.radius)}
-              onChange={(e) => updateTheme({ radius: `${e.target.value}px` })}
-              className="w-full h-1.5 bg-zinc-800 accent-white rounded-full appearance-none cursor-pointer"
-            />
-            <div className="flex justify-between mt-8 px-1">
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-8 h-8 rounded-sm border-2 border-zinc-800"></div>
-                <span className="text-[8px] font-black uppercase text-zinc-700 tracking-widest">Reto</span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-8 h-8 rounded-full border-2 border-zinc-800"></div>
-                <span className="text-[8px] font-black uppercase text-zinc-700 tracking-widest">Círculo</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </section>
     </div>
   );
