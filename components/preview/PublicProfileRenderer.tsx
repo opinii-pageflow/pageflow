@@ -17,10 +17,46 @@ interface Props {
   source?: AnalyticsSource;
 }
 
-const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan, source = 'direct' }) => {
-  const { theme, fonts, buttons, layoutTemplate } = profile;
+// ===== helpers =====
+const safeString = (v: any, fallback: string) => (typeof v === 'string' && v.trim() ? v : fallback);
 
-  // Verificações de permissão por funcionalidade
+const normalizeFontStack = (font: string) => {
+  const name = safeString(font, 'Inter');
+  const needsQuotes = /\s/.test(name) || /["']/.test(name);
+  const quoted = needsQuotes ? `"${name.replace(/"/g, '')}"` : name;
+  return `${quoted}, Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+};
+
+const hexToRgb = (hex: string) => {
+  const h = hex.replace('#', '').trim();
+  if (![3, 6].includes(h.length)) return null;
+  const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+  const n = parseInt(full, 16);
+  if (Number.isNaN(n)) return null;
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+};
+
+const relativeLuminance = (hex: string) => {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return null;
+  const srgb = [rgb.r, rgb.g, rgb.b].map(v => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
+};
+
+const pickReadableOn = (hexBg: string, light = '#F8FAFC', dark = '#0B1220') => {
+  const lum = relativeLuminance(hexBg);
+  if (lum === null) return light;
+  return lum > 0.62 ? dark : light;
+};
+
+const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan, source = 'direct' }) => {
+  const { theme, fonts, buttons } = profile;
+  const layoutTemplate = safeString(profile.layoutTemplate, 'Minimal Card');
+
+  // Permissões por feature
   const hasCatalogAccess = canAccessFeature(clientPlan, 'catalog');
   const hasPortfolioAccess = canAccessFeature(clientPlan, 'portfolio');
   const hasVideosAccess = canAccessFeature(clientPlan, 'videos');
@@ -28,7 +64,97 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   const hasLeadAccess = canAccessFeature(clientPlan, 'leads_capture');
   const hasNpsAccess = canAccessFeature(clientPlan, 'nps');
 
-  const proCardClass = "mt-6 w-full rounded-[2.5rem] border border-white/5 bg-white/5 backdrop-blur-2xl p-6 shadow-2xl";
+  const isSplit = layoutTemplate === 'Split Header';
+  const isIconGrid = layoutTemplate === 'Icon Grid';
+  const isBoldList = layoutTemplate === 'Button List Bold';
+  const isGlass = layoutTemplate === 'Glassmorphism';
+  const isNeon = layoutTemplate === 'Neon';
+  const isCorporate = layoutTemplate === 'Corporate';
+  const isCreator = layoutTemplate === 'Creator';
+  const isDarkElegant = layoutTemplate === 'Dark Elegant';
+  const isLightClean = layoutTemplate === 'Light Clean';
+  const isBigAvatar = layoutTemplate === 'Big Avatar';
+  const isMagazine = layoutTemplate === 'Magazine';
+  const isMinimal = layoutTemplate === 'Minimal Card';
+
+  const headingFont = normalizeFontStack(fonts?.headingFont || 'Poppins');
+  const bodyFont = normalizeFontStack(fonts?.bodyFont || 'Inter');
+  const buttonFont = normalizeFontStack(fonts?.buttonFont || fonts?.bodyFont || 'Inter');
+
+  const primaryTextOnPrimary = pickReadableOn(theme.primary);
+
+  const bgCss = (() => {
+    const bgValue = safeString(theme.backgroundValue, '#0A0A0A');
+    if (theme.backgroundType === 'gradient') {
+      const dir = safeString(theme.backgroundDirection, 'to bottom');
+      const b = safeString(theme.backgroundValueSecondary, bgValue);
+      return `linear-gradient(${dir}, ${bgValue}, ${b})`;
+    }
+    if (theme.backgroundType === 'image') {
+      // Em preview: evitar background-attachment: fixed (pode quebrar scroll em alguns browsers)
+      const attachment = isPreview ? 'scroll' : 'fixed';
+      return `url(${bgValue}) center/cover no-repeat ${attachment}`;
+    }
+    return bgValue;
+  })();
+
+  const bgStyle: React.CSSProperties = {
+    background: bgCss,
+    minHeight: isPreview ? '100%' : '100vh',
+    height: isPreview ? '100%' : 'auto',
+    color: theme.text,
+    fontFamily: bodyFont,
+    transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+  };
+
+  const proCardStyle: React.CSSProperties = {
+    borderRadius: `calc(${theme.radius} + 18px)`,
+    border: `1px solid ${theme.border}`,
+    background: theme.cardBg,
+    boxShadow: theme.shadow,
+    backdropFilter: (isGlass || theme.buttonStyle === 'glass' || isNeon) ? 'blur(24px)' : undefined,
+  };
+
+  const shellCardStyle: React.CSSProperties = {
+    borderRadius: isLightClean ? `calc(${theme.radius} + 6px)` : `calc(${theme.radius} + 14px)`,
+    border: `1px solid ${theme.border}`,
+    background: theme.cardBg,
+    boxShadow: isMinimal ? 'none' : theme.shadow,
+    backdropFilter: (isGlass || theme.buttonStyle === 'glass' || isNeon || isCreator) ? 'blur(26px)' : undefined,
+    position: 'relative',
+    overflow: 'hidden',
+  };
+
+  const shellDecor = (
+    <>
+      {isNeon && (
+        <>
+          <div
+            className="absolute -top-24 -left-24 w-56 h-56 rounded-full blur-3xl opacity-30"
+            style={{ background: theme.primary }}
+          />
+          <div
+            className="absolute -bottom-24 -right-24 w-56 h-56 rounded-full blur-3xl opacity-25"
+            style={{ background: theme.primary }}
+          />
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{ boxShadow: `0 0 0 1px ${theme.border}, 0 0 45px rgba(0,0,0,0.25)` }}
+          />
+        </>
+      )}
+
+      {isCreator && (
+        <div className="absolute inset-0 pointer-events-none">
+          <div
+            className="absolute -top-32 left-1/2 -translate-x-1/2 w-[520px] h-[240px] rounded-full blur-3xl opacity-25"
+            style={{ background: theme.primary }}
+          />
+          <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-black/25 to-transparent" />
+        </div>
+      )}
+    </>
+  );
 
   const pushLead = (payload: { name: string; contact: string; message?: string }) => {
     if (!hasLeadAccess || isPreview) return;
@@ -76,60 +202,57 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
       profileId: profile.id,
       clientId: profile.clientId,
       type: 'click',
-      linkId: btnId
+      linkId: btnId,
     });
   };
 
-  const isSplit = layoutTemplate === 'Split Header';
+  const getButtonStyle = (_btn: any, index: number): React.CSSProperties => {
+    const wantsGlass = isGlass || theme.buttonStyle === 'glass' || isCreator;
+    const wantsOutline = theme.buttonStyle === 'outline' || isLightClean || isDarkElegant;
+    const wantsSolid = theme.buttonStyle === 'solid' || isBoldList;
 
-  const bgStyle: React.CSSProperties = {
-    background: theme.backgroundType === 'gradient' 
-      ? `linear-gradient(${theme.backgroundDirection || 'to bottom'}, ${theme.backgroundValue}, ${theme.backgroundValueSecondary || theme.backgroundValue})`
-      : theme.backgroundType === 'image'
-        ? `url(${theme.backgroundValue}) center/cover no-repeat fixed`
-        : theme.backgroundValue,
-    minHeight: isPreview ? '100%' : '100vh',
-    height: isPreview ? '100%' : 'auto',
-    color: theme.text,
-    fontFamily: fonts.bodyFont,
-    transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-  };
-
-  const getButtonStyle = (btn: any, index: number): React.CSSProperties => {
-    const isIconGrid = layoutTemplate === 'Icon Grid';
-    const isBoldList = layoutTemplate === 'Button List Bold';
-    const isGlass = layoutTemplate === 'Glassmorphism' || theme.buttonStyle === 'glass';
-    
     const base: React.CSSProperties = {
-      borderRadius: theme.radius,
-      fontFamily: fonts.buttonFont,
-      transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-      boxShadow: theme.shadow,
-      borderWidth: theme.buttonStyle === 'outline' ? '2px' : '1px',
-      borderColor: theme.buttonStyle === 'outline' ? theme.primary : 'rgba(255,255,255,0.08)',
+      borderRadius: isBoldList ? `calc(${theme.radius} + 10px)` : theme.radius,
+      fontFamily: buttonFont,
+      transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+      borderWidth: wantsOutline ? '2px' : '1px',
+      borderColor: wantsOutline ? theme.primary : theme.border,
       display: 'flex',
       alignItems: 'center',
-      gap: isIconGrid ? '0.4rem' : isSplit ? '0.5rem' : '0.8rem',
       justifyContent: isIconGrid ? 'center' : 'flex-start',
-      padding: isIconGrid ? '0.8rem' : isBoldList ? '1.2rem 1.5rem' : isSplit ? '0.5rem 0.7rem' : '0.9rem 1.1rem',
+      gap: isIconGrid ? '0.45rem' : isSplit ? '0.55rem' : '0.85rem',
+      padding: isIconGrid ? '0.85rem' : isBoldList ? '1.15rem 1.4rem' : isSplit ? '0.55rem 0.75rem' : '0.95rem 1.15rem',
       width: '100%',
-      backgroundColor: theme.buttonStyle === 'solid' ? theme.primary : isGlass ? 'rgba(255,255,255,0.06)' : 'transparent',
-      color: theme.buttonStyle === 'solid' ? '#fff' : theme.text,
-      backdropFilter: isGlass ? 'blur(20px)' : 'none',
-      fontSize: isSplit ? '0.75rem' : '0.9rem',
+      boxShadow: isBoldList ? theme.shadow : 'none',
+      backdropFilter: wantsGlass ? 'blur(20px)' : undefined,
+      fontSize: isSplit ? '0.78rem' : '0.92rem',
+      fontWeight: isBoldList ? 900 : 800,
     };
 
+    if (wantsSolid) {
+      base.backgroundColor = theme.primary;
+      base.color = primaryTextOnPrimary;
+    } else if (wantsGlass) {
+      base.backgroundColor = 'rgba(255,255,255,0.08)';
+      base.color = theme.text;
+    } else {
+      base.backgroundColor = 'transparent';
+      base.color = theme.text;
+    }
+
     if (isBoldList) {
-      base.transform = `rotate(${index % 2 === 0 ? '0.4deg' : '-0.4deg'})`;
-      base.fontWeight = '900';
+      base.transform = `rotate(${index % 2 === 0 ? '0.5deg' : '-0.5deg'})`;
+    }
+
+    if (isNeon) {
+      base.boxShadow = `0 0 0 1px ${theme.border}, 0 0 18px rgba(0,0,0,0.15)`;
     }
 
     return base;
   };
 
   const renderLinks = () => {
-    const activeButtons = buttons.filter(b => b.enabled);
-    const isIconGrid = layoutTemplate === 'Icon Grid';
+    const activeButtons = (buttons || []).filter(b => b.enabled);
 
     const iconMap: Record<string, any> = {
       whatsapp: LucideIcons.MessageCircle,
@@ -148,14 +271,19 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
       telegram: LucideIcons.Send,
       threads: LucideIcons.AtSign,
       twitch: LucideIcons.Tv,
-      discord: LucideIcons.MessageSquare
+      discord: LucideIcons.MessageSquare,
     };
 
+    const wrapperClass = clsx(
+      'w-full transition-all duration-700',
+      isIconGrid && 'grid grid-cols-2 gap-2',
+      !isIconGrid && isSplit && 'space-y-1.5',
+      !isIconGrid && !isSplit && isMagazine && 'grid grid-cols-2 gap-2',
+      !isIconGrid && !isSplit && !isMagazine && 'space-y-3',
+    );
+
     return (
-      <div className={clsx(
-        "w-full transition-all duration-1000",
-        isIconGrid ? "grid grid-cols-2 gap-2" : isSplit ? "space-y-1.5" : "space-y-3",
-      )}>
+      <div className={wrapperClass}>
         {activeButtons.map((btn, idx) => {
           const Icon = iconMap[btn.type] || LucideIcons.ExternalLink;
           return (
@@ -167,32 +295,35 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
               onClick={() => handleLinkClick(btn.id)}
               style={getButtonStyle(btn, idx)}
               className={clsx(
-                "group relative overflow-hidden",
-                !isIconGrid && "hover:translate-x-1",
-                isIconGrid && "aspect-square flex-col text-center hover:scale-105"
+                'group relative overflow-hidden',
+                !isIconGrid && 'hover:translate-x-1',
+                isIconGrid && 'aspect-square flex-col text-center hover:scale-[1.03]',
               )}
             >
-              <div className={clsx(
-                "rounded-lg flex items-center justify-center transition-transform duration-500 group-hover:scale-110",
-                isIconGrid ? "w-7 h-7 mb-1" : isSplit ? "w-6 h-6 bg-black/5" : "w-8 h-8 bg-black/10"
-              )}>
+              <div
+                className={clsx(
+                  'rounded-lg flex items-center justify-center transition-transform duration-500 group-hover:scale-110',
+                  isIconGrid ? 'w-7 h-7 mb-1' : isSplit ? 'w-6 h-6 bg-black/5' : 'w-8 h-8 bg-black/10',
+                )}
+              >
                 <Icon size={isIconGrid ? 20 : isSplit ? 14 : 16} color={getIconColor(btn.type)} />
               </div>
 
               {!isIconGrid && (
                 <div className="flex-1 truncate">
-                  <div className="font-bold leading-tight">{btn.label}</div>
-                </div>
-              )}
-              
-              {isIconGrid && (
-                <div className="text-[7px] font-black uppercase tracking-widest opacity-70">
-                  {btn.label}
+                  <div className="font-black leading-tight">{btn.label}</div>
                 </div>
               )}
 
-              {!isIconGrid && layoutTemplate !== 'Button List Bold' && !isSplit && (
-                <LucideIcons.ChevronRight size={12} className="opacity-10 group-hover:translate-x-1 group-hover:opacity-100 transition-all" />
+              {isIconGrid && (
+                <div className="text-[7px] font-black uppercase tracking-widest opacity-70">{btn.label}</div>
+              )}
+
+              {!isIconGrid && !isBoldList && !isSplit && (
+                <LucideIcons.ChevronRight
+                  size={12}
+                  className="opacity-10 group-hover:translate-x-1 group-hover:opacity-100 transition-all"
+                />
               )}
             </a>
           );
@@ -202,43 +333,52 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   };
 
   const renderHeader = () => {
-    const isCorporate = layoutTemplate === 'Corporate';
+    const avatarClass = clsx(
+      'object-cover border-2 transition-all duration-700',
+      isSplit && 'w-20 h-20 rounded-2xl',
+      !isSplit && isCorporate && 'w-16 h-16 rounded-2xl',
+      !isSplit && isBigAvatar && 'w-36 h-36 rounded-full',
+      !isSplit && !isCorporate && !isBigAvatar && 'w-28 h-28 rounded-full',
+    );
+
+    const headerClass = clsx(
+      'w-full flex transition-all duration-700',
+      isSplit ? 'flex-row items-center text-left gap-4 mb-4' : 'flex-col',
+      (isCorporate || isMagazine) ? 'items-start text-left' : 'items-center text-center',
+    );
+
+    const headlineClass = clsx(
+      'font-medium truncate',
+      isSplit ? 'text-xs' : 'text-sm',
+    );
+
+    const nameClass = clsx(
+      'font-black tracking-tighter leading-tight truncate',
+      isSplit ? 'text-lg' : isBigAvatar ? 'text-3xl' : isMagazine ? 'text-2xl' : 'text-2xl',
+    );
 
     return (
-      <header className={clsx(
-        "w-full flex flex-col transition-all duration-700",
-        isCorporate ? "items-start text-left" : "items-center text-center",
-        isSplit ? "flex-row items-center text-left gap-4 mb-3" : "mb-6"
-      )}>
-        <div className={clsx(
-          "relative",
-          isSplit ? "flex-shrink-0" : "mb-4"
-        )}>
-          <img 
-            src={profile.avatarUrl} 
-            className={clsx(
-              "object-cover border-2 shadow-lg transition-all duration-700",
-              isSplit ? "w-20 h-20 rounded-2xl" : "rounded-full w-32 h-32",
-            )}
-            style={{ borderColor: theme.cardBg }}
+      <header className={headerClass}>
+        <div className={clsx('relative', isSplit ? 'flex-shrink-0' : (isCorporate || isMagazine) ? 'mb-3' : 'mb-4')}>
+          <img
+            src={profile.avatarUrl}
+            className={avatarClass}
+            style={{ borderColor: theme.border, boxShadow: isNeon ? `0 0 0 1px ${theme.border}, 0 0 25px rgba(0,0,0,0.25)` : undefined }}
             alt={profile.displayName}
           />
+          {isCreator && !isSplit && (
+            <div
+              className="absolute inset-0 rounded-full pointer-events-none"
+              style={{ boxShadow: `0 0 0 2px ${theme.primary}55, 0 0 28px ${theme.primary}33` }}
+            />
+          )}
         </div>
-        
-        <div className="flex-1 min-w-0">
-          <h1 
-            className={clsx(
-              "font-black tracking-tighter leading-tight truncate",
-              isSplit ? "text-lg" : "text-2xl",
-            )}
-            style={{ fontFamily: fonts.headingFont }}
-          >
+
+        <div className={clsx('flex-1 min-w-0', (isCorporate || isMagazine) && !isSplit ? 'w-full' : '')}>
+          <h1 className={nameClass} style={{ fontFamily: headingFont }}>
             {profile.displayName}
           </h1>
-          <p className={clsx(
-            "font-medium opacity-50 truncate",
-            isSplit ? "text-xs" : "text-sm",
-          )}>
+          <p className={headlineClass} style={{ color: theme.muted }}>
             {profile.headline}
           </p>
         </div>
@@ -246,34 +386,61 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
     );
   };
 
+  // Cover: aparece em quase todos, mas com regras específicas
+  const shouldShowCover = Boolean(profile.coverUrl) && !isMinimal;
+  const coverHeightClass = isPreview ? (isMagazine ? 'h-40' : 'h-28') : (isMagazine ? 'h-56' : 'h-44');
+
+  const shellWrapClass = clsx(
+    'relative z-10 w-full px-4 flex flex-col items-center',
+    shouldShowCover ? (isMagazine ? '-mt-16' : '-mt-12') : 'pt-8',
+  );
+
+  const shellMaxWidth = isSplit ? 'max-w-[94%]' : isMagazine ? 'max-w-[560px]' : isBigAvatar ? 'max-w-[520px]' : 'max-w-[520px]';
+  const shellPaddingClass = isSplit ? 'p-4' : isLightClean ? 'p-7' : isMagazine ? 'p-6' : isCorporate ? 'p-6' : isCreator ? 'p-7' : 'p-6';
+
   return (
     <div style={bgStyle} className="w-full flex flex-col items-center overflow-x-hidden no-scrollbar">
-      {profile.coverUrl && layoutTemplate !== 'Minimal Card' && (
-        <div className={clsx(
-          "w-full overflow-hidden sticky top-0 z-0",
-          isPreview ? "h-24" : "h-40"
-        )}>
+      {shouldShowCover && (
+        <div className={clsx('w-full overflow-hidden sticky top-0 z-0 relative', coverHeightClass)}>
           <img src={profile.coverUrl} className="w-full h-full object-cover" alt="Cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60" />
         </div>
       )}
 
-      <div className={clsx(
-        "relative z-10 w-full px-4 flex flex-col items-center",
-        profile.coverUrl ? "-mt-12" : "pt-8"
-      )}>
-        <main className={clsx(
-          "w-full transition-all duration-700 mb-12",
-          isSplit ? "max-w-[94%] p-4 rounded-[2.5rem] bg-black/30 backdrop-blur-xl border border-white/5 shadow-2xl" : "max-w-[500px]",
-          layoutTemplate === 'Glassmorphism' ? "p-6 rounded-[2.5rem] bg-white/5 backdrop-blur-3xl border border-white/10" : ""
-        )}>
+      <div className={shellWrapClass}>
+        <main
+          className={clsx('w-full transition-all duration-700 mb-12', shellMaxWidth, shellPaddingClass)}
+          style={shellCardStyle}
+        >
+          {shellDecor}
+
+          {isMagazine && profile.coverUrl && (
+            <div className="-mx-6 -mt-6 mb-5 overflow-hidden rounded-[1.6rem] border" style={{ borderColor: theme.border }}>
+              <div className="relative">
+                <img src={profile.coverUrl} className="w-full h-44 object-cover" alt="Cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+              </div>
+              <div className="px-5 py-4">
+                <div className="text-[10px] font-black uppercase tracking-[0.25em]" style={{ color: theme.muted }}>
+                  Destaque
+                </div>
+                <div className="mt-1 text-lg font-black" style={{ fontFamily: headingFont }}>
+                  {profile.bioShort || 'Seu perfil em formato editorial.'}
+                </div>
+              </div>
+            </div>
+          )}
+
           {renderHeader()}
 
-          {profile.bioShort && (
-            <div className={clsx(
-              "mb-4 leading-relaxed opacity-60",
-              isSplit ? "text-[10px] text-left line-clamp-3" : "text-xs text-center"
-            )}>
+          {profile.bioShort && !isMagazine && (
+            <div
+              className={clsx(
+                'mb-5 leading-relaxed',
+                isSplit ? 'text-[10px] text-left line-clamp-3' : (isCorporate ? 'text-xs text-left' : 'text-xs text-center'),
+              )}
+              style={{ color: theme.muted }}
+            >
               {profile.bioShort}
             </div>
           )}
@@ -282,17 +449,24 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
           {/* PIX */}
           {hasPixAccess && profile.pixKey && (
-            <div className={proCardClass}>
+            <div className="mt-6 w-full p-6" style={proCardStyle}>
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Pix</div>
-                  <div className="font-bold text-sm truncate" style={{ fontFamily: fonts.headingFont }}>{profile.pixKey}</div>
+                  <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: theme.muted }}>
+                    Pix
+                  </div>
+                  <div className="font-bold text-sm truncate" style={{ fontFamily: headingFont }}>
+                    {profile.pixKey}
+                  </div>
                 </div>
                 <button
                   onClick={async () => {
-                    try { await navigator.clipboard.writeText(profile.pixKey || ''); } catch {}
+                    try {
+                      await navigator.clipboard.writeText(profile.pixKey || '');
+                    } catch {}
                   }}
-                  className="px-3 py-2 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest active:scale-95"
+                  className="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95"
+                  style={{ background: theme.primary, color: primaryTextOnPrimary }}
                 >
                   Copiar
                 </button>
@@ -302,9 +476,11 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
           {/* Catálogo */}
           {hasCatalogAccess && (profile.catalogItems || []).filter(i => i.isActive).length > 0 && (
-            <div className={proCardClass}>
+            <div className="mt-6 w-full p-6" style={proCardStyle}>
               <div className="flex items-center justify-between mb-4">
-                <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Catálogo</div>
+                <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: theme.muted }}>
+                  Catálogo
+                </div>
                 <LucideIcons.ShoppingBag size={16} className="opacity-50" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -312,25 +488,43 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                   .filter(i => i.isActive)
                   .sort((a, b) => a.sortOrder - b.sortOrder)
                   .map((item) => (
-                    <div key={item.id} className="flex flex-col gap-3 rounded-[1.8rem] border border-white/10 bg-black/20 p-4 transition-all hover:bg-black/30 group">
+                    <div
+                      key={item.id}
+                      className="flex flex-col gap-3 rounded-[1.8rem] border p-4 transition-all group"
+                      style={{ borderColor: theme.border, background: 'rgba(0,0,0,0.18)' }}
+                    >
                       {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.title} className="w-full aspect-square rounded-2xl object-cover border border-white/10 group-hover:scale-[1.02] transition-transform duration-500" />
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          className="w-full aspect-square rounded-2xl object-cover border group-hover:scale-[1.02] transition-transform duration-500"
+                          style={{ borderColor: theme.border }}
+                        />
                       ) : (
-                        <div className="w-full aspect-square rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                        <div className="w-full aspect-square rounded-2xl border flex items-center justify-center" style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.05)' }}>
                           <LucideIcons.Package size={24} className="opacity-30" />
                         </div>
                       )}
                       <div className="flex-1 flex flex-col min-w-0">
-                        <div className="font-black text-sm truncate" style={{ fontFamily: fonts.headingFont }}>{item.title}</div>
-                        {item.description && <div className="text-[10px] opacity-60 line-clamp-2 mt-1 mb-2 leading-relaxed">{item.description}</div>}
-                        <div className="mt-auto pt-3 border-t border-white/5 flex items-center justify-between gap-2">
-                          <div className="text-[11px] font-black text-emerald-400 whitespace-nowrap">{item.priceText || 'Consultar'}</div>
+                        <div className="font-black text-sm truncate" style={{ fontFamily: headingFont }}>
+                          {item.title}
+                        </div>
+                        {item.description && (
+                          <div className="text-[10px] line-clamp-2 mt-1 mb-2 leading-relaxed" style={{ color: theme.muted }}>
+                            {item.description}
+                          </div>
+                        )}
+                        <div className="mt-auto pt-3 border-t flex items-center justify-between gap-2" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+                          <div className="text-[11px] font-black whitespace-nowrap" style={{ color: theme.primary }}>
+                            {item.priceText || 'Consultar'}
+                          </div>
                           {item.ctaLink && (
                             <a
                               href={item.ctaLink}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="px-3 py-1.5 rounded-xl bg-white text-black text-[9px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-colors"
+                              className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-colors"
+                              style={{ background: theme.primary, color: primaryTextOnPrimary }}
                             >
                               {item.ctaLabel || 'Ver'}
                             </a>
@@ -345,9 +539,11 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
           {/* Portfólio */}
           {hasPortfolioAccess && (profile.portfolioItems || []).filter(i => i.isActive).length > 0 && (
-            <div className={proCardClass}>
+            <div className="mt-6 w-full p-6" style={proCardStyle}>
               <div className="flex items-center justify-between mb-3">
-                <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Portfólio</div>
+                <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: theme.muted }}>
+                  Portfólio
+                </div>
                 <LucideIcons.Image size={16} className="opacity-50" />
               </div>
               <div className="grid grid-cols-3 gap-2">
@@ -357,7 +553,12 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                   .slice(0, 9)
                   .map((item) => (
                     <a key={item.id} href={item.imageUrl} target="_blank" rel="noopener noreferrer" className="block">
-                      <img src={item.imageUrl} alt={item.title || 'Portfolio'} className="w-full aspect-square object-cover rounded-xl border border-white/10 hover:opacity-90 transition-opacity" />
+                      <img
+                        src={item.imageUrl}
+                        alt={item.title || 'Portfolio'}
+                        className="w-full aspect-square object-cover rounded-xl border hover:opacity-90 transition-opacity"
+                        style={{ borderColor: theme.border }}
+                      />
                     </a>
                   ))}
               </div>
@@ -366,9 +567,11 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
           {/* Vídeos */}
           {hasVideosAccess && (profile.youtubeVideos || []).filter(i => i.isActive).length > 0 && (
-            <div className={proCardClass}>
+            <div className="mt-6 w-full p-6" style={proCardStyle}>
               <div className="flex items-center justify-between mb-3">
-                <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Vídeos</div>
+                <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: theme.muted }}>
+                  Vídeos
+                </div>
                 <LucideIcons.Youtube size={16} className="opacity-50" />
               </div>
               <div className="space-y-3">
@@ -380,7 +583,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                     const id = extractYouTubeId(vid.url);
                     if (!id) return null;
                     return (
-                      <div key={vid.id} className="rounded-2xl border border-white/10 overflow-hidden bg-black/20">
+                      <div key={vid.id} className="rounded-2xl border overflow-hidden" style={{ borderColor: theme.border, background: 'rgba(0,0,0,0.18)' }}>
                         <div className="aspect-video w-full">
                           <iframe
                             className="w-full h-full"
@@ -390,7 +593,11 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                             allowFullScreen
                           />
                         </div>
-                        {vid.title && <div className="p-3 text-[10px] font-bold opacity-70">{vid.title}</div>}
+                        {vid.title && (
+                          <div className="p-3 text-[10px] font-bold" style={{ color: theme.muted }}>
+                            {vid.title}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -400,17 +607,17 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
           {/* NPS */}
           {hasNpsAccess && profile.enableNps && (
-            <NpsBlock onSubmit={pushNps} className={proCardClass} />
+            <NpsBlock onSubmit={pushNps} styleObj={proCardStyle} theme={theme} primaryTextOnPrimary={primaryTextOnPrimary} headingFont={headingFont} />
           )}
 
           {/* Leads */}
           {hasLeadAccess && profile.enableLeadCapture && (
-            <LeadBlock onSubmit={pushLead} className={proCardClass} />
+            <LeadBlock onSubmit={pushLead} styleObj={proCardStyle} theme={theme} primaryTextOnPrimary={primaryTextOnPrimary} />
           )}
 
-          <footer className="mt-6 flex flex-col items-center gap-1 opacity-20">
-             <div className="w-3 h-3 bg-current rounded-sm flex items-center justify-center font-black text-[5px]">LF</div>
-             <span className="text-[5px] font-black uppercase tracking-[0.3em]">LinkFlow</span>
+          <footer className="mt-7 flex flex-col items-center gap-1 opacity-30">
+            <div className="w-3 h-3 bg-current rounded-sm flex items-center justify-center font-black text-[5px]">LF</div>
+            <span className="text-[5px] font-black uppercase tracking-[0.3em]">LinkFlow</span>
           </footer>
         </main>
       </div>
@@ -418,24 +625,34 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   );
 };
 
-const NpsBlock: React.FC<{ className: string; onSubmit: (score: number, comment?: string) => void }> = ({ className, onSubmit }) => {
+const NpsBlock: React.FC<{
+  styleObj: React.CSSProperties;
+  theme: Profile['theme'];
+  headingFont: string;
+  primaryTextOnPrimary: string;
+  onSubmit: (score: number, comment?: string) => void;
+}> = ({ styleObj, theme, primaryTextOnPrimary, onSubmit }) => {
   const [score, setScore] = React.useState<number | null>(null);
   const [comment, setComment] = React.useState('');
   const [sent, setSent] = React.useState(false);
 
   if (sent) {
     return (
-      <div className={className}>
-        <div className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-2">Avaliação</div>
-        <div className="text-sm font-black">Obrigado pela sua nota! ✅</div>
+      <div className="mt-6 w-full p-6" style={styleObj}>
+        <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: theme.muted }}>
+          Avaliação
+        </div>
+        <div className="text-sm font-black mt-2">Obrigado pela sua nota! ✅</div>
       </div>
     );
   }
 
   return (
-    <div className={className}>
+    <div className="mt-6 w-full p-6" style={styleObj}>
       <div className="flex items-center justify-between mb-3">
-        <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Avalie este perfil (NPS)</div>
+        <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: theme.muted }}>
+          Avalie este perfil (NPS)
+        </div>
         <LucideIcons.Star size={16} className="opacity-50" />
       </div>
       <div className="grid grid-cols-11 gap-1">
@@ -444,9 +661,14 @@ const NpsBlock: React.FC<{ className: string; onSubmit: (score: number, comment?
             key={i}
             onClick={() => setScore(i)}
             className={clsx(
-              "aspect-square rounded-lg text-[10px] font-black transition-all active:scale-95",
-              score === i ? "bg-white text-black" : "bg-white/5 border border-white/10 opacity-70 hover:opacity-100"
+              'aspect-square rounded-lg text-[10px] font-black transition-all active:scale-95',
+              score === i ? 'text-black' : 'border opacity-80 hover:opacity-100',
             )}
+            style={
+              score === i
+                ? { background: theme.primary, color: primaryTextOnPrimary }
+                : { background: 'rgba(255,255,255,0.06)', borderColor: theme.border, color: theme.text }
+            }
           >
             {i}
           </button>
@@ -456,7 +678,8 @@ const NpsBlock: React.FC<{ className: string; onSubmit: (score: number, comment?
         value={comment}
         onChange={(e) => setComment(e.target.value)}
         placeholder="Se quiser, deixe um comentário (opcional)"
-        className="mt-3 w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-xs outline-none focus:border-white/30"
+        className="mt-3 w-full rounded-xl px-3 py-2 text-xs outline-none"
+        style={{ background: 'rgba(0,0,0,0.18)', border: `1px solid ${theme.border}`, color: theme.text }}
         rows={2}
       />
       <button
@@ -466,7 +689,8 @@ const NpsBlock: React.FC<{ className: string; onSubmit: (score: number, comment?
           onSubmit(score, comment.trim() || undefined);
           setSent(true);
         }}
-        className="mt-3 w-full py-3 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest disabled:opacity-30 active:scale-95"
+        className="mt-3 w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-30 active:scale-95"
+        style={{ background: theme.primary, color: primaryTextOnPrimary }}
       >
         Enviar
       </button>
@@ -474,7 +698,12 @@ const NpsBlock: React.FC<{ className: string; onSubmit: (score: number, comment?
   );
 };
 
-const LeadBlock: React.FC<{ className: string; onSubmit: (data: { name: string; contact: string; message?: string }) => void }> = ({ className, onSubmit }) => {
+const LeadBlock: React.FC<{
+  styleObj: React.CSSProperties;
+  theme: Profile['theme'];
+  primaryTextOnPrimary: string;
+  onSubmit: (data: { name: string; contact: string; message?: string }) => void;
+}> = ({ styleObj, theme, primaryTextOnPrimary, onSubmit }) => {
   const [sent, setSent] = React.useState(false);
   const [name, setName] = React.useState('');
   const [contact, setContact] = React.useState('');
@@ -482,17 +711,21 @@ const LeadBlock: React.FC<{ className: string; onSubmit: (data: { name: string; 
 
   if (sent) {
     return (
-      <div className={className}>
-        <div className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-2">Contato</div>
-        <div className="text-sm font-black">Recebido! Vou te chamar em breve. ✅</div>
+      <div className="mt-6 w-full p-6" style={styleObj}>
+        <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: theme.muted }}>
+          Contato
+        </div>
+        <div className="text-sm font-black mt-2">Recebido! Vou te chamar em breve. ✅</div>
       </div>
     );
   }
 
   return (
-    <div className={className}>
+    <div className="mt-6 w-full p-6" style={styleObj}>
       <div className="flex items-center justify-between mb-3">
-        <div className="text-[10px] font-black uppercase tracking-widest opacity-70">Fale comigo</div>
+        <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: theme.muted }}>
+          Fale comigo
+        </div>
         <LucideIcons.MessageCircle size={16} className="opacity-50" />
       </div>
 
@@ -501,19 +734,22 @@ const LeadBlock: React.FC<{ className: string; onSubmit: (data: { name: string; 
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Seu nome*"
-          className="w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-xs outline-none focus:border-white/30"
+          className="w-full rounded-xl px-3 py-2 text-xs outline-none"
+          style={{ background: 'rgba(0,0,0,0.18)', border: `1px solid ${theme.border}`, color: theme.text }}
         />
         <input
           value={contact}
           onChange={(e) => setContact(e.target.value)}
           placeholder="Seu contato (WhatsApp ou E-mail)*"
-          className="w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-xs outline-none focus:border-white/30"
+          className="w-full rounded-xl px-3 py-2 text-xs outline-none"
+          style={{ background: 'rgba(0,0,0,0.18)', border: `1px solid ${theme.border}`, color: theme.text }}
         />
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Mensagem (opcional)"
-          className="w-full rounded-xl bg-black/20 border border-white/10 px-3 py-2 text-xs outline-none focus:border-white/30"
+          className="w-full rounded-xl px-3 py-2 text-xs outline-none"
+          style={{ background: 'rgba(0,0,0,0.18)', border: `1px solid ${theme.border}`, color: theme.text }}
           rows={2}
         />
       </div>
@@ -529,7 +765,8 @@ const LeadBlock: React.FC<{ className: string; onSubmit: (data: { name: string; 
           });
           setSent(true);
         }}
-        className="mt-3 w-full py-3 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest disabled:opacity-30 active:scale-95"
+        className="mt-3 w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest disabled:opacity-30 active:scale-95"
+        style={{ background: theme.primary, color: primaryTextOnPrimary }}
       >
         Enviar
       </button>
