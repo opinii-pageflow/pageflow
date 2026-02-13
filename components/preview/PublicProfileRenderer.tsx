@@ -130,6 +130,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   
   const [leadName, setLeadName] = useState('');
   const [leadContact, setLeadContact] = useState('');
@@ -503,12 +504,10 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
                   {activePortfolio.map((item) => (
-                    <a
+                    <button
                       key={item.id}
-                      href={isPreview ? '#' : item.imageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-2xl border overflow-hidden transition-all hover:translate-y-[-1px]"
+                      onClick={() => setSelectedImage(item.imageUrl)}
+                      className="rounded-2xl border overflow-hidden transition-all hover:translate-y-[-1px] text-left w-full"
                       style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.04)' }}
                     >
                       <img src={item.imageUrl} alt={item.title || 'Portfolio'} className="w-full h-28 object-cover" />
@@ -517,7 +516,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                           {item.title}
                         </div>
                       )}
-                    </a>
+                    </button>
                   ))}
                 </div>
               </section>
@@ -829,6 +828,27 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                 Fechar
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Image Modal (Lightbox) */}
+        {selectedImage && (
+          <div 
+            className="fixed inset-0 z-[300] flex items-center justify-center bg-black/95 p-4 animate-in fade-in duration-300"
+            onClick={() => setSelectedImage(null)}
+          >
+            <button 
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-5 right-5 p-2 bg-white/10 rounded-full text-white hover:bg-white/20 transition-all z-10"
+            >
+              <LucideIcons.X size={24} />
+            </button>
+            <img 
+              src={selectedImage} 
+              alt="Zoom" 
+              className="max-w-full max-h-full rounded-lg object-contain shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         )}
       </div>
