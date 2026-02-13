@@ -49,11 +49,23 @@ const ProfilesListPage: React.FC = () => {
 
     const id = Math.random().toString(36).substring(7);
     const newProfile: Profile = {
-      id, clientId: user.clientId, slug: `perfil-${id}`, displayName: 'Novo Perfil', headline: 'Bio curta aqui',
-      bioShort: '', bioLong: '', avatarUrl: 'https://picsum.photos/seed/' + id + '/200', coverUrl: '',
-      layoutTemplate: 'Minimal Card', visibilityMode: 'public', createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(), theme: themePresets['Minimal Dark'],
-      fonts: { headingFont: 'Poppins', bodyFont: 'Inter', buttonFont: 'Inter' }, buttons: []
+      id, 
+      clientId: user.clientId, 
+      slug: `perfil-${id}`, 
+      profileType: 'personal', // Default type
+      displayName: 'Novo Perfil', 
+      headline: 'Bio curta aqui',
+      bioShort: '', 
+      bioLong: '', 
+      avatarUrl: 'https://picsum.photos/seed/' + id + '/200', 
+      coverUrl: '',
+      layoutTemplate: 'Minimal Card', 
+      visibilityMode: 'public', 
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(), 
+      theme: themePresets['Minimal Dark'],
+      fonts: { headingFont: 'Poppins', bodyFont: 'Inter', buttonFont: 'Inter' }, 
+      buttons: []
     };
 
     updateStorage(prev => ({ ...prev, profiles: [newProfile, ...prev.profiles] }));

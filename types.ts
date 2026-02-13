@@ -5,6 +5,7 @@ export type ButtonStyle = 'solid' | 'outline' | 'glass';
 export type VisibilityMode = 'public' | 'private' | 'password';
 export type AnalyticsSource = 'direct' | 'qr' | 'nfc' | string; // Permitir strings customizadas (UTMs)
 export type EventType = 'view' | 'click';
+export type ProfileType = 'personal' | 'business'; // Novo tipo adicionado
 
 // ===== Pro Modules =====
 export type CatalogItemKind = 'product' | 'service';
@@ -142,6 +143,7 @@ export interface Profile {
   id: string;
   clientId: string;
   slug: string;
+  profileType: ProfileType; // Campo adicionado
   displayName: string;
   headline: string;
   bioShort: string;

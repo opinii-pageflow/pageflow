@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { Profile } from '../../types';
-import { Camera, Image as ImageIcon, Sparkles, Upload, Link as LinkIcon, X } from 'lucide-react';
+import { Camera, Image as ImageIcon, Sparkles, Upload, Link as LinkIcon, X, User, Building2 } from 'lucide-react';
 
 interface Props {
   profile: Profile;
@@ -28,6 +28,44 @@ const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
         <h3 className="text-xl font-bold tracking-tight">Identidade Visual</h3>
         <p className="text-xs text-gray-500">Como você aparece para o mundo.</p>
       </header>
+
+      {/* Seletor de Tipo de Perfil */}
+      <section className="space-y-3">
+        <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Tipo de Perfil</label>
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={() => onUpdate({ profileType: 'personal' })}
+            className={`
+              p-4 rounded-2xl border flex items-center gap-3 transition-all
+              ${profile.profileType === 'personal' 
+                ? 'bg-white text-black border-white shadow-lg' 
+                : 'bg-zinc-900 border-white/10 text-zinc-500 hover:text-white hover:bg-zinc-800'}
+            `}
+          >
+            <User size={20} />
+            <div className="text-left">
+              <div className="text-xs font-black uppercase tracking-wider">Profissional</div>
+              <div className="text-[10px] opacity-60">Para pessoas</div>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => onUpdate({ profileType: 'business' })}
+            className={`
+              p-4 rounded-2xl border flex items-center gap-3 transition-all
+              ${profile.profileType === 'business' 
+                ? 'bg-white text-black border-white shadow-lg' 
+                : 'bg-zinc-900 border-white/10 text-zinc-500 hover:text-white hover:bg-zinc-800'}
+            `}
+          >
+            <Building2 size={20} />
+            <div className="text-left">
+              <div className="text-xs font-black uppercase tracking-wider">Empresa</div>
+              <div className="text-[10px] opacity-60">Para negócios</div>
+            </div>
+          </button>
+        </div>
+      </section>
 
       {/* Seção de Fotos (Avatar e Capa) */}
       <section className="space-y-6">

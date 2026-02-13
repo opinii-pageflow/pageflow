@@ -36,6 +36,7 @@ export const INITIAL_DATA: AppData = {
       id: 'profile-1',
       clientId: 'client-1',
       slug: 'israel',
+      profileType: 'personal', // Default type
       displayName: 'Israel Tech',
       headline: 'Fullstack Engineer & Designer',
       bioShort: 'Criando o futuro da web com React e IA.',
@@ -123,6 +124,9 @@ export const getStorage = (): AppData => {
     }
 
     (data.profiles || []).forEach((p: any) => {
+      // Migration for profileType
+      if (!p.profileType) p.profileType = 'personal';
+      
       if (p.pixKey === undefined) p.pixKey = '';
       if (!Array.isArray(p.catalogItems)) p.catalogItems = [];
       if (!Array.isArray(p.portfolioItems)) p.portfolioItems = [];
