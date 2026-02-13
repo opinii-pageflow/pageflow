@@ -15,8 +15,11 @@ import {
   Layers,
   Grip,
   Image as ImageIcon,
-  Columns3,
-  BadgeCheck,
+  // ⚠️ Columns3 e BadgeCheck podem não existir dependendo da versão do lucide-react
+  // Columns3,
+  // BadgeCheck,
+  Columns2,
+  Badge,
 } from 'lucide-react';
 
 interface Props {
@@ -79,20 +82,22 @@ const ThumbShell: React.FC<{
 const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
   const templates: Tpl[] = useMemo(() => {
     const t: Tpl[] = [
-      // 1) foco na capa
+      // 1) foco na capa (capa menos apagada: bg/12 -> bg/18 e overlay de “brilho”)
       {
         id: 'Cover Clean',
         label: 'Cover Clean',
         icon: <ImageIcon size={14} />,
         preview: (
-          <div className="h-full flex flex-col">
-            <div className="h-12 rounded-lg bg-white/12 border border-white/10" />
-            <div className="-mt-5 mx-auto w-11 h-11 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/18 mx-auto" />
-            <div className="mt-1 w-1/2 h-1 rounded-full bg-white/10 mx-auto" />
+          <div className="h-full flex flex-col relative">
+            <div className="h-12 rounded-lg bg-white/18 border border-white/12 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
+            </div>
+            <div className="-mt-5 mx-auto w-11 h-11 rounded-full bg-white/12 border border-white/18" />
+            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/22 mx-auto" />
+            <div className="mt-1 w-1/2 h-1 rounded-full bg-white/12 mx-auto" />
             <div className="mt-3 space-y-2">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
+                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" />
               ))}
             </div>
           </div>
@@ -104,12 +109,59 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
         icon: <RectangleHorizontal size={14} />,
         preview: (
           <div className="h-full flex flex-col">
-            <div className="h-14 rounded-lg bg-white/12 border border-white/10" />
-            <div className="-mt-4 mx-auto w-9 h-9 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-2 w-3/4 h-1 rounded-full bg-white/18 mx-auto" />
+            <div className="h-14 rounded-lg bg-white/18 border border-white/12 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
+            </div>
+            <div className="-mt-4 mx-auto w-9 h-9 rounded-full bg-white/12 border border-white/18" />
+            <div className="mt-2 w-3/4 h-1 rounded-full bg-white/22 mx-auto" />
             <div className="mt-3 space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
+                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" />
+              ))}
+            </div>
+          </div>
+        ),
+      },
+
+      // ✅ NOVO: Neon (thumb diferente e claro)
+      {
+        id: 'Neon',
+        label: 'Neon',
+        icon: <Sparkles size={14} />,
+        preview: (
+          <div className="h-full relative">
+            <div className="absolute -top-6 -left-6 w-24 h-24 rounded-full bg-blue-500/20 blur-2xl" />
+            <div className="absolute -bottom-6 -right-6 w-24 h-24 rounded-full bg-purple-500/18 blur-2xl" />
+            <div className="h-12 rounded-lg bg-white/10 border border-blue-400/20 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-blue-500/20 to-transparent" />
+            </div>
+            <div className="-mt-4 mx-auto w-10 h-10 rounded-full bg-white/10 border border-blue-400/25" />
+            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/20 mx-auto" />
+            <div className="mt-3 space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-4 rounded-xl bg-white/8 border border-blue-400/18" />
+              ))}
+            </div>
+          </div>
+        ),
+      },
+
+      // ✅ NOVO: Chips (thumb realmente diferente)
+      {
+        id: 'Chips',
+        label: 'Chips',
+        icon: <Rows3 size={14} />,
+        preview: (
+          <div className="h-full flex flex-col">
+            <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+            <div className="mt-3 flex gap-1">
+              <div className="h-4 flex-1 rounded-full bg-white/12 border border-white/12" />
+              <div className="h-4 flex-1 rounded-full bg-white/8 border border-white/10" />
+              <div className="h-4 flex-1 rounded-full bg-white/8 border border-white/10" />
+            </div>
+            <div className="mt-3 space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-4 rounded-xl bg-white/8 border border-white/10" />
               ))}
             </div>
           </div>
@@ -234,7 +286,7 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
         ),
       },
 
-      // 6) “pílulas” (diferente do resto)
+      // 6) “pílulas”
       {
         id: 'Rounded Pills',
         label: 'Rounded Pills',
@@ -252,7 +304,7 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
         ),
       },
 
-      // 7) revista (bem distinto)
+      // 7) revista
       {
         id: 'Magazine',
         label: 'Magazine',
@@ -274,11 +326,11 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
         ),
       },
 
-      // 8) premium / “verificado”
+      // 8) premium / “verificado” (sem BadgeCheck pra não quebrar)
       {
         id: 'Verified Pro',
         label: 'Verified Pro',
-        icon: <BadgeCheck size={14} />,
+        icon: <Badge size={14} />,
         preview: (
           <div className="h-full">
             <div className="mt-2 flex items-center justify-center gap-2">
@@ -334,11 +386,11 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
         ),
       },
 
-      // 11) dois blocos/colunas (bem diferente do grid)
+      // 11) dois blocos/colunas (troquei Columns3 por Columns2 pra não quebrar)
       {
         id: 'Two Columns',
         label: 'Two Columns',
-        icon: <Columns3 size={14} />,
+        icon: <Columns2 size={14} />,
         preview: (
           <div className="h-full flex flex-col">
             <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
