@@ -208,17 +208,17 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
       <header className={clsx(
         "w-full flex flex-col transition-all duration-700",
         isCorporate ? "items-start text-left" : "items-center text-center",
-        isSplit ? "flex-row items-center text-left gap-3 mb-3" : "mb-4"
+        isSplit ? "flex-row items-center text-left gap-4 mb-3" : "mb-6"
       )}>
         <div className={clsx(
           "relative",
-          isSplit ? "flex-shrink-0" : "mb-3"
+          isSplit ? "flex-shrink-0" : "mb-4"
         )}>
           <img 
             src={profile.avatarUrl} 
             className={clsx(
               "object-cover border-2 shadow-lg transition-all duration-700",
-              isSplit ? "w-12 h-12 rounded-xl" : "rounded-full w-20 h-20",
+              isSplit ? "w-20 h-20 rounded-2xl" : "rounded-full w-32 h-32",
             )}
             style={{ borderColor: theme.cardBg }}
             alt={profile.displayName}
@@ -229,7 +229,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
           <h1 
             className={clsx(
               "font-black tracking-tighter leading-tight truncate",
-              isSplit ? "text-base" : "text-xl",
+              isSplit ? "text-lg" : "text-2xl",
             )}
             style={{ fontFamily: fonts.headingFont }}
           >
@@ -237,7 +237,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
           </h1>
           <p className={clsx(
             "font-medium opacity-50 truncate",
-            isSplit ? "text-[9px]" : "text-xs",
+            isSplit ? "text-xs" : "text-sm",
           )}>
             {profile.headline}
           </p>
@@ -260,19 +260,19 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
       <div className={clsx(
         "relative z-10 w-full px-4 flex flex-col items-center",
-        profile.coverUrl ? "-mt-8" : "pt-6"
+        profile.coverUrl ? "-mt-12" : "pt-8"
       )}>
         <main className={clsx(
           "w-full transition-all duration-700 mb-12",
-          isSplit ? "max-w-[94%] p-3 rounded-[2rem] bg-black/30 backdrop-blur-xl border border-white/5 shadow-2xl" : "max-w-[500px]",
-          layoutTemplate === 'Glassmorphism' ? "p-5 rounded-[2rem] bg-white/5 backdrop-blur-3xl border border-white/10" : ""
+          isSplit ? "max-w-[94%] p-4 rounded-[2.5rem] bg-black/30 backdrop-blur-xl border border-white/5 shadow-2xl" : "max-w-[500px]",
+          layoutTemplate === 'Glassmorphism' ? "p-6 rounded-[2.5rem] bg-white/5 backdrop-blur-3xl border border-white/10" : ""
         )}>
           {renderHeader()}
 
           {profile.bioShort && (
             <div className={clsx(
-              "mb-3 leading-relaxed opacity-60",
-              isSplit ? "text-[9px] text-left line-clamp-2" : "text-[10px] text-center"
+              "mb-4 leading-relaxed opacity-60",
+              isSplit ? "text-[10px] text-left line-clamp-3" : "text-xs text-center"
             )}>
               {profile.bioShort}
             </div>

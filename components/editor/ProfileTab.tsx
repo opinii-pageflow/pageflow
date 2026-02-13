@@ -1,4 +1,3 @@
-
 import React, { useRef } from 'react';
 import { Profile } from '../../types';
 import { Camera, Image as ImageIcon, Sparkles, Upload, Link as LinkIcon, X } from 'lucide-react';
@@ -88,7 +87,7 @@ const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
         {/* Avatar e Infos Principais */}
         <div className="flex flex-col sm:flex-row items-center gap-8 p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 relative">
           <div className="relative group flex-shrink-0">
-            <div className="w-32 h-32 rounded-full overflow-hidden border-[6px] border-zinc-950 ring-2 ring-white/5 bg-zinc-900 flex items-center justify-center shadow-2xl relative">
+            <div className="w-40 h-40 rounded-full overflow-hidden border-[6px] border-zinc-950 ring-2 ring-white/5 bg-zinc-900 flex items-center justify-center shadow-2xl relative">
               {profile.avatarUrl ? (
                 <img src={profile.avatarUrl} className="w-full h-full object-cover transition-transform group-hover:scale-110 duration-500" alt="Avatar" />
               ) : (
@@ -97,7 +96,7 @@ const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
             </div>
             <button 
               onClick={() => avatarInputRef.current?.click()}
-              className="absolute bottom-0 right-0 p-3 bg-blue-600 text-white rounded-2xl shadow-xl hover:bg-blue-500 hover:scale-110 active:scale-95 transition-all ring-4 ring-zinc-950"
+              className="absolute bottom-1 right-1 p-3 bg-blue-600 text-white rounded-2xl shadow-xl hover:bg-blue-500 hover:scale-110 active:scale-95 transition-all ring-4 ring-zinc-950"
             >
               <Upload size={18} />
             </button>
