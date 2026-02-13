@@ -89,7 +89,12 @@ const getBrandColor = (type: string): string | null => {
     case 'telegram': return '#229ED9';
     case 'twitter':
     case 'x': return '#1D9BF0';
-    case 'github': return '#FFFFFF';
+    case 'github': return '#333333';
+    case 'email': return '#EA4335';
+    case 'maps': return '#34A853';
+    case 'twitch': return '#9146FF';
+    case 'discord': return '#5865F2';
+    case 'threads': return '#000000';
     default: return null;
   }
 };
@@ -283,12 +288,25 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
   const renderLinks = () => {
     const activeButtons = buttons.filter((b: any) => b?.enabled);
-    const iconStyle = (theme as any)?.iconStyle === 'brand' ? 'brand' : 'mono';
+    const iconStyle = theme.iconStyle || 'mono';
+    
     return (
       <div className={clsx(isGrid ? "grid grid-cols-2 gap-3" : "flex flex-col gap-3", "w-full")}>
         {activeButtons.map((btn: any, idx: number) => {
           const Icon = getIcon(btn.type);
-          const brandColor = iconStyle === 'brand' ? getBrandColor(btn.type) : null;
+          const brandColor = getBrandColor(btn.type);
+          const buttonStyle = getButtonStyle();
+
+          // Lógica para estilo 'Real' (Fundo colorido da marca)
+          if (iconStyle === 'real' && brandColor) {
+            buttonStyle.backgroundColor = brandColor;
+            buttonStyle.color = '#ffffff';
+            buttonStyle.border = 'none'; // Remove borda para ficar "clean" como app
+          }
+
+          // Lógica para estilo 'Brand' (Apenas ícone colorido)
+          const iconColor = iconStyle === 'brand' ? brandColor || undefined : iconStyle === 'real' && brandColor ? '#ffffff' : undefined;
+
           return (
             <a
               key={btn.id || `${btn.type}-${idx}`}
@@ -296,21 +314,21 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => handleLinkClick(btn.id)}
-              style={getButtonStyle()}
+              style={buttonStyle}
               className="group hover:translate-y-[-2px]"
             >
               {isGrid ? (
                 <>
-                  <Icon size={24} color={brandColor || undefined} />
+                  <Icon size={24} color={iconColor} />
                   <div className="font-black truncate w-full">{btn.label}</div>
                 </>
               ) : (
                 <>
                   <div className="flex items-center gap-3 min-w-0">
-                    <Icon size={20} color={brandColor || undefined} />
+                    <Icon size={20} color={iconColor} />
                     <span className="font-black truncate">{btn.label}</span>
                   </div>
-                  <LucideIcons.ChevronRight size={16} className="opacity-40" />
+                  <LucideIcons.ChevronRight size={16} className={clsx("opacity-40", iconStyle === 'real' ? "text-white" : "")} />
                 </>
               )}
             </a>
@@ -398,11 +416,11 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
           </div>
 
           <div className="px-6 pb-8 space-y-6">
-            {/* Top Actions */}
+            {/* Top Actions - CORRIGIDO: Removido grid-cols-1 para permitir tamanho natural */}
             <div className="flex justify-start w-full">
               <button
                 onClick={() => setShowWalletModal(true)}
-                className="rounded-lg px-3 py-2 font-black text-[10px] uppercase tracking-widest transition-all hover:translate-y-[-1px]"
+                className="rounded-xl px-3 py-1.5 font-black text-[9px] uppercase tracking-widest transition-all hover:translate-y-[-1px]"
                 style={{
                   border: `${borderWidth} solid ${theme.border}`,
                   background: theme.buttonStyle === 'glass' ? 'rgba(255,255,255,0.06)' : 'transparent',
@@ -410,8 +428,8 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                   fontFamily: buttonFont,
                 }}
               >
-                <span className="inline-flex items-center gap-2">
-                  <LucideIcons.Bookmark size={14} />
+                <span className="inline-flex items-center justify-center gap-1.5">
+                  <LucideIcons.Bookmark size={12} />
                   Salvar Contato
                 </span>
               </button>

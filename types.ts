@@ -2,6 +2,7 @@ export type UserRole = 'admin' | 'client';
 export type PlanType = 'starter' | 'pro' | 'business' | 'enterprise';
 export type BackgroundType = 'solid' | 'gradient' | 'image';
 export type ButtonStyle = 'solid' | 'outline' | 'glass';
+export type IconStyle = 'mono' | 'brand' | 'real'; // Adicionado 'real'
 export type VisibilityMode = 'public' | 'private' | 'password';
 export type AnalyticsSource = 'direct' | 'qr' | 'nfc' | string; // Permitir strings customizadas (UTMs)
 export type EventType = 'view' | 'click';
@@ -132,6 +133,7 @@ export interface Theme {
   radius: string;
   shadow: string;
   buttonStyle: ButtonStyle;
+  iconStyle?: IconStyle; // Adicionado
 }
 
 export interface Fonts {

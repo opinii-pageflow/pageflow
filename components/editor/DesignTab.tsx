@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Profile, BackgroundType, ButtonStyle } from '../../types';
+import { Profile, BackgroundType, ButtonStyle, IconStyle } from '../../types';
 import { themePresets } from '../../lib/themePresets';
 import { getStyleFromClipboard, copyStyleToClipboard, StyleConfig, getStorage, getCurrentUser } from '../../lib/storage';
 import { canAccessFeature } from '../../lib/permissions';
@@ -87,6 +87,8 @@ const DesignTab: React.FC<Props> = ({ profile, onUpdate }) => {
       layoutTemplate: config.layoutTemplate
     });
   };
+
+  const setIconStyle = (style: IconStyle) => updateTheme({ iconStyle: style });
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -356,38 +358,30 @@ const DesignTab: React.FC<Props> = ({ profile, onUpdate }) => {
                 </div>
                 <div>
                   <h4 className="font-black text-base">Ícones dos Botões</h4>
-                  <p className="text-zinc-500 text-xs">Escolha entre ícones monocromáticos ou ícones oficiais (coloridos).</p>
+                  <p className="text-zinc-500 text-xs">Escolha entre mono, marca ou cores oficiais.</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 bg-zinc-900/60 border border-white/5 rounded-2xl p-1">
-                <button
-                  onClick={() => updateTheme({ iconStyle: 'mono' })}
-                  className={clsx(
-                    "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                    profile.theme.iconStyle !== 'brand'
-                      ? 'bg-white text-black'
-                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
-                  )}
-                >
-                  Mono
-                </button>
-                <button
-                  onClick={() => updateTheme({ iconStyle: 'brand' })}
-                  className={clsx(
-                    "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                    profile.theme.iconStyle === 'brand'
-                      ? 'bg-white text-black'
-                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
-                  )}
-                >
-                  Brand
-                </button>
+                {(['mono', 'brand', 'real'] as const).map(style => (
+                  <button
+                    key={style}
+                    onClick={() => setIconStyle(style)}
+                    className={clsx(
+                      "px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                      profile.theme.iconStyle === style || (!profile.theme.iconStyle && style === 'mono')
+                        ? 'bg-white text-black'
+                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                    )}
+                  >
+                    {style === 'mono' ? 'Mono' : style === 'brand' ? 'Cor' : 'Real'}
+                  </button>
+                ))}
               </div>
             </div>
 
             <div className="mt-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-relaxed">
-              Dica: “Brand” fica melhor em templates com botões em <span className="text-white">Glass</span> ou <span className="text-white">Outline</span>.
+              Dica: “Real” aplica a cor oficial da marca ao fundo do botão.
             </div>
           </div>
         </div>
