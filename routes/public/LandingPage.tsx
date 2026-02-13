@@ -136,7 +136,7 @@ const LandingPage: React.FC = () => {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-600/10 blur-[100px] pointer-events-none rounded-full" />
             
             <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85] text-white relative z-10">
-              Sua marca <br /> <span className="text-zinc-700">em outro</span> nível.
+              Sua marca <br /> <span className="text-lime-400">em outro</span> nível.
             </h1>
             <p className="text-lg md:text-2xl text-zinc-500 font-medium leading-relaxed max-w-2xl mx-auto relative z-10">
               Transforme contatos em conexões de alto valor com o cartão digital mais avançado do mercado.
