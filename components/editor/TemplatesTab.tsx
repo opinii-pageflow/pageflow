@@ -16,11 +16,7 @@ import {
   Grip,
   Image as ImageIcon,
   Columns3,
-  AlignLeft,
-  Frame,
-  SquareStack,
   BadgeCheck,
-  Minus,
 } from 'lucide-react';
 
 interface Props {
@@ -50,7 +46,6 @@ const ThumbShell: React.FC<{
           : 'border-white/10 bg-zinc-950/40 hover:border-white/25',
       ].join(' ')}
     >
-      {/* Header (icon) */}
       <div className="px-2 pt-2 flex items-center justify-between">
         <div
           className={[
@@ -67,10 +62,8 @@ const ThumbShell: React.FC<{
         )}
       </div>
 
-      {/* Body */}
       <div className="flex-1 px-2 pb-2 pt-1">{children}</div>
 
-      {/* Footer label */}
       <div
         className={[
           'py-1 px-1 text-[8px] font-black uppercase tracking-[0.18em] text-center border-t',
@@ -84,19 +77,19 @@ const ThumbShell: React.FC<{
 };
 
 const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
-  // templates memoizado: evita recriar e evita bugs visuais de repetição
   const templates: Tpl[] = useMemo(() => {
-    const base: Tpl[] = [
+    const t: Tpl[] = [
+      // 1) foco na capa
       {
         id: 'Cover Clean',
         label: 'Cover Clean',
         icon: <ImageIcon size={14} />,
         preview: (
           <div className="h-full flex flex-col">
-            <div className="h-10 rounded-lg bg-white/10 border border-white/10" />
-            <div className="-mt-4 mx-auto w-10 h-10 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
-            <div className="mt-1 w-1/2 h-1 rounded-full bg-white/8 mx-auto" />
+            <div className="h-12 rounded-lg bg-white/12 border border-white/10" />
+            <div className="-mt-5 mx-auto w-11 h-11 rounded-full bg-white/10 border border-white/15" />
+            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/18 mx-auto" />
+            <div className="mt-1 w-1/2 h-1 rounded-full bg-white/10 mx-auto" />
             <div className="mt-3 space-y-2">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
@@ -111,17 +104,19 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
         icon: <RectangleHorizontal size={14} />,
         preview: (
           <div className="h-full flex flex-col">
-            <div className="h-12 rounded-lg bg-white/10 border border-white/10" />
-            <div className="-mt-3 mx-auto w-8 h-8 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
+            <div className="h-14 rounded-lg bg-white/12 border border-white/10" />
+            <div className="-mt-4 mx-auto w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+            <div className="mt-2 w-3/4 h-1 rounded-full bg-white/18 mx-auto" />
             <div className="mt-3 space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
+              {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
               ))}
             </div>
           </div>
         ),
       },
+
+      // 2) avatar à esquerda / corporativo
       {
         id: 'Avatar Left',
         label: 'Avatar Left',
@@ -129,116 +124,15 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
         preview: (
           <div className="h-full">
             <div className="flex items-start gap-2 mt-2">
-              <div className="w-9 h-9 rounded-2xl bg-white/10 border border-white/15" />
+              <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/15" />
               <div className="flex-1 pt-1">
-                <div className="w-3/4 h-1 rounded-full bg-white/15" />
-                <div className="w-1/2 h-1 rounded-full bg-white/8 mt-1" />
+                <div className="w-4/5 h-1 rounded-full bg-white/18" />
+                <div className="w-1/2 h-1 rounded-full bg-white/10 mt-1" />
               </div>
             </div>
             <div className="mt-3 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
+              {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Rounded Pills',
-        label: 'Rounded Pills',
-        icon: <Sparkles size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="mx-auto mt-2 w-10 h-10 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
-            <div className="mt-4 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-full bg-white/8 border border-white/10" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Button Grid',
-        label: 'Button Grid',
-        icon: <Grid3X3 size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-6 rounded-xl bg-white/8 border border-white/10" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Stacked Cards',
-        label: 'Stacked Cards',
-        icon: <Layers size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-6 rounded-2xl bg-white/8 border border-white/10" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-
-      // (existentes)
-      {
-        id: 'Minimal Card',
-        label: 'Minimal Card',
-        icon: <Layout size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
-            <div className="mt-1 w-1/2 h-1 rounded-full bg-white/8 mx-auto" />
-            <div className="mt-4 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Glassmorphism',
-        label: 'Glassmorphism',
-        icon: <Shield size={14} />,
-        preview: (
-          <div className="h-full p-2 rounded-xl bg-white/5 border border-white/10">
-            <div className="mx-auto mt-1 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
-            <div className="mt-4 space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Neon',
-        label: 'Neon',
-        icon: <Sparkles size={14} />,
-        preview: (
-          <div className="h-full relative">
-            <div className="absolute -top-4 -left-4 w-20 h-20 rounded-full bg-blue-400/10 blur-2xl" />
-            <div className="absolute -bottom-4 -right-4 w-20 h-20 rounded-full bg-blue-400/10 blur-2xl" />
-            <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-blue-400/20" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
-            <div className="mt-4 space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/8 border border-blue-400/15" />
               ))}
             </div>
           </div>
@@ -251,103 +145,33 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
         preview: (
           <div className="h-full">
             <div className="flex items-center gap-2 mt-2">
-              <div className="w-9 h-9 rounded-2xl bg-white/10 border border-white/15" />
+              <div className="w-9 h-9 rounded-xl bg-white/10 border border-white/15" />
               <div className="flex-1">
-                <div className="w-3/4 h-1 rounded-full bg-white/15" />
-                <div className="w-1/2 h-1 rounded-full bg-white/8 mt-1" />
+                <div className="w-3/4 h-1 rounded-full bg-white/18" />
+                <div className="w-1/2 h-1 rounded-full bg-white/10 mt-1" />
               </div>
             </div>
             <div className="mt-3 space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
+                <div key={i} className="h-4 rounded-lg bg-white/8 border border-white/10" />
               ))}
             </div>
           </div>
         ),
       },
+
+      // 3) grid
       {
-        id: 'Creator',
-        label: 'Creator',
-        icon: <UserCircle2 size={14} />,
+        id: 'Button Grid',
+        label: 'Button Grid',
+        icon: <Grid3X3 size={14} />,
         preview: (
-          <div className="h-full">
-            <div className="h-6 rounded-lg bg-white/10 border border-white/10 mt-2" />
-            <div className="-mt-3 mx-auto w-9 h-9 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
+          <div className="h-full flex flex-col">
+            <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/18 mx-auto" />
             <div className="mt-3 grid grid-cols-2 gap-2">
-              {Array.from({ length: 4 }).map((_, i) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="h-7 rounded-xl bg-white/8 border border-white/10" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Dark Elegant',
-        label: 'Dark Elegant',
-        icon: <Shield size={14} />,
-        preview: (
-          <div className="h-full">
-            <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/8 border border-white/10" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/10 mx-auto" />
-            <div className="mt-1 w-1/2 h-1 rounded-full bg-white/6 mx-auto" />
-            <div className="mt-4 space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/6 border border-white/10" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Light Clean',
-        label: 'Light Clean',
-        icon: <Layout size={14} />,
-        preview: (
-          <div className="h-full p-2 rounded-xl bg-white/4 border border-white/10">
-            <div className="mx-auto mt-1 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
-            <div className="mt-4 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Split Header',
-        label: 'Split Header',
-        icon: <PanelLeft size={14} />,
-        preview: (
-          <div className="h-full">
-            <div className="flex gap-2 mt-2">
-              <div className="w-10 h-10 rounded-2xl bg-white/10 border border-white/15" />
-              <div className="flex-1 pt-1">
-                <div className="h-1 w-3/4 rounded-full bg-white/15" />
-                <div className="h-1 w-1/2 rounded-full bg-white/8 mt-1" />
-              </div>
-            </div>
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Big Avatar',
-        label: 'Big Avatar',
-        icon: <UserCircle2 size={14} />,
-        preview: (
-          <div className="h-full">
-            <div className="mx-auto mt-1 w-14 h-14 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
-            <div className="mt-1 w-1/2 h-1 rounded-full bg-white/8 mx-auto" />
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
               ))}
             </div>
           </div>
@@ -368,6 +192,8 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
           </div>
         ),
       },
+
+      // 4) lista bold
       {
         id: 'Button List Bold',
         label: 'Button List Bold',
@@ -376,7 +202,7 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
           <div className="h-full">
             <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
             <div className="mt-3 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
+              {Array.from({ length: 5 }).map((_, i) => (
                 <div
                   key={i}
                   className={[
@@ -389,121 +215,66 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
           </div>
         ),
       },
+
+      // 5) cards empilhados
+      {
+        id: 'Stacked Cards',
+        label: 'Stacked Cards',
+        icon: <Layers size={14} />,
+        preview: (
+          <div className="h-full flex flex-col">
+            <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/18 mx-auto" />
+            <div className="mt-3 space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-7 rounded-2xl bg-white/8 border border-white/10" />
+              ))}
+            </div>
+          </div>
+        ),
+      },
+
+      // 6) “pílulas” (diferente do resto)
+      {
+        id: 'Rounded Pills',
+        label: 'Rounded Pills',
+        icon: <Sparkles size={14} />,
+        preview: (
+          <div className="h-full flex flex-col">
+            <div className="mx-auto mt-2 w-11 h-11 rounded-full bg-white/10 border border-white/15" />
+            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/18 mx-auto" />
+            <div className="mt-4 space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-3 rounded-full bg-white/8 border border-white/10" />
+              ))}
+            </div>
+          </div>
+        ),
+      },
+
+      // 7) revista (bem distinto)
       {
         id: 'Magazine',
         label: 'Magazine',
         icon: <Newspaper size={14} />,
         preview: (
           <div className="h-full">
-            <div className="h-10 rounded-lg bg-white/10 border border-white/10 mt-2" />
-            <div className="mt-3 w-3/4 h-1 rounded-full bg-white/15" />
+            <div className="h-11 rounded-lg bg-white/12 border border-white/10 mt-2" />
+            <div className="mt-3 w-4/5 h-1 rounded-full bg-white/18" />
             <div className="mt-2 space-y-1">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-1 rounded-full bg-white/6" />
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-1 rounded-full bg-white/7" />
               ))}
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <div className="h-8 rounded-xl bg-white/8 border border-white/10" />
-              <div className="h-8 rounded-xl bg-white/8 border border-white/10" />
+              <div className="h-9 rounded-xl bg-white/8 border border-white/10" />
+              <div className="h-9 rounded-xl bg-white/8 border border-white/10" />
             </div>
           </div>
         ),
       },
 
-      // ✅ novos estilos (sem mexer no renderer ainda — apenas biblioteca)
-      {
-        id: 'Editorial',
-        label: 'Editorial',
-        icon: <Newspaper size={14} />,
-        preview: (
-          <div className="h-full">
-            <div className="mt-2 h-9 rounded-lg bg-white/10 border border-white/10" />
-            <div className="mt-3 flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-white/10 border border-white/15" />
-              <div className="flex-1">
-                <div className="h-1 w-3/4 rounded-full bg-white/15" />
-                <div className="h-1 w-1/2 rounded-full bg-white/8 mt-1" />
-              </div>
-            </div>
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Compact Header',
-        label: 'Compact Header',
-        icon: <AlignLeft size={14} />,
-        preview: (
-          <div className="h-full">
-            <div className="flex items-center gap-2 mt-2">
-              <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/15" />
-              <div className="flex-1">
-                <div className="w-4/5 h-1 rounded-full bg-white/15" />
-                <div className="w-1/2 h-1 rounded-full bg-white/8 mt-1" />
-              </div>
-            </div>
-            <div className="mt-4 space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-lg bg-white/8 border border-white/10" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Two Columns',
-        label: 'Two Columns',
-        icon: <Columns3 size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-5 rounded-lg bg-white/8 border border-white/10" />
-              ))}
-            </div>
-            <div className="mt-2 h-3 rounded-xl bg-white/6 border border-white/10" />
-          </div>
-        ),
-      },
-      {
-        id: 'Framed',
-        label: 'Framed',
-        icon: <Frame size={14} />,
-        preview: (
-          <div className="h-full p-2 rounded-xl bg-white/3 border border-white/10">
-            <div className="h-10 rounded-lg bg-white/10 border border-white/10" />
-            <div className="-mt-4 mx-auto w-10 h-10 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Chip Row',
-        label: 'Chip Row',
-        icon: <SquareStack size={14} />,
-        preview: (
-          <div className="h-full">
-            <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
-            <div className="mt-3 flex flex-wrap gap-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-4 w-[46%] rounded-full bg-white/8 border border-white/10" />
-              ))}
-            </div>
-            <div className="mt-3 h-3 rounded-xl bg-white/6 border border-white/10" />
-          </div>
-        ),
-      },
+      // 8) premium / “verificado”
       {
         id: 'Verified Pro',
         label: 'Verified Pro',
@@ -511,12 +282,12 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
         preview: (
           <div className="h-full">
             <div className="mt-2 flex items-center justify-center gap-2">
-              <div className="w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+              <div className="w-10 h-10 rounded-full bg-white/10 border border-white/15" />
               <div className="w-5 h-5 rounded-full bg-blue-500/20 border border-blue-400/20 flex items-center justify-center">
                 <Check size={12} className="text-blue-200" />
               </div>
             </div>
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/15 mx-auto" />
+            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/18 mx-auto" />
             <div className="mt-4 space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
@@ -525,19 +296,72 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
           </div>
         ),
       },
+
+      // 9) fallback clássico
+      {
+        id: 'Minimal Card',
+        label: 'Minimal Card',
+        icon: <Layout size={14} />,
+        preview: (
+          <div className="h-full flex flex-col">
+            <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/18 mx-auto" />
+            <div className="mt-1 w-1/2 h-1 rounded-full bg-white/10 mx-auto" />
+            <div className="mt-4 space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
+              ))}
+            </div>
+          </div>
+        ),
+      },
+
+      // 10) “glass”
+      {
+        id: 'Glassmorphism',
+        label: 'Glassmorphism',
+        icon: <Shield size={14} />,
+        preview: (
+          <div className="h-full p-2 rounded-xl bg-white/5 border border-white/10">
+            <div className="mx-auto mt-1 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/18 mx-auto" />
+            <div className="mt-4 space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-3 rounded-xl bg-white/8 border border-white/10" />
+              ))}
+            </div>
+          </div>
+        ),
+      },
+
+      // 11) dois blocos/colunas (bem diferente do grid)
+      {
+        id: 'Two Columns',
+        label: 'Two Columns',
+        icon: <Columns3 size={14} />,
+        preview: (
+          <div className="h-full flex flex-col">
+            <div className="mx-auto mt-2 w-9 h-9 rounded-full bg-white/10 border border-white/15" />
+            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/18 mx-auto" />
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="h-5 rounded-lg bg-white/8 border border-white/10" />
+              ))}
+            </div>
+          </div>
+        ),
+      },
     ];
 
-    // ✅ proteção: remove duplicados por ID (isso é o que costuma “repetir templates” sem você perceber)
+    // segurança: remove duplicados por id
     const seen = new Set<string>();
-    const unique = base.filter((t) => {
-      const key = (t.id || '').trim();
+    return t.filter((tpl) => {
+      const key = (tpl.id || '').trim();
       if (!key) return false;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
-
-    return unique;
   }, []);
 
   const currentTpl = (profile.layoutTemplate || '').trim() || 'Minimal Card';
@@ -548,24 +372,11 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
         <h3 className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">
           Biblioteca de Layouts
         </h3>
-
-        <div className="flex items-center gap-2">
-          <div className="text-[8px] font-black text-blue-400 uppercase tracking-widest bg-blue-400/5 px-2 py-0.5 rounded">
-            {currentTpl}
-          </div>
-          {currentTpl && !templates.some(t => t.id === currentTpl) && (
-            <div
-              className="text-[8px] font-black text-amber-300 uppercase tracking-widest bg-amber-400/10 px-2 py-0.5 rounded flex items-center gap-1"
-              title="Layout atual não existe mais na biblioteca (mantido por compatibilidade)."
-            >
-              <Minus size={10} />
-              legado
-            </div>
-          )}
+        <div className="text-[8px] font-black text-blue-400 uppercase tracking-widest bg-blue-400/5 px-2 py-0.5 rounded">
+          {currentTpl}
         </div>
       </header>
 
-      {/* ✅ responsivo: 2 col no mobile, 3 col no sm, 4 col no md+ (não quebra nada) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
         {templates.map((tpl) => {
           const active = currentTpl === tpl.id;
