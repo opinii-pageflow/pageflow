@@ -78,8 +78,6 @@ const getIcon = (type: string) => {
   }
 };
 
-// Cores oficiais aproximadas para ícones "brand" (sem dependências extras).
-// Mantém retrocompatibilidade: se o tema não tiver iconStyle, permanece monocromático.
 const getBrandColor = (type: string): string | null => {
   switch (type) {
     case 'whatsapp': return '#25D366';
@@ -100,6 +98,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   const theme = (profile as any)?.theme || {
     primary: '#3b82f6',
     text: '#ffffff',
+    muted: 'rgba(255,255,255,0.7)', // Fallback muted
     border: 'rgba(255,255,255,0.10)',
     cardBg: 'rgba(0,0,0,0.30)',
     shadow: '0 12px 40px rgba(0,0,0,0.35)',
@@ -110,6 +109,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
     backgroundDirection: 'to bottom',
     backgroundValueSecondary: '#0A0A0A',
   };
+
+  // Garante que muted existe
+  if (!theme.muted) theme.muted = 'rgba(255,255,255,0.7)';
 
   const fonts = (profile as any)?.fonts || {
     headingFont: 'Poppins',
@@ -246,7 +248,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
         border = `1px solid ${theme.border}`;
         break;
       case 'outline':
-        border = `2px solid ${theme.primary}`; // Ajuste aqui: 2px e cor primária
+        border = `2px solid ${theme.primary}`;
         break;
     }
 
@@ -668,21 +670,21 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                       value={leadName}
                       onChange={(e) => setLeadName(e.target.value)}
                       placeholder="Seu nome"
-                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold"
+                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold placeholder:text-current placeholder:opacity-60"
                       style={{ borderColor: theme.border, color: theme.text, fontFamily: bodyFont }}
                     />
                     <input
                       value={leadContact}
                       onChange={(e) => setLeadContact(e.target.value)}
                       placeholder="WhatsApp ou e-mail"
-                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold"
+                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold placeholder:text-current placeholder:opacity-60"
                       style={{ borderColor: theme.border, color: theme.text, fontFamily: bodyFont }}
                     />
                     <textarea
                       value={leadMessage}
                       onChange={(e) => setLeadMessage(e.target.value)}
                       placeholder="Mensagem (opcional)"
-                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold min-h-[96px]"
+                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold min-h-[96px] placeholder:text-current placeholder:opacity-60"
                       style={{ borderColor: theme.border, color: theme.text, fontFamily: bodyFont }}
                     />
                     <button
@@ -758,7 +760,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                       value={npsComment}
                       onChange={(e) => setNpsComment(e.target.value)}
                       placeholder="Comentário (opcional)"
-                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold min-h-[96px]"
+                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold min-h-[96px] placeholder:text-current placeholder:opacity-60"
                       style={{ borderColor: theme.border, color: theme.text, fontFamily: bodyFont }}
                     />
                     <button
