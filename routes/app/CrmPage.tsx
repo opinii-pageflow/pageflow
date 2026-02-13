@@ -49,7 +49,7 @@ const CrmPage: React.FC = () => {
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none">Pipeline de <span className="text-zinc-600">Vendas</span></h1>
           <p className="text-zinc-500 text-lg md:text-xl font-medium">Gerencie seus leads, acompanhe negociações e maximize sua taxa de fechamento.</p>
         </header>
-        <AdvancedCrm leads={leads} />
+        <AdvancedCrm leads={leads} clientPlan={client?.plan} />
       </main>
     </div>
   );

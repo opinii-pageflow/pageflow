@@ -1,15 +1,17 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { LeadCapture, LeadStatus } from '../../types';
+import { LeadCapture, LeadStatus, PlanType } from '../../types';
 import { updateStorage } from '../../lib/storage';
+import { canAccessFeature } from '../../lib/permissions';
 import { 
   Search, ChevronDown, X, User, MessageSquare, 
   AlertCircle, DollarSign, Send, Save, Trash2, 
-  Download, Activity, UserCheck
+  Download, Activity, UserCheck, Lock
 } from 'lucide-react';
 import clsx from 'clsx';
 
 interface Props {
   leads: LeadCapture[];
+  clientPlan?: PlanType;
 }
 
 const statusConfig: Record<LeadStatus, { label: string; color: string; bg: string }> = {
@@ -22,14 +24,15 @@ const statusConfig: Record<LeadStatus, { label: string; color: string; bg: strin
   'arquivado': { label: 'Arquivado', color: 'text-zinc-600', bg: 'bg-zinc-800' },
 };
 
-const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads }) => {
+const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
   const [localLeads, setLocalLeads] = useState<LeadCapture[]>(initialLeads);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
   const [selectedLead, setSelectedLead] = useState<LeadCapture | null>(null);
   const [noteInput, setNoteInput] = useState('');
 
-  // Sincroniza estado local se a prop mudar (ex: navegação)
+  const hasExportAccess = canAccessFeature(clientPlan, 'leads_export');
+
   useEffect(() => {
     setLocalLeads(initialLeads);
   }, [initialLeads]);
@@ -53,6 +56,7 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads }) => {
   }, [localLeads, searchTerm, statusFilter]);
 
   const exportToCsv = () => {
+    if (!hasExportAccess) return;
     const headers = ['Nome', 'Contato', 'Status', 'Data', 'Mensagem'];
     const rows = localLeads.map(l => [l.name, l.contact || '', l.status, new Date(l.createdAt).toLocaleString(), l.message || '']);
     const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].map(e => e.join(",")).join("\n");
@@ -68,50 +72,25 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads }) => {
     const ts = new Date().toISOString();
     updateStorage(prev => ({
       ...prev,
-      leads: prev.leads.map(l => l.id === leadId ? { 
-        ...l, status: newStatus, 
-        history: [...(l.history || []), { status: newStatus, date: ts }] 
-      } : l)
+      leads: prev.leads.map(l => l.id === leadId ? { ...l, status: newStatus, history: [...(l.history || []), { status: newStatus, date: ts }] } : l)
     }));
-
-    setLocalLeads(prev => prev.map(l => l.id === leadId ? { 
-      ...l, status: newStatus, 
-      history: [...(l.history || []), { status: newStatus, date: ts }] 
-    } : l));
-
-    if (selectedLead?.id === leadId) {
-      setSelectedLead(prev => prev ? ({
-        ...prev, 
-        status: newStatus,
-        history: [...(prev.history || []), { status: newStatus, date: ts }]
-      }) : null);
-    }
+    setLocalLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: newStatus, history: [...(l.history || []), { status: newStatus, date: ts }] } : l));
+    if (selectedLead?.id === leadId) setSelectedLead(prev => prev ? ({...prev, status: newStatus, history: [...(prev.history || []), { status: newStatus, date: ts }]}) : null);
   };
 
   const saveNote = () => {
     if (!selectedLead || !noteInput.trim()) return;
     const ts = new Date().toLocaleDateString();
-    const newNote = `[${ts}]: ${noteInput}`;
-    const updatedNotes = selectedLead.notes ? `${selectedLead.notes}\n${newNote}` : newNote;
-
-    updateStorage(prev => ({ 
-      ...prev, 
-      leads: prev.leads.map(l => l.id === selectedLead.id ? { ...l, notes: updatedNotes } : l) 
-    }));
-
+    const updatedNotes = selectedLead.notes ? `${selectedLead.notes}\n[${ts}]: ${noteInput}` : `[${ts}]: ${noteInput}`;
+    updateStorage(prev => ({ ...prev, leads: prev.leads.map(l => l.id === selectedLead.id ? { ...l, notes: updatedNotes } : l) }));
     setLocalLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, notes: updatedNotes } : l));
     setSelectedLead({ ...selectedLead, notes: updatedNotes });
     setNoteInput('');
   };
 
   const deleteLead = (leadId: string) => {
-    if (!window.confirm("Deseja realmente excluir este lead permanentemente?")) return;
-
-    updateStorage(prev => ({
-      ...prev,
-      leads: prev.leads.filter(l => l.id !== leadId)
-    }));
-
+    if (!window.confirm("Excluir lead permanentemente?")) return;
+    updateStorage(prev => ({ ...prev, leads: prev.leads.filter(l => l.id !== leadId) }));
     setLocalLeads(prev => prev.filter(l => l.id !== leadId));
     if (selectedLead?.id === leadId) setSelectedLead(null);
   };
@@ -144,8 +123,16 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads }) => {
           />
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={exportToCsv} className="p-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border border-white/5">
-            <Download size={16} /> Exportar CSV
+          <button 
+            onClick={exportToCsv} 
+            disabled={!hasExportAccess}
+            className={clsx(
+              "p-4 rounded-2xl transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest border",
+              hasExportAccess ? "bg-white/5 hover:bg-white/10 text-white border-white/5" : "bg-zinc-900 text-zinc-600 border-white/5 opacity-50 cursor-not-allowed"
+            )}
+          >
+            {hasExportAccess ? <Download size={16} /> : <Lock size={16} />} 
+            Exportar CSV
           </button>
         </div>
       </div>
@@ -190,10 +177,7 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads }) => {
                         <button onClick={() => setSelectedLead(lead)} className="bg-white text-black px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg">
                           Ficha
                         </button>
-                        <button 
-                          onClick={() => deleteLead(lead.id)}
-                          className="p-3 text-zinc-600 hover:text-red-500 transition-all hover:bg-red-500/10 rounded-xl"
-                        >
+                        <button onClick={() => deleteLead(lead.id)} className="p-3 text-zinc-600 hover:text-red-500 transition-all hover:bg-red-500/10 rounded-xl">
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -273,13 +257,6 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads }) => {
                   ))}
                 </div>
               </div>
-
-              <button 
-                onClick={() => deleteLead(selectedLead.id)}
-                className="w-full py-4 text-red-500/50 hover:text-red-500 text-[10px] font-black uppercase tracking-widest transition-all"
-              >
-                Excluir Lead Permanentemente
-              </button>
             </div>
           </div>
         </div>

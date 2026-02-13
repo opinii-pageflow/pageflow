@@ -8,6 +8,7 @@ export type FeatureKey =
   | 'nps' 
   | 'leads_capture'
   | 'crm' 
+  | 'leads_export'
   | 'analytics' 
   | 'white_label';
 
@@ -24,15 +25,15 @@ const FEATURE_REQUIREMENTS: Record<FeatureKey, PlanType> = {
   videos: 'pro',
   pix: 'pro',
   analytics: 'pro',
-  nps: 'pro',           // Movido de Business para Pro
-  leads_capture: 'pro', // Movido de Business para Pro
-  crm: 'business',      // Gestão avançada (CRM) requer Business+
+  nps: 'pro',
+  leads_capture: 'pro',
+  leads_export: 'enterprise', // Exclusivo para o plano mais caro
+  crm: 'business',
   white_label: 'enterprise'
 };
 
 /**
  * Verifica se um plano tem acesso a um determinado recurso.
- * O sistema de ranking garante que planos superiores herdem permissões dos inferiores.
  */
 export const canAccessFeature = (clientPlan: PlanType | undefined, feature: FeatureKey): boolean => {
   if (!clientPlan) return false;
