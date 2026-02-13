@@ -10,10 +10,11 @@ import {
   ExternalLink,
   ChevronRight
 } from 'lucide-react';
-import { getCurrentUser } from '../../lib/storage';
+import { getCurrentUser, getStorage } from '../../lib/storage';
 import { FeatureCard, PricingCard, FAQItem } from '../../components/landing/LandingUI';
 import { PLANS } from '../../lib/plans';
 import clsx from 'clsx';
+import PublicProfileRenderer from '../../components/preview/PublicProfileRenderer';
 
 const NAV_HEIGHT = 80;
 
@@ -22,6 +23,17 @@ const LandingPage: React.FC = () => {
   const location = useLocation();
   const user = getCurrentUser();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+
+  // Perfis vitrine (editáveis no /admin)
+  const data = getStorage();
+  const showcaseIds = (data.landing?.showcaseProfileIds || []).concat(['', '']).slice(0, 2);
+
+  const getClientPlan = (profileId: string) => {
+    const p = data.profiles.find(pr => pr.id === profileId);
+    if (!p) return 'starter' as const;
+    const client = data.clients.find(c => c.id === p.clientId);
+    return (client?.plan || 'starter') as const;
+  };
 
   const handleStart = useCallback(() => {
     if (!user) {
@@ -165,6 +177,90 @@ const LandingPage: React.FC = () => {
                    </div>
                 </div>
              </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Showcase Profiles (admin-editável) */}
+      <section className="py-24 px-6 relative z-10">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            <div className="lg:col-span-5 space-y-6">
+              <div className="text-blue-400 text-[10px] font-black uppercase tracking-[0.3em]">Demonstração Real</div>
+              <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
+                Veja 2 perfis 
+                <span className="text-zinc-700"> ao vivo</span>
+              </h2>
+              <p className="text-zinc-500 text-lg font-medium leading-relaxed">
+                Nada de mock genérico: estes perfis são os mesmos que você edita no painel. Troque a vitrine no <span className="text-white">/admin</span> e ela atualiza aqui.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  type="button"
+                  onClick={handleStart}
+                  className="px-10 py-5 rounded-[2rem] bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black text-[10px] uppercase tracking-[0.22em] hover:shadow-[0_0_20px_rgba(37,99,235,0.35)] hover:-translate-y-0.5 transition-all active:scale-95"
+                >
+                  Criar meu perfil
+                </button>
+                <a
+                  href="#precos"
+                  onClick={(e) => handleAnchorClick(e, 'precos')}
+                  className="px-10 py-5 rounded-[2rem] border border-white/10 text-zinc-400 hover:text-white hover:bg-white/5 transition-all font-black text-[10px] uppercase tracking-[0.22em] flex items-center justify-center gap-3 active:scale-95"
+                >
+                  Ver planos <ChevronRight size={16} />
+                </a>
+              </div>
+            </div>
+
+            <div className="lg:col-span-7">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {[0, 1].map((slot) => {
+                  const id = showcaseIds[slot];
+                  const profile = data.profiles.find(p => p.id === id);
+                  const plan = id ? getClientPlan(id) : 'starter';
+
+                  return (
+                    <div key={slot} className="group relative">
+                      <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/15 to-indigo-600/10 blur-[60px] opacity-30 group-hover:opacity-55 transition-all duration-700 pointer-events-none" />
+                      <div className="relative bg-zinc-900/40 border border-white/10 rounded-[2.8rem] p-4 backdrop-blur-3xl shadow-2xl">
+                        <div className="flex items-center justify-between px-3 pb-3">
+                          <div className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-500">Perfil {slot + 1}</div>
+                          {profile ? (
+                            <Link
+                              to={`/u/${profile.slug}`}
+                              className="text-[10px] font-black uppercase tracking-[0.22em] text-blue-400 hover:text-white flex items-center gap-2"
+                            >
+                              Abrir <ExternalLink size={14} />
+                            </Link>
+                          ) : (
+                            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-600">(configure no admin)</span>
+                          )}
+                        </div>
+
+                        {/* Phone Frame */}
+                        <div className="rounded-[2.3rem] bg-black border border-white/10 overflow-hidden">
+                          <div className="h-[520px] overflow-hidden">
+                            {profile ? (
+                              <div className="origin-top-left scale-[0.92] w-[108%]">
+                                <PublicProfileRenderer profile={profile} isPreview={true} clientPlan={plan} source="direct" />
+                              </div>
+                            ) : (
+                              <div className="h-full flex items-center justify-center p-10">
+                                <div className="text-center space-y-2">
+                                  <div className="text-zinc-600 text-[10px] font-black uppercase tracking-[0.28em]">Sem vitrine</div>
+                                  <div className="text-zinc-500 text-sm font-medium">Escolha um perfil em <span className="text-white">/admin</span> para aparecer aqui.</div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </section>
