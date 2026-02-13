@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { getCurrentUser, getStorage } from '../../lib/storage';
 import { FeatureCard, PricingCard, FAQItem } from '../../components/landing/LandingUI';
+import PhoneFrame from '../../components/landing/PhoneFrame';
 import { PLANS } from '../../lib/plans';
 import clsx from 'clsx';
 import PublicProfileRenderer from '../../components/preview/PublicProfileRenderer';
@@ -238,23 +239,21 @@ const LandingPage: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Phone Frame */}
-                        <div className="rounded-[2.3rem] bg-black border border-white/10 overflow-hidden">
-                          <div className="h-[520px] overflow-hidden">
-                            {profile ? (
-                              <div className="origin-top-left scale-[0.92] w-[108%]">
-                                <PublicProfileRenderer profile={profile} isPreview={true} clientPlan={plan} source="direct" />
+                        {/* Phone Frame (realista + scroll funcional no viewport) */}
+                        <PhoneFrame>
+                          {profile ? (
+                            <div className="min-h-full">
+                              <PublicProfileRenderer profile={profile} isPreview={true} clientPlan={plan} source="direct" />
+                            </div>
+                          ) : (
+                            <div className="h-full min-h-[520px] flex items-center justify-center p-10">
+                              <div className="text-center space-y-2">
+                                <div className="text-zinc-600 text-[10px] font-black uppercase tracking-[0.28em]">Sem vitrine</div>
+                                <div className="text-zinc-500 text-sm font-medium">Escolha um perfil em <span className="text-white">/admin</span> para aparecer aqui.</div>
                               </div>
-                            ) : (
-                              <div className="h-full flex items-center justify-center p-10">
-                                <div className="text-center space-y-2">
-                                  <div className="text-zinc-600 text-[10px] font-black uppercase tracking-[0.28em]">Sem vitrine</div>
-                                  <div className="text-zinc-500 text-sm font-medium">Escolha um perfil em <span className="text-white">/admin</span> para aparecer aqui.</div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                            </div>
+                          )}
+                        </PhoneFrame>
                       </div>
                     </div>
                   );
