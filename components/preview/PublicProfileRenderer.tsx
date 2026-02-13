@@ -105,19 +105,42 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
 
-  // Layout Logic
   const layout = (profile.layoutTemplate || 'Minimal Card').trim();
-  const isGrid = ['Button Grid', 'Icon Grid', 'Creator', 'Magazine', 'Two Columns'].includes(layout);
-  const isLeft = ['Avatar Left', 'Corporate', 'Split Header', 'Magazine', 'Compact Header'].includes(layout);
-  const isCoverFocused = ['Cover Clean', 'Hero Banner', 'Magazine', 'Framed', 'Editorial'].includes(layout);
+
+  const isGrid = ['Button Grid', 'Icon Grid', 'Two Columns', 'Creator', 'Magazine'].includes(layout);
+  const isLeft = ['Avatar Left', 'Corporate', 'Split Header', 'Magazine'].includes(layout);
   const isBigAvatar = ['Big Avatar'].includes(layout);
 
-  // Font Stacks
   const headingFont = normalizeFontStack(fonts?.headingFont || 'Poppins');
   const bodyFont = normalizeFontStack(fonts?.bodyFont || 'Inter');
   const buttonFont = normalizeFontStack(fonts?.buttonFont || fonts?.bodyFont || 'Inter');
 
   const primaryTextOnPrimary = pickReadableOn(theme.primary);
+
+  // ✅ Capa por template: altura e overlay (SEM apagar com opacity)
+  const coverConfig = useMemo(() => {
+    // valores padrão
+    let heightClass = 'h-36';
+    let overlay = 'from-black/10 via-black/25 to-black/70';
+
+    if (['Hero Banner', 'Cover Clean'].includes(layout)) {
+      heightClass = 'h-52';
+      overlay = 'from-black/5 via-black/20 to-black/75';
+    }
+
+    if (layout === 'Magazine') {
+      heightClass = 'h-48';
+      overlay = 'from-black/10 via-black/30 to-black/80';
+    }
+
+    // layouts não focados: capa menor, overlay um pouco mais forte (mas imagem continua viva)
+    if (!['Hero Banner', 'Cover Clean', 'Magazine'].includes(layout)) {
+      heightClass = 'h-32';
+      overlay = 'from-black/15 via-black/30 to-black/75';
+    }
+
+    return { heightClass, overlay };
+  }, [layout]);
 
   const bgComputed = useMemo(() => {
     const bgValue = safeString(theme.backgroundValue, '#0A0A0A');
@@ -147,9 +170,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
       } as React.CSSProperties;
     }
 
-    return {
-      backgroundColor: bgValue,
-    } as React.CSSProperties;
+    return { backgroundColor: bgValue } as React.CSSProperties;
   }, [theme.backgroundType, theme.backgroundValue, theme.backgroundDirection, theme.backgroundValueSecondary, isPreview]);
 
   const bgStyle: React.CSSProperties = {
@@ -222,11 +243,10 @@ NOTE:Perfil digital criado com LinkFlow.
     a.click();
     document.body.removeChild(a);
 
-    // ✅ evita leak
     setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
   };
 
-  const getButtonStyle = (_btn: any): React.CSSProperties => {
+  const getButtonStyle = (): React.CSSProperties => {
     let backgroundColor: string;
     let color: string;
     let border: string;
@@ -283,7 +303,7 @@ NOTE:Perfil digital criado com LinkFlow.
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => handleLinkClick(btn.id)}
-              style={getButtonStyle(btn)}
+              style={getButtonStyle()}
               className="group hover:translate-y-[-2px]"
             >
               {isGrid ? (
@@ -325,24 +345,21 @@ NOTE:Perfil digital criado com LinkFlow.
   };
 
   const activeSlots = (profile.nativeSlots || []).filter(s => s.isActive);
-
   const avatarSrc = safeString(profile.avatarUrl, 'https://picsum.photos/seed/avatar/200/200');
 
   return (
     <div style={bgStyle} className="w-full flex flex-col items-center overflow-x-hidden no-scrollbar">
       <div className="relative z-10 w-full px-4 flex flex-col items-center pt-8 pb-20">
         <main className="w-full max-w-[520px] p-0 space-y-6" style={shellCardStyle}>
-          {/* Header Area */}
           <div className="relative">
-            {/* Capa */}
+            {/* ✅ Capa SEM opacity */}
             {profile.coverUrl && (
-              <div className={clsx("w-full overflow-hidden", isCoverFocused ? "h-48" : "h-32 opacity-40")}>
+              <div className={clsx("w-full overflow-hidden relative", coverConfig.heightClass)}>
                 <img src={profile.coverUrl} className="w-full h-full object-cover" alt="Cover" />
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60"></div>
+                <div className={clsx("absolute inset-0 bg-gradient-to-b", coverConfig.overlay)} />
               </div>
             )}
 
-            {/* Avatar & Infos */}
             <div className={clsx("px-6 pb-6 relative", profile.coverUrl ? "-mt-12" : "pt-8")}>
               <div className={clsx("flex gap-4", isLeft ? "flex-row items-end text-left" : "flex-col items-center text-center")}>
                 <img
@@ -365,7 +382,6 @@ NOTE:Perfil digital criado com LinkFlow.
           </div>
 
           <div className="px-6 pb-6 space-y-6">
-            {/* Ações de Contato / Wallet */}
             <div className="flex items-center gap-3 w-full">
               <button
                 onClick={handleSaveContact}
@@ -380,14 +396,12 @@ NOTE:Perfil digital criado com LinkFlow.
                 onClick={() => setShowWalletModal(true)}
                 className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
                 style={{ borderColor: theme.border, color: theme.text }}
-                title="Atalho para salvar/instalar como acesso rápido (MVP)"
               >
                 <LucideIcons.WalletCards size={14} />
                 Wallet
               </button>
             </div>
 
-            {/* Bio Short se existir */}
             {profile.bioShort && (
               <p className={clsx("text-sm leading-relaxed opacity-70", isLeft ? "text-left" : "text-center")}>
                 {profile.bioShort}
@@ -396,7 +410,6 @@ NOTE:Perfil digital criado com LinkFlow.
 
             {renderLinks()}
 
-            {/* AGENDAMENTO */}
             {hasSchedulingAccess && profile.enableScheduling && (
               <div className="w-full p-6" style={proCardStyle}>
                 <div className="flex items-center justify-between mb-4">
@@ -459,7 +472,6 @@ NOTE:Perfil digital criado com LinkFlow.
               </div>
             )}
 
-            {/* PIX */}
             {hasPixAccess && profile.pixKey && (
               <div className="w-full p-6" style={proCardStyle}>
                 <div className="flex items-center justify-between gap-3">
@@ -490,7 +502,7 @@ NOTE:Perfil digital criado com LinkFlow.
         </main>
       </div>
 
-      {/* Wallet Modal (MVP) */}
+      {/* Wallet Modal (MVP) — mantido igual ao seu */}
       {showWalletModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-zinc-900 border border-white/10 w-full max-w-sm rounded-[2rem] p-8 relative animate-in slide-in-from-bottom-10 duration-300">
