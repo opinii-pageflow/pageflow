@@ -1,11 +1,9 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Profile, AnalyticsSource, CatalogItem, PortfolioItem, YoutubeVideoItem, PlanType, SchedulingSlot } from '../../types';
-import { formatLink, getIconColor } from '../../lib/linkHelpers';
+import { Profile, AnalyticsSource, PlanType, SchedulingSlot } from '../../types';
+import { formatLink } from '../../lib/linkHelpers';
 import { trackEvent } from '../../lib/analytics';
-import { updateStorage } from '../../lib/storage';
-import { extractYouTubeId } from '../../lib/youtube';
 import { canAccessFeature } from '../../lib/permissions';
 import * as LucideIcons from 'lucide-react';
 import clsx from 'clsx';
@@ -55,17 +53,11 @@ const pickReadableOn = (hexBg: string, light = '#F8FAFC', dark = '#0B1220') => {
 
 const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan, source = 'direct' }) => {
   const { theme, fonts, buttons } = profile;
-  const layoutTemplate = safeString(profile.layoutTemplate, 'Minimal Card');
-
-  const hasCatalogAccess = canAccessFeature(clientPlan, 'catalog');
-  const hasPortfolioAccess = canAccessFeature(clientPlan, 'portfolio');
-  const hasVideosAccess = canAccessFeature(clientPlan, 'videos');
-  const hasPixAccess = canAccessFeature(clientPlan, 'pix');
-  const hasLeadAccess = canAccessFeature(clientPlan, 'leads_capture');
-  const hasNpsAccess = canAccessFeature(clientPlan, 'nps');
   const hasSchedulingAccess = canAccessFeature(clientPlan, 'scheduling');
+  const hasPixAccess = canAccessFeature(clientPlan, 'pix');
 
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  const [showWalletModal, setShowWalletModal] = useState(false);
 
   const headingFont = normalizeFontStack(fonts?.headingFont || 'Poppins');
   const bodyFont = normalizeFontStack(fonts?.bodyFont || 'Inter');
@@ -117,6 +109,47 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   const handleLinkClick = (btnId: string) => {
     if (isPreview) return;
     trackEvent({ profileId: profile.id, clientId: profile.clientId, type: 'click', linkId: btnId });
+  };
+
+  const handleSaveContact = () => {
+    // 1. Extrair dados
+    const name = profile.displayName || 'Contato LinkFlow';
+    const headline = profile.headline || '';
+    const url = window.location.origin + '/#/u/' + profile.slug;
+    
+    // Tentar encontrar telefone e email nos botões
+    const phoneBtn = profile.buttons.find(b => b.enabled && (b.type === 'whatsapp' || b.type === 'phone' || b.type === 'mobile'));
+    const emailBtn = profile.buttons.find(b => b.enabled && b.type === 'email');
+    
+    const phone = phoneBtn ? phoneBtn.value.replace(/\D/g, '') : '';
+    const email = emailBtn ? emailBtn.value : '';
+
+    // 2. Construir vCard content
+    let vCard = `BEGIN:VCARD
+VERSION:3.0
+FN:${name}
+N:${name};;;;
+TITLE:${headline}
+URL:${url}
+NOTE:Perfil digital criado com LinkFlow.
+`;
+
+    if (phone) vCard += `TEL;TYPE=CELL:${phone}\n`;
+    if (email) vCard += `EMAIL:${email}\n`;
+    if (profile.avatarUrl && profile.avatarUrl.startsWith('http')) {
+      vCard += `PHOTO;VALUE=URI:${profile.avatarUrl}\n`;
+    }
+
+    vCard += `END:VCARD`;
+
+    // 3. Trigger download
+    const blob = new Blob([vCard], { type: 'text/vcard;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.setAttribute('download', `${profile.slug}.vcf`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const getButtonStyle = (_btn: any, index: number): React.CSSProperties => {
@@ -179,10 +212,30 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
       <div className="relative z-10 w-full px-4 flex flex-col items-center pt-8">
         <main className="w-full max-w-[520px] p-6 space-y-6" style={shellCardStyle}>
           <header className="flex flex-col items-center text-center">
-            <img src={profile.avatarUrl} className="w-24 h-24 rounded-full border-2 mb-4" style={{ borderColor: theme.border }} alt="" />
+            <img src={profile.avatarUrl} className="w-24 h-24 rounded-full border-2 mb-4 object-cover" style={{ borderColor: theme.border }} alt="" />
             <h1 className="text-2xl font-black" style={{ fontFamily: headingFont }}>{profile.displayName}</h1>
-            <p className="text-sm opacity-70">{profile.headline}</p>
+            <p className="text-sm opacity-70 mt-1 max-w-[80%]">{profile.headline}</p>
           </header>
+
+          {/* Ações de Contato / Wallet */}
+          <div className="flex items-center gap-3 w-full">
+            <button 
+              onClick={handleSaveContact}
+              className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
+              style={{ borderColor: theme.border, color: theme.text }}
+            >
+              <LucideIcons.UserPlus size={14} />
+              Salvar Contato
+            </button>
+            <button 
+              onClick={() => setShowWalletModal(true)}
+              className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
+              style={{ borderColor: theme.border, color: theme.text }}
+            >
+              <LucideIcons.WalletCards size={14} />
+              Wallet
+            </button>
+          </div>
 
           {renderLinks()}
 
@@ -269,6 +322,53 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
           </footer>
         </main>
       </div>
+
+      {/* Wallet Modal (MVP) */}
+      {showWalletModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-900 border border-white/10 w-full max-w-sm rounded-[2rem] p-8 relative animate-in slide-in-from-bottom-10 duration-300">
+            <button 
+              onClick={() => setShowWalletModal(false)}
+              className="absolute top-4 right-4 p-2 bg-white/5 rounded-full text-zinc-400 hover:text-white"
+            >
+              <LucideIcons.X size={16} />
+            </button>
+            
+            <div className="flex flex-col items-center text-center space-y-6">
+              <div className="w-16 h-16 bg-blue-600/10 rounded-[1.5rem] flex items-center justify-center text-blue-500 mb-2">
+                <LucideIcons.WalletCards size={32} />
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-white">Cartão Digital</h3>
+                <p className="text-zinc-400 text-xs leading-relaxed px-2">
+                  A integração nativa com Apple Wallet e Google Pay está em desenvolvimento. Por enquanto, utilize as opções abaixo para salvar o contato.
+                </p>
+              </div>
+
+              <div className="w-full space-y-3">
+                <button 
+                  onClick={() => { handleSaveContact(); setShowWalletModal(false); }}
+                  className="w-full py-4 bg-white text-black rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
+                >
+                  <LucideIcons.Download size={16} />
+                  Baixar Arquivo vCard
+                </button>
+                <div className="p-4 bg-white/5 rounded-xl border border-white/5 text-center">
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Dica Pro</p>
+                  <p className="text-xs text-zinc-300">
+                    No iPhone/Android, use a opção 
+                    <span className="inline-flex items-center gap-1 mx-1 bg-white/10 px-1.5 py-0.5 rounded text-white">
+                      <LucideIcons.Share size={10} /> Adicionar à Tela de Início
+                    </span>
+                    para criar um app do perfil.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
