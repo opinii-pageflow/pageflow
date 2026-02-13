@@ -21,7 +21,8 @@ import {
   Meh,
   Frown,
   MessageSquare,
-  AlertCircle
+  AlertCircle,
+  Star
 } from 'lucide-react';
 import { getProfileSummary } from '../../lib/analytics';
 import { PLANS } from '../../lib/plans';
@@ -42,7 +43,6 @@ const ClientDashboard: React.FC = () => {
   const client = data.clients.find(c => c.id === user?.clientId);
   const summary = useMemo(() => getProfileSummary('all', days), [days]);
 
-  // Usando a nova lógica de permissões
   const hasProAccess = canAccessFeature(client?.plan, 'catalog');
   const hasCrmAccess = canAccessFeature(client?.plan, 'crm');
   const hasNpsAccess = canAccessFeature(client?.plan, 'nps');
@@ -67,6 +67,7 @@ const ClientDashboard: React.FC = () => {
     data.nps
       .filter(n => n.clientId === user?.clientId)
       .filter(n => now - new Date(n.createdAt).getTime() <= ms)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
   , [data.nps, user?.clientId, days]);
 
   const npsAvg = npsRecent.length ? (npsRecent.reduce((acc, n) => acc + n.score, 0) / npsRecent.length) : 0;
@@ -99,7 +100,6 @@ const ClientDashboard: React.FC = () => {
 
       <main className="max-w-7xl mx-auto p-6 lg:p-10 pt-32 relative z-10 pb-40">
         
-        {/* Navigation Tabs if Business or Higher */}
         {hasCrmAccess && (
           <div className="mb-12 flex bg-zinc-900/40 p-1.5 rounded-[2rem] border border-white/5 w-fit animate-in fade-in duration-1000">
              <button 
@@ -123,11 +123,9 @@ const ClientDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* LOGIC SWITCHER: OVERVIEW vs CRM */}
         {activeTab === 'crm' && hasCrmAccess ? (
           <AdvancedCrm leads={allLeads} />
         ) : (
-          /* ================= OVERVIEW CONTENT ================= */
           <>
             <header className="mb-12 flex flex-col md:flex-row items-start md:items-end justify-between gap-8">
               <div 
@@ -173,7 +171,6 @@ const ClientDashboard: React.FC = () => {
               </div>
             </header>
 
-            {/* Plan Status Card */}
             <div className={clsx(
               "w-full bg-zinc-900/40 backdrop-blur-xl border p-8 rounded-[2.5rem] mb-12 flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-500 animate-in fade-in slide-in-from-top-4",
               usagePercentage >= 80 ? "border-amber-500/50 shadow-[0_0_40px_rgba(245,158,11,0.1)]" : "border-white/5"
@@ -402,105 +399,40 @@ const ClientDashboard: React.FC = () => {
                         <div className="text-[8px] uppercase tracking-widest text-red-500/60">Detratores</div>
                       </div>
                     </div>
+
+                    <div className="mt-6 pt-6 border-t border-white/5 space-y-4">
+                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 flex items-center gap-2">
+                        <Star size={12} /> Comentários Recentes
+                      </div>
+                      <div className="max-h-40 overflow-y-auto no-scrollbar space-y-3">
+                        {npsRecent.filter(n => n.comment).length === 0 ? (
+                          <div className="text-[10px] text-zinc-600 italic">Nenhum comentário enviado ainda.</div>
+                        ) : (
+                          npsRecent.filter(n => n.comment).map((n) => (
+                            <div key={n.id} className="bg-black/40 p-3 rounded-xl border border-white/5 group">
+                              <div className="flex items-center justify-between mb-1.5">
+                                <div className="flex items-center gap-1.5">
+                                  {n.score >= 9 ? <Smile size={12} className="text-emerald-500" /> : n.score >= 7 ? <Meh size={12} className="text-zinc-400" /> : <Frown size={12} className="text-red-500" />}
+                                  <span className="text-[10px] font-black">{n.score} / 10</span>
+                                </div>
+                                <span className="text-[8px] text-zinc-600 font-mono">{new Date(n.createdAt).toLocaleDateString()}</span>
+                              </div>
+                              <p className="text-[10px] text-zinc-400 leading-relaxed italic">"{n.comment}"</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-xs text-zinc-500 flex items-center gap-2 font-bold uppercase tracking-widest">
-                    <Lock size={14} /> Disponível no Business
+                    <Lock size={14} /> Disponível no Pro
                   </div>
                 )}
               </div>
             </div>
-
-            {/* Profiles Preview List Section */}
-            <section className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-              <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-black tracking-tighter">Perfis Mais Ativos</h2>
-                <Link to="/app/profiles" className="text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-white flex items-center gap-2 group transition-all">
-                  Ver Todos os Perfis
-                  <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {clientProfiles.slice(0, 3).map(profile => (
-                  <div key={profile.id} className="bg-zinc-900/40 border border-white/5 p-8 rounded-[3rem] flex flex-col gap-8 group hover:border-blue-500/20 hover:bg-zinc-800/20 transition-all duration-500 shadow-xl">
-                    <div className="flex items-center gap-5">
-                      <div className="relative">
-                          <img src={profile.avatarUrl} className="w-16 h-16 rounded-2xl object-cover ring-2 ring-white/5 group-hover:scale-105 transition-transform duration-500" alt="" />
-                          <div className="absolute -top-2 -right-2 bg-blue-600 p-1.5 rounded-lg border-2 border-[#020202]">
-                            <Zap size={10} className="text-white" />
-                          </div>
-                      </div>
-                      <div className="min-w-0">
-                          <h4 className="font-bold text-lg truncate text-white">{profile.displayName}</h4>
-                          <div className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 font-mono">linkflow.me/u/{profile.slug}</div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <button 
-                        onClick={() => navigate(`/app/profiles/${profile.id}/editor`)}
-                        className="flex-1 bg-white text-black py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-zinc-200 transition-all active:scale-95 shadow-lg"
-                      >
-                          <Settings size={14} />
-                          Editar
-                      </button>
-                      <a 
-                        href={`#/u/${profile.slug}`}
-                        target="_blank"
-                        className="flex-1 bg-zinc-800/80 hover:bg-zinc-700 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border border-white/5 shadow-lg"
-                      >
-                          <ExternalLink size={14} />
-                          Link
-                      </a>
-                    </div>
-                  </div>
-                ))}
-
-                {clientProfiles.length < (client?.maxProfiles || 0) && (
-                  <button 
-                    onClick={() => navigate('/app/profiles')}
-                    className="group border-2 border-dashed border-zinc-800 p-8 rounded-[3rem] flex flex-col items-center justify-center gap-4 text-zinc-600 hover:border-zinc-700 hover:text-zinc-400 hover:bg-white/[0.02] transition-all duration-500"
-                  >
-                    <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Plus size={32} />
-                    </div>
-                    <div className="text-center">
-                      <span className="text-[10px] font-black uppercase tracking-[0.3em]">Liberar Novo Slot</span>
-                      <p className="text-[10px] mt-1 opacity-50">Você ainda possui { (client?.maxProfiles || 0) - clientProfiles.length } vagas.</p>
-                    </div>
-                  </button>
-                )}
-              </div>
-            </section>
           </>
         )}
-        
-        {/* Pro Teaser Footer */}
-        {!hasCrmAccess && activeTab !== 'crm' && (
-          <footer className="mt-20">
-             <div className="bg-gradient-to-r from-blue-600/20 via-indigo-600/20 to-purple-600/20 border border-white/10 rounded-[3.5rem] p-12 relative overflow-hidden group shadow-[0_0_80px_rgba(37,99,235,0.1)]">
-                <div className="absolute top-0 right-0 p-20 opacity-10 pointer-events-none group-hover:rotate-12 group-hover:scale-110 transition-transform duration-1000">
-                   <Shield size={200} />
-                </div>
-                <div className="max-w-xl space-y-6 relative z-10">
-                   <div className="inline-flex items-center gap-2 bg-white text-black text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
-                      Vantagem Premium
-                   </div>
-                   <h3 className="text-4xl font-black tracking-tighter leading-none">
-                      Desbloqueie o <span className="text-blue-500">Poder Total</span> do seu Legado.
-                   </h3>
-                   <p className="text-zinc-400 text-lg font-medium leading-relaxed">
-                      Obtenha gestão avançada de leads (CRM), pixels de rastreamento, links ilimitados e remova completamente a marca LinkFlow dos seus perfis.
-                   </p>
-                   <Link to="/app/settings" className="inline-flex bg-blue-600 hover:bg-blue-500 text-white px-10 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-2xl shadow-blue-600/30">
-                      Fazer Upgrade Agora
-                   </Link>
-                </div>
-             </div>
-          </footer>
-        )}
-
       </main>
     </div>
   );
