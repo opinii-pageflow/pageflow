@@ -29,10 +29,10 @@ const FEATURE_REQUIREMENTS: Record<FeatureKey, PlanType> = {
   analytics: 'pro',
   nps: 'pro',
   leads_capture: 'pro',
-  premium_templates: 'pro',
+  premium_templates: 'pro', // Bloqueia templates avançados no Starter
   leads_export: 'enterprise',
   leads_full_details: 'enterprise', 
-  crm: 'enterprise',
+  crm: 'enterprise', // CRM Completo apenas no Enterprise
   white_label: 'enterprise'
 };
 
@@ -43,9 +43,7 @@ export const ESSENTIAL_TEMPLATES = [
   'Minimal Card',
   'Button List Bold',
   'Avatar Left',
-  'Corporate',
-  'Button Grid',
-  'Light Clean'
+  'Corporate'
 ];
 
 /**
