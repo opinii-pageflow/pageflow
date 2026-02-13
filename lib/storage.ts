@@ -15,6 +15,10 @@ export const ADMIN_MASTER = {
 
 export const INITIAL_DATA: AppData = {
   version: CURRENT_VERSION,
+  landing: {
+    // Vitrine padrão: 2 slots (podem ser ajustados no Admin)
+    showcaseProfileIds: ['profile-1', ''],
+  },
   clients: [
     {
       id: 'client-1',
@@ -100,6 +104,27 @@ export const getStorage = (): AppData => {
     // Migrations e inicialização de campos Pro se necessário
     if (!Array.isArray((data as any).leads)) (data as any).leads = [];
     if (!Array.isArray((data as any).nps)) (data as any).nps = [];
+
+    // Landing config (evita tela branca se faltar)
+    if (!(data as any).landing) {
+      (data as any).landing = { showcaseProfileIds: [] };
+    }
+    if (!Array.isArray((data as any).landing.showcaseProfileIds)) {
+      (data as any).landing.showcaseProfileIds = [];
+    }
+    // Garante 2 slots sempre
+    const ids = (data as any).landing.showcaseProfileIds as string[];
+    if (ids.length < 2) {
+      const filled = [...ids];
+      while (filled.length < 2) filled.push('');
+      (data as any).landing.showcaseProfileIds = filled;
+    }
+    // Se ambos vazios, tenta preencher com os 2 primeiros perfis
+    const finalIds = ((data as any).landing.showcaseProfileIds as string[]).slice(0, 2);
+    if (finalIds.every(v => !v)) {
+      const top2 = (data.profiles || []).slice(0, 2).map(p => p.id);
+      (data as any).landing.showcaseProfileIds = [top2[0] || '', top2[1] || ''];
+    }
 
     (data.profiles || []).forEach((p: any) => {
       if (p.pixKey === undefined) p.pixKey = '';
