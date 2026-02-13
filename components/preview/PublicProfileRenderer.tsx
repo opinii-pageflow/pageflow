@@ -32,73 +32,78 @@ const hexToRgb = (hex: string) => {
   if (![3, 6].includes(h.length)) return null;
   const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
   const n = parseInt(full, 16);
+  if (Number.isNaN(n)) return null;
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 };
 
-const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
-
-const luminance = (hex: string) => {
+const relativeLuminance = (hex: string) => {
   const rgb = hexToRgb(hex);
-  if (!rgb) return 0.5;
-  // sRGB luminance approximation
-  const toLin = (v: number) => {
-    const s = v / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  };
-  const r = toLin(rgb.r);
-  const g = toLin(rgb.g);
-  const b = toLin(rgb.b);
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  if (!rgb) return null;
+  const srgb = [rgb.r, rgb.g, rgb.b].map(v => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
 };
 
-const pickReadableOn = (hex: string) => (luminance(hex) > 0.55 ? '#0b0b0b' : '#ffffff');
+const pickReadableOn = (hexBg: string, light = '#F8FAFC', dark = '#0B1220') => {
+  const lum = relativeLuminance(hexBg);
+  if (lum === null) return light;
+  return lum > 0.62 ? dark : light;
+};
 
 const getIcon = (type: string) => {
-  const key = (type || '').trim();
-  // tenta ícone pelo nome de tipo (ex: instagram -> Instagram)
-  const pascal = key
-    .split(/[_-\s]+/)
-    .filter(Boolean)
-    .map(s => s.charAt(0).toUpperCase() + s.slice(1))
-    .join('');
-
-  // tenta: <Type> (ex: Instagram)
-  const direct = (LucideIcons as any)[pascal];
-  if (direct) return direct;
-
-  // tenta: <Type>Icon
-  const alt = (LucideIcons as any)[`${pascal}Icon`];
-  if (alt) return alt;
-
-  // fallback
-  return (LucideIcons as any).Link2;
+  switch (type) {
+    case 'whatsapp': return LucideIcons.MessageCircle;
+    case 'instagram': return LucideIcons.Instagram;
+    case 'linkedin': return LucideIcons.Linkedin;
+    case 'website': return LucideIcons.Globe;
+    case 'phone':
+    case 'mobile': return LucideIcons.Phone;
+    case 'email': return LucideIcons.Mail;
+    case 'maps': return LucideIcons.MapPin;
+    case 'youtube': return LucideIcons.Youtube;
+    case 'github': return LucideIcons.Github;
+    case 'facebook': return LucideIcons.Facebook;
+    case 'twitter':
+    case 'x': return LucideIcons.Twitter;
+    case 'tiktok': return LucideIcons.Music2;
+    case 'telegram': return LucideIcons.Send;
+    case 'threads': return LucideIcons.AtSign;
+    case 'twitch': return LucideIcons.Tv;
+    case 'discord': return LucideIcons.MessageSquare;
+    default: return LucideIcons.Link;
+  }
 };
 
-const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview = false, clientPlan = 'starter', source = 'direct' }) => {
-  const theme = profile.theme || { primary: '#2563eb', background: '#0b0b0b' };
-  const fonts = profile.fonts || { headingFont: 'Poppins', bodyFont: 'Inter', buttonFont: 'Inter' };
-  const background = profile.background || { type: 'solid', value: '#000000' };
-  const cover = profile.cover || { enabled: false, imageUrl: '' };
-  const buttons = Array.isArray(profile.buttons) ? profile.buttons : [];
-  const contact = profile.contact || {};
-  const pix = (profile as any).pix || {};
+const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan, source = 'direct' }) => {
+  const theme = (profile as any)?.theme || {
+    primary: '#3b82f6',
+    text: '#ffffff',
+    border: 'rgba(255,255,255,0.10)',
+    cardBg: 'rgba(0,0,0,0.30)',
+    shadow: '0 12px 40px rgba(0,0,0,0.35)',
+    radius: '18px',
+    buttonStyle: 'glass',
+    backgroundType: 'color',
+    backgroundValue: '#0A0A0A',
+    backgroundDirection: 'to bottom',
+    backgroundValueSecondary: '#0A0A0A',
+  };
 
-  const hasPix = canAccessFeature(clientPlan, 'pix');
+  const fonts = (profile as any)?.fonts || {
+    headingFont: 'Poppins',
+    bodyFont: 'Inter',
+    buttonFont: 'Inter',
+  };
+
+  const buttons = Array.isArray((profile as any)?.buttons) ? (profile as any).buttons : [];
+
+  const hasSchedulingAccess = canAccessFeature(clientPlan, 'scheduling');
+  const hasPixAccess = canAccessFeature(clientPlan, 'pix');
 
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
-  const [previewToast, setPreviewToast] = useState<string | null>(null);
-
-  const showPreviewToast = (message: string) => {
-    if (!isPreview) return;
-    setPreviewToast(message);
-  };
-
-  React.useEffect(() => {
-    if (!previewToast) return;
-    const t = window.setTimeout(() => setPreviewToast(null), 1600);
-    return () => window.clearTimeout(t);
-  }, [previewToast]);
 
   const layout = (profile.layoutTemplate || 'Minimal Card').trim();
 
@@ -112,64 +117,92 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview = false, cl
 
   const primaryTextOnPrimary = pickReadableOn(theme.primary);
 
-  // ✅ Capa
-  const coverEnabled = !!cover?.enabled && !!cover?.imageUrl;
+  // ✅ Capa por template: altura e overlay (SEM apagar com opacity)
+  const coverConfig = useMemo(() => {
+    // valores padrão
+    let heightClass = 'h-36';
+    let overlay = 'from-black/10 via-black/25 to-black/70';
 
-  const bgStyle = useMemo(() => {
-    const base: React.CSSProperties = {
-      backgroundColor: theme.background || '#0b0b0b',
-      fontFamily: bodyFont,
-    };
+    if (['Hero Banner', 'Cover Clean'].includes(layout)) {
+      heightClass = 'h-52';
+      overlay = 'from-black/5 via-black/20 to-black/75';
+    }
 
-    if (background?.type === 'image' && background?.value) {
+    if (layout === 'Magazine') {
+      heightClass = 'h-48';
+      overlay = 'from-black/10 via-black/30 to-black/80';
+    }
+
+    // layouts não focados: capa menor, overlay um pouco mais forte (mas imagem continua viva)
+    if (!['Hero Banner', 'Cover Clean', 'Magazine'].includes(layout)) {
+      heightClass = 'h-32';
+      overlay = 'from-black/15 via-black/30 to-black/75';
+    }
+
+    return { heightClass, overlay };
+  }, [layout]);
+
+  const bgComputed = useMemo(() => {
+    const bgValue = safeString(theme.backgroundValue, '#0A0A0A');
+
+    if (theme.backgroundType === 'gradient') {
+      const dir = safeString(theme.backgroundDirection, 'to bottom');
+      const b = safeString(theme.backgroundValueSecondary, bgValue);
       return {
-        ...base,
-        backgroundImage: `url(${background.value})`,
-        backgroundSize: 'cover',
+        backgroundImage: `linear-gradient(${dir}, ${bgValue}, ${b})`,
+        backgroundColor: 'transparent',
+        backgroundAttachment: 'scroll',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-      };
+        backgroundSize: 'cover',
+      } as React.CSSProperties;
     }
 
-    if (background?.type === 'gradient' && background?.value) {
-      // background.value já vem como css gradient (ex: linear-gradient(...))
+    if (theme.backgroundType === 'image') {
+      const attachment = isPreview ? 'scroll' : 'fixed';
       return {
-        ...base,
-        backgroundImage: background.value,
-      };
+        backgroundImage: `url(${bgValue})`,
+        backgroundColor: '#0A0A0A',
+        backgroundAttachment: attachment,
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: 'cover',
+      } as React.CSSProperties;
     }
 
-    if (background?.type === 'solid' && background?.value) {
-      return {
-        ...base,
-        backgroundColor: background.value,
-      };
-    }
+    return { backgroundColor: bgValue } as React.CSSProperties;
+  }, [theme.backgroundType, theme.backgroundValue, theme.backgroundDirection, theme.backgroundValueSecondary, isPreview]);
 
-    return base;
-  }, [background?.type, background?.value, theme.background, bodyFont]);
+  const bgStyle: React.CSSProperties = {
+    ...bgComputed,
+    minHeight: isPreview ? '100%' : '100vh',
+    height: isPreview ? '100%' : 'auto',
+    color: theme.text,
+    fontFamily: bodyFont,
+    transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+  };
 
-  const activeButtons = useMemo(
-    () => buttons.filter((b: any) => b?.enabled && (b?.label || b?.text || b?.title)),
-    [buttons]
-  );
+  const proCardStyle: React.CSSProperties = {
+    borderRadius: `calc(${theme.radius} + 6px)`,
+    border: `1px solid ${theme.border}`,
+    background: theme.cardBg,
+    boxShadow: theme.shadow,
+    backdropFilter: 'blur(24px)',
+  };
+
+  const shellCardStyle: React.CSSProperties = {
+    borderRadius: `calc(${theme.radius} + 14px)`,
+    border: `1px solid ${theme.border}`,
+    background: theme.cardBg,
+    boxShadow: theme.shadow,
+    backdropFilter: 'blur(26px)',
+    position: 'relative',
+    overflow: 'hidden',
+  };
 
   const handleLinkClick = (btnId: string) => {
     if (isPreview) return;
     trackEvent({ profileId: profile.id, clientId: profile.clientId, type: 'click', linkId: btnId, source });
-  };
-
-  const handlePreviewAnchorClick = (
-    e: React.MouseEvent<HTMLAnchorElement>,
-    href: string,
-    label?: string
-  ) => {
-    if (!isPreview) return;
-    e.preventDefault();
-    e.stopPropagation();
-
-    const msg = label ? `Preview: ${label}` : `Preview: ${href}`;
-    showPreviewToast(msg);
   };
 
   const handleSaveContact = () => {
@@ -177,335 +210,444 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview = false, cl
     const headline = profile.headline || '';
     const url = window.location.origin + '/#/u/' + profile.slug;
 
-    const phoneBtn = buttons.find((b: any) => b?.enabled && (b.type === 'whatsapp' || b.type === 'phone' || b.type === 'call'));
-    const phoneValue = phoneBtn?.value || '';
-
+    const phoneBtn = buttons.find((b: any) => b?.enabled && (b.type === 'whatsapp' || b.type === 'phone' || b.type === 'mobile'));
     const emailBtn = buttons.find((b: any) => b?.enabled && b.type === 'email');
-    const emailValue = emailBtn?.value || '';
 
-    const lines = [
-      'BEGIN:VCARD',
-      'VERSION:3.0',
-      `FN:${name}`,
-      headline ? `TITLE:${headline}` : '',
-      phoneValue ? `TEL;TYPE=CELL:${phoneValue}` : '',
-      emailValue ? `EMAIL:${emailValue}` : '',
-      `URL:${url}`,
-      'END:VCARD',
-    ].filter(Boolean);
+    const phone = phoneBtn ? String(phoneBtn.value || '').replace(/\D/g, '') : '';
+    const email = emailBtn ? String(emailBtn.value || '') : '';
 
-    const blob = new Blob([lines.join('\n')], { type: 'text/vcard;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${name}.vcf`;
-    link.click();
-    URL.revokeObjectURL(link.href);
+    let vCard = `BEGIN:VCARD
+VERSION:3.0
+FN:${name}
+`;
+    if (headline) vCard += `TITLE:${headline}\n`;
+    if (phone) vCard += `TEL;TYPE=CELL:${phone}\n`;
+    if (email) vCard += `EMAIL:${email}\n`;
+    vCard += `URL:${url}\nEND:VCARD`;
+
+    const blob = new Blob([vCard], { type: 'text/vcard;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${name}.vcf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
-  const walletSlots = useMemo(() => {
-    const slots = (profile as any)?.walletSlots || [];
-    return Array.isArray(slots) ? slots : [];
-  }, [profile]);
+  const showCover = !!(profile.coverImageUrl || (profile as any)?.coverUrl);
+  const coverUrl = (profile.coverImageUrl || (profile as any)?.coverUrl || '').trim();
+  const avatarUrl = (profile.avatarUrl || '').trim();
 
-  const enabledDays = useMemo(() => {
-    const days = (profile as any)?.activeDays;
-    if (!Array.isArray(days)) return null;
-    return days.filter((d: any) => typeof d === 'number' && d >= 0 && d <= 6);
-  }, [profile]);
+  const displayName = safeString(profile.displayName, 'Seu Nome');
+  const headline = safeString(profile.headline, 'Sua headline / profissão');
+  const bio = safeString((profile as any)?.bio, '');
 
-  const getButtonStyle = () => {
-    const radius = clamp(profile?.buttonRadius ?? 16, 10, 28);
-    const opacity = clamp(profile?.buttonOpacity ?? 0.15, 0.05, 0.35);
+  const buttonStyle = safeString(theme.buttonStyle, 'glass');
 
-    const border = `1px solid rgba(255,255,255,${Math.max(0.06, opacity - 0.05)})`;
-    const bg = `rgba(255,255,255,${opacity})`;
+  const buttonBase = useMemo(() => {
+    const base = 'w-full flex items-center gap-3 px-4 py-3 font-black text-[11px] uppercase tracking-[0.18em] transition-all active:scale-[0.99]';
 
+    if (buttonStyle === 'solid') {
+      return clsx(base, 'rounded-2xl');
+    }
+
+    if (buttonStyle === 'outline') {
+      return clsx(base, 'rounded-2xl bg-transparent');
+    }
+
+    // glass default
+    return clsx(base, 'rounded-2xl');
+  }, [buttonStyle]);
+
+  const buttonInlineStyle = useMemo(() => {
+    if (buttonStyle === 'solid') {
+      return {
+        background: theme.primary,
+        color: primaryTextOnPrimary,
+        border: `1px solid ${theme.primary}`,
+        boxShadow: '0 14px 30px rgba(0,0,0,0.25)',
+        fontFamily: buttonFont,
+      } as React.CSSProperties;
+    }
+
+    if (buttonStyle === 'outline') {
+      return {
+        background: 'transparent',
+        color: theme.text,
+        border: `1px solid ${theme.border}`,
+        fontFamily: buttonFont,
+      } as React.CSSProperties;
+    }
+
+    // glass
     return {
-      borderRadius: radius,
-      border,
-      background: bg,
+      background: 'rgba(255,255,255,0.06)',
+      color: theme.text,
+      border: `1px solid ${theme.border}`,
+      backdropFilter: 'blur(20px)',
       fontFamily: buttonFont,
-      color: '#ffffff',
-      backdropFilter: 'blur(18px)',
-      WebkitBackdropFilter: 'blur(18px)',
     } as React.CSSProperties;
-  };
+  }, [buttonStyle, theme.primary, theme.text, theme.border, primaryTextOnPrimary, buttonFont]);
 
-  const Header = () => {
-    if (!coverEnabled) return null;
+  const containerClass = useMemo(() => {
+    if (isPreview) return 'w-full h-full';
+    return 'min-h-screen w-full';
+  }, [isPreview]);
 
-    return (
-      <div className="w-full max-w-[440px] mx-auto">
-        <div className="w-full rounded-3xl overflow-hidden border border-white/10 bg-white/5">
-          <div className="h-40 w-full relative">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            <img src={(cover as any).imageUrl} alt="cover" className="absolute inset-0 w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/65" />
-          </div>
+  const innerClass = useMemo(() => {
+    if (isPreview) return 'w-full h-full';
+    return 'w-full max-w-lg mx-auto px-5 py-10';
+  }, [isPreview]);
+
+  const headerClass = useMemo(() => {
+    if (layout === 'Split Header') return 'flex items-start gap-4';
+    if (isLeft) return 'flex items-start gap-4';
+    if (isBigAvatar) return 'flex flex-col items-center text-center';
+    return 'flex flex-col items-center text-center';
+  }, [layout, isLeft, isBigAvatar]);
+
+  const avatarClass = useMemo(() => {
+    if (isBigAvatar) return 'w-24 h-24 rounded-[2rem] border border-white/15 bg-white/5 overflow-hidden';
+    if (layout === 'Split Header') return 'w-16 h-16 rounded-2xl border border-white/15 bg-white/5 overflow-hidden';
+    if (isLeft) return 'w-16 h-16 rounded-2xl border border-white/15 bg-white/5 overflow-hidden';
+    return 'w-20 h-20 rounded-[2.2rem] border border-white/15 bg-white/5 overflow-hidden';
+  }, [layout, isLeft, isBigAvatar]);
+
+  const titleWrapClass = useMemo(() => {
+    if (layout === 'Split Header') return 'flex-1 pt-1';
+    if (isLeft) return 'flex-1 pt-1';
+    return 'w-full mt-4';
+  }, [layout, isLeft]);
+
+  const titleClass = useMemo(() => {
+    return 'text-2xl font-black tracking-tight';
+  }, []);
+
+  const headlineClass = useMemo(() => {
+    return 'text-sm font-bold text-white/70';
+  }, []);
+
+  const coverNode = showCover ? (
+    <div className={clsx('w-full rounded-[2rem] overflow-hidden relative border border-white/10', coverConfig.heightClass)}>
+      <img
+        src={coverUrl}
+        alt="Cover"
+        className="w-full h-full object-cover"
+        loading="lazy"
+        onError={(e) => {
+          (e.currentTarget as HTMLImageElement).style.display = 'none';
+        }}
+      />
+      <div className={clsx('absolute inset-0 bg-gradient-to-b', coverConfig.overlay)} />
+    </div>
+  ) : null;
+
+  const avatarNode = (
+    <div className={avatarClass}>
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={displayName}
+          className="w-full h-full object-cover"
+          loading="lazy"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-white/40">
+          <LucideIcons.User size={28} />
         </div>
-      </div>
-    );
-  };
+      )}
+    </div>
+  );
 
-  const Identity = () => {
-    const avatar = (profile as any)?.avatarUrl || (profile as any)?.photoUrl || '';
+  const headerNode = (
+    <div className={clsx(headerClass)}>
+      {isLeft || layout === 'Split Header' ? avatarNode : null}
 
-    return (
-      <div
-        className={clsx(
-          'w-full max-w-[440px] mx-auto',
-          isLeft ? 'flex items-start gap-3' : 'flex flex-col items-center'
-        )}
-      >
-        <div
-          className={clsx(
-            'border border-white/12 bg-white/8 overflow-hidden',
-            isBigAvatar ? 'w-24 h-24 rounded-full' : isLeft ? 'w-16 h-16 rounded-3xl' : 'w-20 h-20 rounded-full'
-          )}
-        >
-          {avatar ? (
-            <img src={avatar} alt="avatar" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full grid place-items-center text-white/20">
-              <LucideIcons.User2 size={28} />
-            </div>
-          )}
+      <div className={clsx(titleWrapClass)}>
+        <h1 className={titleClass} style={{ fontFamily: headingFont }}>
+          {displayName}
+        </h1>
+        <div className={headlineClass} style={{ fontFamily: bodyFont }}>
+          {headline}
         </div>
 
-        <div className={clsx(isLeft ? 'flex-1 pt-1' : 'mt-3 text-center')}>
-          <div
-            className="text-white font-black tracking-tight"
-            style={{ fontFamily: headingFont, fontSize: isBigAvatar ? 24 : 22, lineHeight: 1.1 }}
-          >
-            {profile.displayName || 'Seu Nome'}
-          </div>
-          {profile.headline ? (
-            <div className="text-white/65 font-semibold text-sm mt-1">{profile.headline}</div>
-          ) : null}
-          {profile.bio ? (
-            <div className="text-white/55 text-sm font-medium mt-2 leading-relaxed">{profile.bio}</div>
-          ) : null}
-
-          {/* tags / chips */}
-          {(profile as any)?.tags?.length ? (
-            <div className={clsx('mt-3 flex flex-wrap gap-2', isLeft ? '' : 'justify-center')}>
-              {(profile as any).tags.slice(0, 6).map((tag: string) => (
-                <div
-                  key={tag}
-                  className="px-3 py-1 rounded-full bg-white/8 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/70"
-                >
-                  {tag}
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      </div>
-    );
-  };
-
-  const ActionsRow = () => {
-    const showContact = (profile as any)?.showContactButton !== false;
-
-    return (
-      <div className="w-full max-w-[440px] mx-auto mt-5">
-        <div className="flex gap-2">
-          {showContact ? (
-            <button
-              type="button"
-              onClick={handleSaveContact}
-              className="flex-1 h-12 rounded-2xl bg-white/10 border border-white/12 hover:bg-white/14 transition-all active:scale-95 font-black text-[10px] uppercase tracking-[0.22em] text-white/80"
-              style={{ fontFamily: buttonFont }}
-            >
-              Salvar contato
-            </button>
-          ) : null}
-
-          {hasPix && pix?.enabled ? (
-            <button
-              type="button"
-              onClick={() => setShowWalletModal(true)}
-              className="w-14 h-12 rounded-2xl bg-white/10 border border-white/12 hover:bg-white/14 transition-all active:scale-95 grid place-items-center"
-              title="Carteira / Pix"
-            >
-              <LucideIcons.Wallet size={18} className="text-white/80" />
-            </button>
-          ) : null}
-        </div>
-      </div>
-    );
-  };
-
-  const Schedule = () => {
-    if (!enabledDays || enabledDays.length === 0) return null;
-
-    return (
-      <div className="w-full max-w-[440px] mx-auto mt-6">
-        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40 mb-2">
-          Disponível
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {DAYS_OF_WEEK.map((d, idx) => {
-            const on = enabledDays.includes(idx);
-            return (
-              <div
-                key={d}
-                className={clsx(
-                  'px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest',
-                  on ? 'bg-white/10 border-white/14 text-white/70' : 'bg-white/5 border-white/8 text-white/25'
-                )}
-              >
-                {d}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  const Buttons = () => {
-    if (!activeButtons.length) return null;
-
-    return (
-      <div className={clsx(isGrid ? "grid grid-cols-2 gap-3" : "flex flex-col gap-3", "w-full")}>
-        {activeButtons.map((btn: any, idx: number) => {
-          const Icon = getIcon(btn.type);
-          return (
-            <a
-              key={btn.id || `${btn.type}-${idx}`}
-              href={formatLink(btn.type, btn.value)}
-              target={isPreview ? undefined : "_blank"}
-              rel={isPreview ? undefined : "noopener noreferrer"}
-              onClick={(e) => {
-                if (isPreview) {
-                  handlePreviewAnchorClick(e, formatLink(btn.type, btn.value), btn.label || btn.title || btn.text);
-                  return;
-                }
-                handleLinkClick(btn.id);
-              }}
-              style={getButtonStyle()}
-              className="group hover:translate-y-[-2px] transition-transform active:scale-[0.99] w-full"
-            >
-              <div className="w-full h-14 px-4 flex items-center gap-3">
-                <span className="w-9 h-9 rounded-2xl bg-black/25 border border-white/10 grid place-items-center text-white/75">
-                  <Icon size={18} />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-white font-black text-sm truncate">
-                    {btn.label || btn.title || btn.text}
-                  </div>
-                  {btn.subtitle ? (
-                    <div className="text-white/55 text-xs font-semibold truncate">{btn.subtitle}</div>
-                  ) : null}
-                </div>
-                <LucideIcons.ChevronRight size={18} className="text-white/35 group-hover:text-white/60 transition-colors" />
-              </div>
-            </a>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const WalletModal = () => {
-    if (!showWalletModal) return null;
-
-    return (
-      <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-2xl grid place-items-center p-5">
-        <div className="w-full max-w-md rounded-3xl bg-zinc-950 border border-white/10 shadow-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-white font-black">Carteira</div>
-            <button
-              type="button"
-              onClick={() => setShowWalletModal(false)}
-              className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all grid place-items-center"
-            >
-              <LucideIcons.X size={18} className="text-white/70" />
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {walletSlots.map((s: any) => (
-              <button
-                key={s?.id || s?.label}
-                type="button"
-                onClick={() => setSelectedSlotId(s?.id || null)}
-                className={clsx(
-                  'w-full p-4 rounded-2xl border transition-all text-left',
-                  selectedSlotId === s?.id
-                    ? 'bg-white/10 border-white/14'
-                    : 'bg-white/5 border-white/8 hover:bg-white/8 hover:border-white/12'
-                )}
-              >
-                <div className="text-white font-black">{s?.label || 'Slot'}</div>
-                {s?.value ? (
-                  <div className="text-white/55 text-sm font-semibold mt-1">{s.value}</div>
-                ) : null}
-              </button>
-            ))}
-          </div>
-
-          {selectedSlotId ? (
-            <div className="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10">
-              <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">
-                Selecionado
-              </div>
-              <div className="text-white font-black mt-1">{selectedSlotId}</div>
-            </div>
-          ) : null}
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div style={bgStyle} className="w-full flex flex-col items-center overflow-x-hidden no-scrollbar">
-      <div className="relative z-10 w-full px-4 flex flex-col items-center pt-8 pb-20">
-        {isPreview && previewToast ? (
-          <div className="sticky bottom-3 z-50 w-full flex justify-center pointer-events-none">
-            <div className="px-3 py-2 rounded-full bg-black/70 border border-white/10 text-[10px] font-extrabold tracking-wide text-white/80 backdrop-blur">
-              {previewToast}
-            </div>
+        {bio ? (
+          <div className="mt-3 text-[13px] leading-relaxed text-white/70 font-semibold" style={{ fontFamily: bodyFont }}>
+            {bio}
           </div>
         ) : null}
 
-        <Header />
-        <Identity />
-        <ActionsRow />
-        <Schedule />
+        {!isLeft && layout !== 'Split Header' ? (
+          <div className="mt-5 flex justify-center">{avatarNode}</div>
+        ) : null}
+      </div>
+    </div>
+  );
 
-        <div className="w-full max-w-[440px] mx-auto mt-6">
-          <Buttons />
+  const enabledButtons = buttons.filter((b: any) => b?.enabled);
+
+  const scheduling = (profile as any)?.scheduling || {};
+  const pix = (profile as any)?.pix || {};
+
+  const scheduleSlots = Array.isArray(scheduling?.slots) ? scheduling.slots : [];
+
+  const openPixModal = () => {
+    if (!hasPixAccess) return;
+    setShowWalletModal(true);
+  };
+
+  const closePixModal = () => setShowWalletModal(false);
+
+  const handleOpenLink = (url: string, btnId: string) => {
+    handleLinkClick(btnId);
+    if (isPreview) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const renderButtons = () => {
+    if (!enabledButtons.length) {
+      return (
+        <div className="text-center text-white/45 text-xs font-black uppercase tracking-[0.18em]">
+          Adicione botões no editor
         </div>
+      );
+    }
 
-        <WalletModal />
+    const ButtonWrap: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+      if (layout === 'Two Columns') return <div className="grid grid-cols-2 gap-3">{children}</div>;
+      if (layout === 'Icon Grid') return <div className="grid grid-cols-3 gap-3">{children}</div>;
+      if (layout === 'Button Grid') return <div className="grid grid-cols-2 gap-3">{children}</div>;
+      return <div className="space-y-3">{children}</div>;
+    };
 
-        <div className="mt-10 w-full max-w-[440px] mx-auto">
-          <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/25 text-center">
-            {profile.slug ? `/${profile.slug}` : '/seu-perfil'}
-          </div>
-        </div>
+    return (
+      <ButtonWrap>
+        {enabledButtons.map((b: any) => {
+          const Icon = getIcon(String(b.type || 'link'));
+          const label = safeString(b.label, 'Link');
+          const value = safeString(b.value, '');
+          const href = formatLink(String(b.type || 'link'), value);
 
-        <div className="mt-10 w-full max-w-[440px] mx-auto border-t border-white/5 pt-6">
-          <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/25 text-center">
-            Powered by
-          </div>
-          <div className="mt-2 w-full flex justify-center">
-            <a
-              href="/"
-              target={isPreview ? undefined : "_blank"}
-              rel={isPreview ? undefined : "noopener noreferrer"}
-              onClick={(e) => handlePreviewAnchorClick(e, "/", "LinkFlow")}
-              className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity"
+          const isIconOnly = layout === 'Icon Grid';
+          const isGridLike = layout === 'Two Columns' || layout === 'Button Grid' || layout === 'Icon Grid';
+
+          const shared = (
+            <>
+              <span
+                className={clsx(
+                  'w-8 h-8 rounded-xl flex items-center justify-center',
+                  buttonStyle === 'solid' ? 'bg-black/10' : 'bg-white/10'
+                )}
+              >
+                <Icon size={18} />
+              </span>
+
+              {!isIconOnly ? (
+                <span className="flex-1 text-left leading-tight">
+                  <span className="block">{label}</span>
+                  {isGridLike ? null : (
+                    <span className="block text-[10px] font-bold tracking-normal uppercase text-white/55 mt-1">
+                      {value}
+                    </span>
+                  )}
+                </span>
+              ) : null}
+
+              {!isIconOnly ? (
+                <span className="text-white/40">
+                  <LucideIcons.ChevronRight size={18} />
+                </span>
+              ) : null}
+            </>
+          );
+
+          return (
+            <button
+              key={String(b.id)}
+              type="button"
+              className={buttonBase}
+              style={buttonInlineStyle}
+              onClick={() => {
+                if (!href) return;
+                handleOpenLink(href, String(b.id));
+              }}
+              title={label}
             >
-              <img src="/logo.png" className="h-5" alt="LinkFlow" />
-              <span className="text-white/70 font-black text-sm">LinkFlow</span>
-            </a>
+              {shared}
+            </button>
+          );
+        })}
+      </ButtonWrap>
+    );
+  };
+
+  const renderScheduling = () => {
+    if (!hasSchedulingAccess) return null;
+    if (!scheduleSlots.length) return null;
+
+    const selected = scheduleSlots.find((s: any) => String(s.id) === String(selectedSlotId));
+
+    return (
+      <div className="mt-6">
+        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/55 mb-3">
+          Agendamento
+        </div>
+
+        <div className="grid grid-cols-1 gap-2">
+          {scheduleSlots.map((s: any) => {
+            const id = String(s.id);
+            const day = DAYS_OF_WEEK[Number(s.day) || 0] || 'Dia';
+            const start = safeString(s.start, '00:00');
+            const end = safeString(s.end, '00:00');
+            const selected = selectedSlotId === id;
+
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setSelectedSlotId(id)}
+                className={clsx(
+                  'w-full text-left rounded-2xl px-4 py-3 border transition-all',
+                  selected ? 'border-blue-500/40 bg-blue-500/10' : 'border-white/10 bg-white/5 hover:bg-white/7'
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="font-black text-[11px] uppercase tracking-[0.18em]">{day}</div>
+                  <div className="text-[10px] font-black text-white/60">{start} — {end}</div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {selected ? (
+          <button
+            type="button"
+            className="mt-3 w-full rounded-2xl px-4 py-4 font-black text-[11px] uppercase tracking-[0.2em] bg-white text-black hover:bg-zinc-200 transition-all active:scale-[0.99]"
+            onClick={() => {
+              if (isPreview) return;
+              trackEvent({ profileId: profile.id, clientId: profile.clientId, type: 'click', linkId: 'scheduling', source });
+              alert('Agendamento: integrar provider depois (placeholder).');
+            }}
+          >
+            Confirmar horário
+          </button>
+        ) : null}
+      </div>
+    );
+  };
+
+  const renderPix = () => {
+    if (!hasPixAccess) return null;
+    const key = safeString(pix?.key, '');
+    if (!key) return null;
+
+    return (
+      <div className="mt-6">
+        <button
+          type="button"
+          onClick={openPixModal}
+          className="w-full rounded-2xl px-4 py-4 font-black text-[11px] uppercase tracking-[0.2em] bg-white/10 border border-white/15 hover:bg-white/15 transition-all active:scale-[0.99]"
+          style={{ fontFamily: buttonFont }}
+        >
+          Pagar via Pix
+        </button>
+      </div>
+    );
+  };
+
+  const pixModal = showWalletModal ? (
+    <div className="fixed inset-0 z-[999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-6">
+      <div className="w-full max-w-sm bg-zinc-950 border border-white/10 rounded-[2.5rem] p-6 shadow-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <div className="font-black uppercase tracking-[0.22em] text-[10px] text-white/60">Pix</div>
+          <button
+            type="button"
+            onClick={closePixModal}
+            className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 transition-all flex items-center justify-center"
+          >
+            <LucideIcons.X size={18} />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="text-white font-black text-xl">{displayName}</div>
+          <div className="text-white/60 text-sm font-semibold">Chave Pix:</div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 font-mono text-sm text-white break-all">
+            {safeString((pix as any)?.key, '')}
           </div>
+
+          <button
+            type="button"
+            className="w-full rounded-2xl px-4 py-4 font-black text-[11px] uppercase tracking-[0.2em] bg-white text-black hover:bg-zinc-200 transition-all active:scale-[0.99]"
+            onClick={() => {
+              const k = safeString((pix as any)?.key, '');
+              if (!k) return;
+              navigator.clipboard?.writeText(k);
+            }}
+          >
+            Copiar chave
+          </button>
         </div>
       </div>
     </div>
+  ) : null;
+
+  return (
+    <>
+      <div className={containerClass} style={bgStyle}>
+        <div className={innerClass}>
+          <div className="w-full" style={shellCardStyle}>
+            <div className="p-6">
+              {coverNode ? <div className="mb-5">{coverNode}</div> : null}
+
+              {headerNode}
+
+              <div className="mt-6" style={proCardStyle}>
+                <div className="p-5">
+                  {renderButtons()}
+                  {renderScheduling()}
+                  {renderPix()}
+
+                  <div className="mt-6 pt-5 border-t border-white/10 flex items-center gap-3">
+                    <button
+                      type="button"
+                      className="flex-1 rounded-2xl px-4 py-3 font-black text-[10px] uppercase tracking-[0.22em] bg-white/10 border border-white/15 hover:bg-white/15 transition-all active:scale-[0.99]"
+                      onClick={handleSaveContact}
+                      style={{ fontFamily: buttonFont }}
+                    >
+                      Salvar contato
+                    </button>
+
+                    <button
+                      type="button"
+                      className="w-12 h-12 rounded-2xl bg-white/10 border border-white/15 hover:bg-white/15 transition-all flex items-center justify-center active:scale-[0.99]"
+                      onClick={() => {
+                        if (isPreview) return;
+                        trackEvent({ profileId: profile.id, clientId: profile.clientId, type: 'click', linkId: 'share', source });
+                        navigator.clipboard?.writeText(window.location.href);
+                      }}
+                      title="Copiar link"
+                    >
+                      <LucideIcons.Share2 size={18} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 text-center text-white/35 text-[10px] font-black uppercase tracking-[0.22em]">
+                Powered by LinkFlow
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {pixModal}
+    </>
   );
 };
 
