@@ -153,6 +153,15 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
   const primaryTextOnPrimary = pickReadableOn(theme.primary);
 
+  const typeLabel = {
+    personal: 'Profissional',
+    business: 'Empresa',
+    creator: 'Criador'
+  }[profile.profileType || 'personal'] || 'Profissional';
+
+  const primaryRgb = hexToRgb(theme.primary);
+  const badgeBg = primaryRgb ? `rgba(${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}, 0.1)` : theme.primary;
+
   const coverConfig = useMemo(() => {
     let heightClass = 'h-36';
     let overlay = 'from-black/10 via-black/25 to-black/70';
@@ -363,6 +372,18 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                   <p className="text-sm font-semibold opacity-80 mt-1" style={{ fontFamily: bodyFont, color: theme.text }}>
                     {safeString(profile.headline, 'Sua headline aqui')}
                   </p>
+                  
+                  <div 
+                    className="mt-2 inline-flex items-center px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest"
+                    style={{
+                      borderColor: theme.primary,
+                      backgroundColor: badgeBg,
+                      color: theme.primary,
+                      fontFamily: buttonFont
+                    }}
+                  >
+                    {typeLabel}
+                  </div>
                 </div>
               </div>
 
