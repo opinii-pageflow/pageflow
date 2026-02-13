@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from 'react';
 import { Profile } from '../../types';
 import { 
@@ -33,7 +32,7 @@ const ShareTab: React.FC<Props> = ({ profile }) => {
   
   // URL pública formatada para o HashRouter
   const shareUrl = `${window.location.origin}/#/u/${profile.slug}`;
-  const shareText = `Confira meu perfil profissional no LinkFlow: ${profile.displayName} 🚀`;
+  const shareText = `Confira meu perfil profissional no PageFlow: ${profile.displayName} 🚀`;
 
   const copyToClipboard = () => {
     try {
@@ -73,7 +72,7 @@ const ShareTab: React.FC<Props> = ({ profile }) => {
       const pngUrl = canvas.toDataURL("image/png");
       const downloadLink = document.createElement("a");
       downloadLink.href = pngUrl;
-      downloadLink.download = `linkflow-qr-${profile.slug}.png`;
+      downloadLink.download = `pageflow-qr-${profile.slug}.png`;
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
@@ -87,7 +86,7 @@ const ShareTab: React.FC<Props> = ({ profile }) => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `LinkFlow - ${profile.displayName}`,
+          title: `PageFlow - ${profile.displayName}`,
           text: shareText,
           url: shareUrl,
         });
@@ -272,7 +271,7 @@ const ShareTab: React.FC<Props> = ({ profile }) => {
         </div>
 
         <p className="relative z-10 text-xs text-zinc-500 leading-relaxed mb-8 pr-8">
-          Adquira um cartão LinkFlow NFC e compartilhe seu perfil apenas aproximando do celular do cliente. Sem leitura de câmera necessária.
+          Adquira um cartão PageFlow NFC e compartilhe seu perfil apenas aproximando do celular do cliente. Sem leitura de câmera necessária.
         </p>
 
         <button className="relative z-10 w-full py-4 bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-purple-600/10 flex items-center justify-center gap-2 active:scale-95">

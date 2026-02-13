@@ -348,7 +348,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
       const slot = profile.nativeSlots?.find(s => s.id === selectedSlotId);
       if (slot && profile.bookingWhatsapp) {
         const text = encodeURIComponent(
-          `Olá, gostaria de agendar um horário (${DAYS_OF_WEEK[slot.dayOfWeek]} das ${slot.startTime} às ${slot.endTime}) visto no seu perfil LinkFlow.`
+          `Olá, gostaria de agendar um horário (${DAYS_OF_WEEK[slot.dayOfWeek]} das ${slot.startTime} às ${slot.endTime}) visto no seu perfil PageFlow.`
         );
         window.open(`https://wa.me/${profile.bookingWhatsapp}?text=${text}`, '_blank');
       }
@@ -843,6 +843,15 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
               </section>
             )}
           </div>
+          
+          {/* Footer Logo - Somente se branding estiver ativo */}
+          {!profile.hideBranding && (
+            <div className="w-full flex justify-center pb-8 pt-4">
+                <a href="/" target="_blank" rel="noopener noreferrer" className="opacity-40 hover:opacity-100 transition-opacity">
+                    <img src="/logo.png" alt="PageFlow" className="h-5 w-auto" />
+                </a>
+            </div>
+          )}
         </main>
 
         {/* Wallet Modal (placeholder visual) */}

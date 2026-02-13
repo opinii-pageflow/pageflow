@@ -91,7 +91,7 @@ const AdminDashboard: React.FC = () => {
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:80px_80px]" />
       </div>
 
-      <TopBar title="Admin Dashboard" subtitle="Supervise o ecossistema LinkFlow" />
+      <TopBar title="Admin Dashboard" subtitle="Supervise o ecossistema PageFlow" />
 
       <main className="relative z-10 px-6 pb-20 max-w-7xl mx-auto">
         <div className="pt-10 pb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-8">

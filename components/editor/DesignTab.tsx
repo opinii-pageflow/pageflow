@@ -130,7 +130,7 @@ const DesignTab: React.FC<Props> = ({ profile, onUpdate }) => {
               <ShieldAlert size={18} />
             </div>
             <div>
-              <h4 className="font-black text-base">Marca LinkFlow</h4>
+              <h4 className="font-black text-base">Marca PageFlow</h4>
               <p className="text-zinc-500 text-xs">Exibe o selo oficial no rodapé do perfil.</p>
             </div>
           </div>
