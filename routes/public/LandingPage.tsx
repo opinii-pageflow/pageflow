@@ -283,7 +283,7 @@ const LandingPage: React.FC = () => {
       <section id="precos" className="py-32 px-6 max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-20 space-y-4">
           <div className="text-indigo-400 text-[10px] font-black uppercase tracking-[0.3em]">Investimento</div>
-          <h2 className="text-4xl md:text-6xl font-black tracking-tighter">Planos de <span className="text-zinc-700">Expansão</span></h2>
+          <h2 className="text-4xl md:text-6xl font-black tracking-tighter">Planos de <span className="text-lime-400">Expansão</span></h2>
           <p className="text-zinc-500 max-w-lg mx-auto text-lg font-medium leading-relaxed">Selecione a infraestrutura ideal para o seu perfil profissional.</p>
         </div>
 
