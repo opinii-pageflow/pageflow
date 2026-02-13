@@ -12,10 +12,7 @@ export type FeatureKey =
   | 'leads_full_details'
   | 'analytics' 
   | 'white_label'
-  | 'premium_templates'
-  | 'premium_fonts'
-  | 'premium_themes'
-  | 'background_image';
+  | 'premium_templates';
 
 const PLAN_RANK: Record<PlanType, number> = {
   starter: 0,
@@ -32,42 +29,41 @@ const FEATURE_REQUIREMENTS: Record<FeatureKey, PlanType> = {
   analytics: 'pro',
   nps: 'pro',
   leads_capture: 'pro',
-  premium_templates: 'pro',
-  premium_fonts: 'pro',
-  premium_themes: 'pro',
-  background_image: 'pro',
+  premium_templates: 'pro', // Bloqueia templates avançados no Starter
   leads_export: 'enterprise',
   leads_full_details: 'enterprise', 
-  crm: 'enterprise', 
+  crm: 'enterprise', // CRM Completo apenas no Enterprise
   white_label: 'enterprise'
 };
 
-export const ESSENTIAL_TEMPLATES = ['Minimal Card', 'Button List Bold', 'Avatar Left', 'Corporate'];
-export const ESSENTIAL_FONTS = ['Inter', 'Roboto', 'Lato'];
-export const ESSENTIAL_THEMES = ['Minimal Dark'];
+/**
+ * Lista de templates considerados "Essenciais" (disponíveis no Starter)
+ */
+export const ESSENTIAL_TEMPLATES = [
+  'Minimal Card',
+  'Button List Bold',
+  'Avatar Left',
+  'Corporate'
+];
 
+/**
+ * Verifica se um plano tem acesso a um determinado recurso.
+ */
 export const canAccessFeature = (clientPlan: PlanType | undefined, feature: FeatureKey): boolean => {
   if (!clientPlan) return false;
+  
   const currentRank = PLAN_RANK[clientPlan];
   const requiredPlan = FEATURE_REQUIREMENTS[feature];
   const requiredRank = PLAN_RANK[requiredPlan];
+
   return currentRank >= requiredRank;
 };
 
+/**
+ * Verifica se o usuário pode usar um template específico
+ */
 export const canUseTemplate = (clientPlan: PlanType | undefined, templateId: string): boolean => {
   if (!clientPlan) return false;
   if (ESSENTIAL_TEMPLATES.includes(templateId)) return true;
   return canAccessFeature(clientPlan, 'premium_templates');
-};
-
-export const canUseFont = (clientPlan: PlanType | undefined, fontName: string): boolean => {
-  if (!clientPlan) return false;
-  if (ESSENTIAL_FONTS.includes(fontName)) return true;
-  return canAccessFeature(clientPlan, 'premium_fonts');
-};
-
-export const canUseTheme = (clientPlan: PlanType | undefined, themeName: string): boolean => {
-  if (!clientPlan) return false;
-  if (ESSENTIAL_THEMES.includes(themeName)) return true;
-  return canAccessFeature(clientPlan, 'premium_themes');
 };

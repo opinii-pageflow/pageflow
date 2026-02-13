@@ -14,14 +14,14 @@ export const PLANS: Record<PlanType, Plan> = {
     name: 'Starter',
     maxProfiles: 1,
     monthlyPrice: 0,
-    features: ['1 Perfil Ativo', 'QR Code Básico', 'Fontes & Temas Essenciais', 'Suporte via E-mail'],
+    features: ['1 Perfil Ativo', 'QR Code Básico', 'Templates Essenciais', 'Suporte via E-mail'],
   },
   pro: {
     id: 'pro',
     name: 'Pro',
     maxProfiles: 3,
     monthlyPrice: 19,
-    features: ['Até 3 Perfis Ativos', 'Analytics Avançado', 'Catálogo & Portfólio', 'Imagens de Fundo', 'Fontes & Temas Premium'],
+    features: ['Até 3 Perfis Ativos', 'Analytics Avançado', 'Catálogo & Portfólio', 'Chave Pix', 'Sem Anúncios'],
   },
   business: {
     id: 'business',
