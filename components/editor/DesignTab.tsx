@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Profile, BackgroundType, ButtonStyle, PlanType } from '../../types';
+import { Profile, BackgroundType, ButtonStyle } from '../../types';
 import { themePresets } from '../../lib/themePresets';
 import { getStyleFromClipboard, copyStyleToClipboard, StyleConfig, getStorage, getCurrentUser } from '../../lib/storage';
 import { canAccessFeature } from '../../lib/permissions';
@@ -339,6 +339,50 @@ const DesignTab: React.FC<Props> = ({ profile, onUpdate }) => {
                 {style === 'solid' ? 'Sólido' : style === 'outline' ? 'Borda' : 'Vidro'}
               </button>
             ))}
+          </div>
+
+          {/* Ícones */}
+          <div className="mt-6 bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-purple-400">
+                  <PaletteIcon size={18} />
+                </div>
+                <div>
+                  <h4 className="font-black text-base">Ícones dos Botões</h4>
+                  <p className="text-zinc-500 text-xs">Escolha entre ícones monocromáticos ou ícones oficiais (coloridos).</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 bg-zinc-900/60 border border-white/5 rounded-2xl p-1">
+                <button
+                  onClick={() => updateTheme({ iconStyle: 'mono' })}
+                  className={clsx(
+                    "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                    profile.theme.iconStyle !== 'brand'
+                      ? 'bg-white text-black'
+                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                  )}
+                >
+                  Mono
+                </button>
+                <button
+                  onClick={() => updateTheme({ iconStyle: 'brand' })}
+                  className={clsx(
+                    "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                    profile.theme.iconStyle === 'brand'
+                      ? 'bg-white text-black'
+                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'
+                  )}
+                >
+                  Brand
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-relaxed">
+              Dica: “Brand” fica melhor em templates com botões em <span className="text-white">Glass</span> ou <span className="text-white">Outline</span>.
+            </div>
           </div>
         </div>
 
