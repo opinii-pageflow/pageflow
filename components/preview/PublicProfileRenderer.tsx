@@ -388,7 +388,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
               </div>
 
               {profile.bioShort && (
-                <p className={clsx("mt-4 text-sm leading-relaxed", isLeft ? "text-left" : "text-center")} style={{ fontFamily: bodyFont, color: theme.muted }}>
+                <p className={clsx("mt-4 text-sm leading-relaxed", isLeft ? "text-left" : "text-center")} style={{ fontFamily: bodyFont, color: theme.text, opacity: 0.8 }}>
                   {profile.bioShort}
                 </p>
               )}
