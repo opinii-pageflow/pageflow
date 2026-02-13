@@ -37,8 +37,10 @@ const AdvancedCrm: React.FC<Props> = ({ leads }) => {
 
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
-      const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          lead.contact.toLowerCase().includes(searchTerm.toLowerCase());
+      const contactStr = lead.contact || '';
+      const nameStr = lead.name || '';
+      const matchesSearch = nameStr.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          contactStr.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
@@ -46,7 +48,7 @@ const AdvancedCrm: React.FC<Props> = ({ leads }) => {
 
   const exportToCsv = () => {
     const headers = ['Nome', 'Contato', 'Status', 'Data', 'Mensagem'];
-    const rows = leads.map(l => [l.name, l.contact, l.status, new Date(l.createdAt).toLocaleString(), l.message || '']);
+    const rows = leads.map(l => [l.name, l.contact || '', l.status, new Date(l.createdAt).toLocaleString(), l.message || '']);
     const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].map(e => e.join(",")).join("\n");
     const link = document.createElement("a");
     link.setAttribute("href", encodeURI(csvContent));
@@ -114,37 +116,40 @@ const AdvancedCrm: React.FC<Props> = ({ leads }) => {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-white/5 bg-white/[0.02]">
-                <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500">Inquilino</th>
+                <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500">Nome</th>
                 <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500">Contato</th>
                 <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500">Pipeline</th>
                 <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-right">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredLeads.map(lead => (
-                <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="p-8">
-                    <div className="font-black text-lg text-white">{lead.name}</div>
-                    <div className="text-[10px] text-zinc-500 mt-1 uppercase tracking-widest font-mono">{new Date(lead.createdAt).toLocaleDateString()}</div>
-                  </td>
-                  <td className="p-8">
-                    <div className="flex items-center gap-3 text-sm font-bold text-zinc-400">
-                      {lead.contact.includes('@') ? <MessageSquare size={14} className="text-blue-500" /> : <UserCheck size={14} className="text-emerald-500" />}
-                      {lead.contact}
-                    </div>
-                  </td>
-                  <td className="p-8">
-                    <span className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border ${statusConfig[lead.status].bg} ${statusConfig[lead.status].color} border-current/20`}>
-                      {statusConfig[lead.status].label}
-                    </span>
-                  </td>
-                  <td className="p-8 text-right">
-                    <button onClick={() => setSelectedLead(lead)} className="bg-white text-black px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg shadow-white/5">
-                      Ficha do Lead
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {filteredLeads.map(lead => {
+                const contactStr = lead.contact || '';
+                return (
+                  <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors group">
+                    <td className="p-8">
+                      <div className="font-black text-lg text-white">{lead.name}</div>
+                      <div className="text-[10px] text-zinc-500 mt-1 uppercase tracking-widest font-mono">{new Date(lead.createdAt).toLocaleDateString()}</div>
+                    </td>
+                    <td className="p-8">
+                      <div className="flex items-center gap-3 text-sm font-bold text-zinc-400">
+                        {contactStr.includes('@') ? <MessageSquare size={14} className="text-blue-500" /> : <UserCheck size={14} className="text-emerald-500" />}
+                        {contactStr || 'Sem contato'}
+                      </div>
+                    </td>
+                    <td className="p-8">
+                      <span className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border ${statusConfig[lead.status]?.bg || 'bg-zinc-800'} ${statusConfig[lead.status]?.color || 'text-zinc-400'} border-current/20`}>
+                        {statusConfig[lead.status]?.label || 'Desconhecido'}
+                      </span>
+                    </td>
+                    <td className="p-8 text-right">
+                      <button onClick={() => setSelectedLead(lead)} className="bg-white text-black px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg shadow-white/5">
+                        Ficha do Lead
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -162,16 +167,16 @@ const AdvancedCrm: React.FC<Props> = ({ leads }) => {
             <div className="space-y-8">
               <div className="flex items-center gap-6">
                 <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-[2rem] flex items-center justify-center text-4xl font-black shadow-2xl">
-                  {selectedLead.name[0]}
+                  {(selectedLead.name || 'L')[0]}
                 </div>
                 <div>
                   <h3 className="text-2xl font-black">{selectedLead.name}</h3>
-                  <p className="text-zinc-500 font-medium">{selectedLead.contact}</p>
+                  <p className="text-zinc-500 font-medium">{selectedLead.contact || 'Sem contato'}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <a href={selectedLead.contact.includes('@') ? `mailto:${selectedLead.contact}` : `https://wa.me/${selectedLead.contact.replace(/\D/g, '')}`} target="_blank" className="bg-white text-black py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 shadow-xl shadow-white/5">
+                <a href={(selectedLead.contact || '').includes('@') ? `mailto:${selectedLead.contact}` : `https://wa.me/${(selectedLead.contact || '').replace(/\D/g, '')}`} target="_blank" className="bg-white text-black py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 shadow-xl shadow-white/5">
                   <Send size={18} /> Iniciar Contato
                 </a>
                 <div className="relative">
@@ -205,7 +210,7 @@ const AdvancedCrm: React.FC<Props> = ({ leads }) => {
                   {selectedLead.history?.map((h, i) => (
                     <div key={i} className="relative pl-8">
                       <div className="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-zinc-800"></div>
-                      <div className="text-xs font-black text-zinc-400">Status alterado para <span className={statusConfig[h.status]?.color}>{statusConfig[h.status]?.label}</span></div>
+                      <div className="text-xs font-black text-zinc-400">Status alterado para <span className={statusConfig[h.status]?.color || 'text-zinc-400'}>{statusConfig[h.status]?.label || 'Desconhecido'}</span></div>
                       <div className="text-[10px] text-zinc-600">{new Date(h.date).toLocaleString()}</div>
                     </div>
                   ))}
