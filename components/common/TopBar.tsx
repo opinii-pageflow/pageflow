@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, ChevronLeft, Layout, BarChart3, Settings, Shield } from 'lucide-react';
+import { LogOut, ChevronLeft, Layout, BarChart3, Settings, Shield, Target } from 'lucide-react';
 import { logout, getCurrentUser, getStorage } from '../../lib/storage';
 import { PLANS } from '../../lib/plans';
 import clsx from 'clsx';
@@ -29,7 +29,9 @@ const TopBar: React.FC<TopBarProps> = ({ title, showBack }) => {
         { label: 'Clientes', path: '/admin/clients', icon: Layout },
       ]
     : [
+        { label: 'Visão Geral', path: '/app', icon: Target },
         ...(client?.plan !== 'starter' ? [{ label: 'Insights', path: '/app/insights', icon: BarChart3 }] : []),
+        { label: 'CRM', path: '/app/crm', icon: Users },
         { label: 'Meus Perfis', path: '/app/profiles', icon: Layout },
         { label: 'Configurações', path: '/app/settings', icon: Settings },
       ];

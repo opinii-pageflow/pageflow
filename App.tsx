@@ -17,6 +17,7 @@ import ClientDashboard from './routes/app/ClientDashboard';
 import ProfilesListPage from './routes/app/ProfilesListPage';
 import ProfileEditorPage from './routes/app/ProfileEditorPage';
 import InsightsPage from './routes/app/InsightsPage';
+import CrmPage from './routes/app/CrmPage';
 import SettingsPage from './routes/app/SettingsPage';
 import UpgradePage from './routes/app/UpgradePage';
 
@@ -43,6 +44,7 @@ const App: React.FC = () => {
         <Route element={<ProtectedRoute allowedRoles={['client']} />}>
           <Route path="/app" element={<ClientDashboard />} />
           <Route path="/app/insights" element={<InsightsPage />} />
+          <Route path="/app/crm" element={<CrmPage />} />
           <Route path="/app/profiles" element={<ProfilesListPage />} />
           <Route path="/app/profiles/:profileId/editor" element={<ProfileEditorPage />} />
           <Route path="/app/settings" element={<SettingsPage />} />
