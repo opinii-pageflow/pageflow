@@ -30,38 +30,44 @@ const SettingsPage: React.FC = () => {
     if (!profile) return '';
     
     const themeColor = profile.theme.primary || '#3B82F6';
-    const avatar = profile.avatarUrl || 'https://via.placeholder.com/100';
+    const avatar = profile.avatarUrl || 'https://via.placeholder.com/120';
     const profileUrl = `${window.location.origin}/#/u/${profile.slug}`;
+    const displayName = profile.displayName || 'Seu Nome';
+    const headline = profile.headline || 'Cargo / Título';
     
-    // Pegar até 3 links principais ativos para a assinatura
+    // Pegar até 4 links principais ativos para a assinatura
     const topLinks = (profile.buttons || [])
       .filter(b => b.enabled)
-      .slice(0, 3);
+      .slice(0, 4);
 
-    const containerStyle = "font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 14px; line-height: 1.4; color: #333333; max-width: 500px;";
+    const baseFont = "font-family: Helvetica, Arial, sans-serif;";
     
     switch (theme) {
       case 'modern':
         return `
-          <table cellpadding="0" cellspacing="0" border="0" style="${containerStyle}">
+          <table cellpadding="0" cellspacing="0" border="0" style="${baseFont} font-size: 14px; line-height: 1.4; color: #333333; max-width: 480px;">
             <tr>
-              <td width="70" valign="top" style="padding-right: 15px;">
-                <img src="${avatar}" alt="${profile.displayName}" width="70" height="70" style="border-radius: 12px; display: block; object-fit: cover;" />
+              <td width="80" valign="top" style="padding-right: 16px;">
+                <img src="${avatar}" alt="${displayName}" width="80" height="80" style="border-radius: 12px; display: block; object-fit: cover;" />
               </td>
               <td valign="top">
-                <strong style="font-size: 18px; color: #111111; display: block; margin-bottom: 2px;">${profile.displayName}</strong>
-                <span style="font-size: 13px; color: ${themeColor}; font-weight: bold; display: block; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">${profile.headline || 'Profissional Digital'}</span>
+                <div style="font-size: 18px; font-weight: 800; color: #111111; letter-spacing: -0.5px; margin-bottom: 2px;">${displayName}</div>
+                <div style="font-size: 12px; font-weight: 600; color: ${themeColor}; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">${headline}</div>
                 
-                <div style="font-size: 12px; margin-bottom: 8px;">
-                  ${topLinks.map(link => `
-                    <a href="${profileUrl}" style="text-decoration: none; color: #555555; margin-right: 10px;">${link.label}</a>
-                  `).join(' ')}
-                </div>
+                <table cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    ${topLinks.map(link => `
+                      <td style="padding-right: 12px;">
+                        <a href="${profileUrl}" style="text-decoration: none; color: #666666; font-size: 11px; font-weight: bold; border-bottom: 1px solid #eeeeee;">${link.label}</a>
+                      </td>
+                    `).join('')}
+                  </tr>
+                </table>
               </td>
             </tr>
             <tr>
-              <td colspan="2" style="padding-top: 10px;">
-                <a href="${profileUrl}" style="background-color: ${themeColor}; color: #ffffff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: bold; display: block; text-align: center;">Acessar Perfil Completo</a>
+              <td colspan="2" style="padding-top: 16px;">
+                <div style="height: 4px; width: 40px; background-color: ${themeColor}; border-radius: 2px;"></div>
               </td>
             </tr>
           </table>
@@ -69,20 +75,22 @@ const SettingsPage: React.FC = () => {
 
       case 'minimal':
         return `
-          <table cellpadding="0" cellspacing="0" border="0" style="${containerStyle}">
+          <table cellpadding="0" cellspacing="0" border="0" style="${baseFont} font-size: 14px; line-height: 1.5; color: #333333; max-width: 500px;">
             <tr>
-              <td valign="middle">
-                <strong style="font-size: 16px; color: #000000;">${profile.displayName}</strong>
-                <span style="margin: 0 8px; color: #ccc;">|</span>
-                <span style="font-size: 14px; color: #666666;">${profile.headline || 'Profissional'}</span>
+              <td valign="middle" width="50" style="padding-right: 12px;">
+                <img src="${avatar}" alt="${displayName}" width="40" height="40" style="border-radius: 50%; display: block; object-fit: cover;" />
+              </td>
+              <td valign="middle" style="border-left: 1px solid #e5e5e5; padding-left: 12px;">
+                <span style="font-weight: bold; color: #000;">${displayName}</span>
+                <span style="color: #999; margin: 0 6px;">&bull;</span>
+                <span style="color: #666;">${headline}</span>
               </td>
             </tr>
             <tr>
-              <td valign="top" style="padding-top: 6px;">
+              <td colspan="2" style="padding-top: 10px;">
                 ${topLinks.map(link => `
-                  <a href="${profileUrl}" style="text-decoration: none; color: ${themeColor}; font-size: 12px; font-weight: bold; margin-right: 12px;">${link.label}</a>
+                  <a href="${profileUrl}" style="text-decoration: none; color: ${themeColor}; font-size: 11px; font-weight: bold; margin-right: 15px; text-transform: uppercase; letter-spacing: 0.5px;">${link.label}</a>
                 `).join('')}
-                <a href="${profileUrl}" style="text-decoration: underline; color: #000000; font-size: 12px; margin-left: 4px;">+ Ver mais</a>
               </td>
             </tr>
           </table>
@@ -90,17 +98,17 @@ const SettingsPage: React.FC = () => {
 
       case 'compact':
         return `
-          <table cellpadding="0" cellspacing="0" border="0" style="${containerStyle}">
+          <table cellpadding="0" cellspacing="0" border="0" style="${baseFont} font-size: 13px; line-height: 1.4; color: #333333;">
             <tr>
-              <td width="40" valign="middle" style="padding-right: 10px;">
-                <img src="${avatar}" alt="${profile.displayName}" width="40" height="40" style="border-radius: 50%; display: block; object-fit: cover;" />
+              <td valign="middle" style="padding-right: 12px;">
+                <img src="${avatar}" alt="${displayName}" width="48" height="48" style="border-radius: 50%; display: block; object-fit: cover; border: 2px solid ${themeColor};" />
               </td>
-              <td valign="middle" style="border-right: 2px solid #eee; padding-right: 15px;">
-                <strong style="font-size: 14px; color: #000000; display: block;">${profile.displayName}</strong>
-                <span style="font-size: 11px; color: #888888;">${profile.headline || 'Profissional'}</span>
-              </td>
-              <td valign="middle" style="padding-left: 15px;">
-                <a href="${profileUrl}" style="border: 1px solid ${themeColor}; color: ${themeColor}; text-decoration: none; padding: 4px 10px; border-radius: 50px; font-size: 11px; font-weight: bold; display: inline-block;">Ver Links</a>
+              <td valign="middle">
+                <div style="font-weight: bold; color: #000;">${displayName}</div>
+                <div style="font-size: 11px; color: #666; margin-bottom: 4px;">${headline}</div>
+                <div>
+                  <a href="${profileUrl}" style="color: ${themeColor}; text-decoration: none; font-size: 10px; font-weight: bold; border: 1px solid ${themeColor}; padding: 2px 8px; border-radius: 100px; display: inline-block;">VER PERFIL</a>
+                </div>
               </td>
             </tr>
           </table>
@@ -109,27 +117,23 @@ const SettingsPage: React.FC = () => {
       case 'classic':
       default:
         return `
-          <table cellpadding="0" cellspacing="0" border="0" style="${containerStyle}">
+          <table cellpadding="0" cellspacing="0" border="0" style="${baseFont} font-size: 14px; line-height: 1.4; color: #444444; max-width: 500px;">
             <tr>
-              <td valign="top" style="padding-right: 20px;">
-                <img src="${avatar}" alt="${profile.displayName}" width="70" height="70" style="border-radius: 50%; display: block; object-fit: cover;" />
+              <td width="90" valign="top" style="padding-right: 20px; border-right: 2px solid ${themeColor};">
+                <img src="${avatar}" alt="${displayName}" width="80" height="80" style="border-radius: 50%; display: block; object-fit: cover;" />
               </td>
-              <td valign="top" style="border-left: 2px solid ${themeColor}; padding-left: 20px;">
-                <strong style="font-size: 18px; color: #000000; display: block; margin-bottom: 4px;">${profile.displayName}</strong>
-                <span style="font-size: 14px; color: #666666; display: block; margin-bottom: 8px;">${profile.headline || 'Profissional Digital'}</span>
+              <td valign="top" style="padding-left: 20px;">
+                <strong style="font-size: 20px; color: #111111; display: block; margin-bottom: 4px; letter-spacing: -0.5px;">${displayName}</strong>
+                <span style="font-size: 13px; color: ${themeColor}; display: block; margin-bottom: 12px; font-weight: 600;">${headline}</span>
                 
-                <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 8px; margin-bottom: 8px;">
-                  <tr>
-                    ${topLinks.map(link => `
-                      <td style="padding-right: 10px;">
-                        <a href="${profileUrl}" style="text-decoration: none; color: ${themeColor}; font-size: 12px; font-weight: bold;">${link.label}</a>
-                      </td>
-                    `).join('')}
-                  </tr>
-                </table>
-
-                <div style="margin-top: 8px;">
-                  <a href="${profileUrl}" style="background-color: ${themeColor}; color: #ffffff; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; display: inline-block;">Ver meu Perfil Completo</a>
+                <div style="font-size: 12px; color: #666666;">
+                  ${topLinks.map((link, i) => `
+                    <a href="${profileUrl}" style="text-decoration: none; color: #555555; font-weight: bold;">${link.label}</a>${i < topLinks.length - 1 ? ' <span style="color:#cccccc; margin:0 4px;">|</span> ' : ''}
+                  `).join('')}
+                </div>
+                
+                <div style="margin-top: 10px;">
+                  <a href="${profileUrl}" style="display: inline-block; font-size: 11px; color: #999999; text-decoration: none;">linkflow.me/u/${profile.slug}</a>
                 </div>
               </td>
             </tr>
