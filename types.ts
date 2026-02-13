@@ -128,6 +128,7 @@ export interface Theme {
   text: string;
   muted: string;
   border: string;
+  borderWidth?: string; // Adicionado
   radius: string;
   shadow: string;
   buttonStyle: ButtonStyle;

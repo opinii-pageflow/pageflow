@@ -112,6 +112,8 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
   if (!theme.muted) theme.muted = 'rgba(255,255,255,0.7)';
 
+  const borderWidth = theme.borderWidth || '1px';
+
   const fonts = (profile as any)?.fonts || {
     headingFont: 'Poppins',
     bodyFont: 'Inter',
@@ -214,12 +216,12 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   const shellCardStyle: React.CSSProperties = useMemo(() => {
     return {
       background: theme.cardBg,
-      border: `1px solid ${theme.border}`,
+      border: `${borderWidth} solid ${theme.border}`,
       borderRadius: theme.radius,
       boxShadow: theme.shadow,
       overflow: 'hidden',
     };
-  }, [theme.cardBg, theme.border, theme.radius, theme.shadow]);
+  }, [theme.cardBg, theme.border, theme.radius, theme.shadow, borderWidth]);
 
   const handleLinkClick = (linkId?: string) => {
     if (isPreview) return;
@@ -233,7 +235,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   };
 
   const getButtonStyle = () => {
-    const baseBorder = `1px solid ${theme.border}`;
+    const baseBorder = `${borderWidth} solid ${theme.border}`;
     const backgroundColor =
       theme.buttonStyle === 'solid'
         ? theme.primary
@@ -249,13 +251,13 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
     let border = baseBorder;
     switch (theme.buttonStyle) {
       case 'solid':
-        border = '1px solid rgba(255,255,255,0.12)';
+        border = `${borderWidth} solid rgba(255,255,255,0.12)`;
         break;
       case 'glass':
-        border = `1px solid ${theme.border}`;
+        border = `${borderWidth} solid ${theme.border}`;
         break;
       case 'outline':
-        border = `2px solid ${theme.primary}`;
+        border = `${borderWidth} solid ${theme.primary}`;
         break;
     }
 
@@ -400,9 +402,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
             <div className="grid grid-cols-1 gap-3">
               <button
                 onClick={() => setShowWalletModal(true)}
-                className="rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all hover:translate-y-[-1px]"
+                className="rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest transition-all hover:translate-y-[-1px]"
                 style={{
-                  border: `1px solid ${theme.border}`,
+                  border: `${borderWidth} solid ${theme.border}`,
                   background: theme.buttonStyle === 'glass' ? 'rgba(255,255,255,0.06)' : 'transparent',
                   color: theme.text,
                   fontFamily: buttonFont,
@@ -419,7 +421,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
             {/* PIX */}
             {hasPixAccess && profile.pixKey && (
-              <div className="rounded-2xl border p-5" style={{ borderColor: theme.border, background: 'rgba(0,0,0,0.25)' }}>
+              <div className="rounded-2xl p-5" style={{ border: `${borderWidth} solid ${theme.border}`, background: 'rgba(0,0,0,0.25)' }}>
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.text }}>
@@ -434,8 +436,8 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                       if (isPreview) return;
                       navigator.clipboard?.writeText(profile.pixKey || '');
                     }}
-                    className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border"
-                    style={{ borderColor: theme.border, color: theme.text }}
+                    className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                    style={{ border: `${borderWidth} solid ${theme.border}`, color: theme.text }}
                   >
                     Copiar
                   </button>
@@ -459,36 +461,36 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                       href={isPreview ? '#' : item.ctaLink || '#'}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="rounded-2xl border p-4 transition-all hover:translate-y-[-1px]"
-                      style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.04)' }}
+                      className="rounded-2xl p-5 transition-all hover:translate-y-[-1px]"
+                      style={{ border: `${borderWidth} solid ${theme.border}`, background: 'rgba(255,255,255,0.04)' }}
                     >
-                      <div className="flex gap-4 items-center">
+                      <div className="flex gap-5 items-center">
                         {item.imageUrl ? (
-                          <img src={item.imageUrl} alt={item.title} className="w-20 h-20 rounded-xl object-cover border flex-shrink-0" style={{ borderColor: theme.border }} />
+                          <img src={item.imageUrl} alt={item.title} className="w-28 h-28 rounded-xl object-cover flex-shrink-0 shadow-lg" style={{ border: `${borderWidth} solid ${theme.border}` }} />
                         ) : (
-                          <div className="w-20 h-20 rounded-xl border flex items-center justify-center flex-shrink-0" style={{ borderColor: theme.border, color: theme.muted }}>
-                            <LucideIcons.Package size={24} />
+                          <div className="w-28 h-28 rounded-xl flex items-center justify-center flex-shrink-0" style={{ border: `${borderWidth} solid ${theme.border}`, color: theme.muted }}>
+                            <LucideIcons.Package size={32} />
                           </div>
                         )}
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="font-black truncate text-base" style={{ color: theme.text }}>
+                        <div className="min-w-0 flex-1 py-1">
+                          <div className="flex flex-col gap-1">
+                            <div className="font-black truncate text-lg leading-tight" style={{ color: theme.text }}>
                               {item.title}
                             </div>
                             {item.priceText && (
-                              <div className="text-[11px] font-black whitespace-nowrap" style={{ color: theme.text }}>
+                              <div className="text-sm font-black whitespace-nowrap opacity-90" style={{ color: theme.text }}>
                                 {item.priceText}
                               </div>
                             )}
                           </div>
                           {item.description && (
-                            <div className="text-xs mt-1 line-clamp-2" style={{ color: theme.text, opacity: 0.8 }}>
+                            <div className="text-xs mt-2 line-clamp-2 leading-relaxed" style={{ color: theme.text, opacity: 0.8 }}>
                               {item.description}
                             </div>
                           )}
                           {item.ctaLabel && (
-                            <div className="text-[10px] font-black uppercase tracking-widest mt-2 inline-flex items-center gap-2" style={{ color: theme.primary }}>
+                            <div className="text-[10px] font-black uppercase tracking-widest mt-4 inline-flex items-center gap-2" style={{ color: theme.primary }}>
                               {item.ctaLabel}
                               <LucideIcons.ArrowUpRight size={14} />
                             </div>
@@ -512,8 +514,8 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                     <button
                       key={item.id}
                       onClick={() => setSelectedImage(item.imageUrl)}
-                      className="rounded-2xl border overflow-hidden transition-all hover:translate-y-[-1px] text-left w-full"
-                      style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.04)' }}
+                      className="rounded-2xl overflow-hidden transition-all hover:translate-y-[-1px] text-left w-full"
+                      style={{ border: `${borderWidth} solid ${theme.border}`, background: 'rgba(255,255,255,0.04)' }}
                     >
                       <img src={item.imageUrl} alt={item.title || 'Portfolio'} className="w-full h-28 object-cover" />
                       {item.title && (
@@ -538,7 +540,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                     const id = extractYouTubeId(v.url);
                     if (id) {
                       return (
-                        <div key={v.id} className="rounded-2xl overflow-hidden shadow-lg border bg-black" style={{ borderColor: theme.border }}>
+                        <div key={v.id} className="rounded-2xl overflow-hidden shadow-lg bg-black" style={{ border: `${borderWidth} solid ${theme.border}` }}>
                            <iframe 
                              width="100%" 
                              height="200" 
@@ -564,8 +566,8 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                         href={isPreview ? '#' : v.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="rounded-2xl border overflow-hidden transition-all hover:translate-y-[-1px]"
-                        style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.04)' }}
+                        className="rounded-2xl overflow-hidden transition-all hover:translate-y-[-1px]"
+                        style={{ border: `${borderWidth} solid ${theme.border}`, background: 'rgba(255,255,255,0.04)' }}
                       >
                         <div className="w-full h-36 flex items-center justify-center" style={{ color: theme.muted }}>
                           <LucideIcons.Video size={22} />
@@ -590,7 +592,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
             {/* Scheduling */}
             {hasSchedulingAccess && profile.enableScheduling && (
-              <section className="rounded-2xl border p-5 space-y-4" style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.03)' }}>
+              <section className="rounded-2xl p-5 space-y-4" style={{ border: `${borderWidth} solid ${theme.border}`, background: 'rgba(255,255,255,0.03)' }}>
                 <div className="flex items-center justify-between">
                   <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.text }}>
                     Agendamento
@@ -601,9 +603,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                 {profile.schedulingMode === 'external' ? (
                   <button
                     onClick={handleBooking}
-                    className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all hover:translate-y-[-1px]"
+                    className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest transition-all hover:translate-y-[-1px]"
                     style={{
-                      borderColor: theme.border,
+                      border: `${borderWidth} solid ${theme.border}`,
                       background: theme.primary,
                       color: primaryTextOnPrimary,
                       fontFamily: buttonFont,
@@ -618,9 +620,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                         <button
                           key={s.id}
                           onClick={() => setSelectedSlotId(s.id)}
-                          className="rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest border transition-all"
+                          className="rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest transition-all"
                           style={{
-                            borderColor: theme.border,
+                            border: `${borderWidth} solid ${theme.border}`,
                             background: selectedSlotId === s.id ? theme.primary : 'transparent',
                             color: selectedSlotId === s.id ? primaryTextOnPrimary : theme.text,
                             fontFamily: buttonFont,
@@ -634,9 +636,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                     <button
                       onClick={handleBooking}
                       disabled={!selectedSlotId}
-                      className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:translate-y-[-1px]"
+                      className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:translate-y-[-1px]"
                       style={{
-                        borderColor: theme.border,
+                        border: `${borderWidth} solid ${theme.border}`,
                         background: theme.primary,
                         color: primaryTextOnPrimary,
                         fontFamily: buttonFont,
@@ -651,7 +653,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
             {/* Lead Capture */}
             {hasLeadCaptureAccess && profile.enableLeadCapture && (
-              <section className="rounded-2xl border p-5 space-y-4" style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.03)' }}>
+              <section className="rounded-2xl p-5 space-y-4" style={{ border: `${borderWidth} solid ${theme.border}`, background: 'rgba(255,255,255,0.03)' }}>
                 <div className="flex items-center justify-between">
                   <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.text }}>
                     Fale comigo
@@ -660,7 +662,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                 </div>
 
                 {leadSent ? (
-                  <div className="rounded-xl border p-4 text-sm font-bold" style={{ borderColor: theme.border, color: theme.text }}>
+                  <div className="rounded-xl p-4 text-sm font-bold" style={{ border: `${borderWidth} solid ${theme.border}`, color: theme.text }}>
                     ✅ Mensagem enviada!
                   </div>
                 ) : (
@@ -669,22 +671,22 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                       value={leadName}
                       onChange={(e) => setLeadName(e.target.value)}
                       placeholder="Seu nome"
-                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold placeholder:text-current placeholder:opacity-60"
-                      style={{ borderColor: theme.border, color: theme.text, fontFamily: bodyFont }}
+                      className="w-full rounded-xl px-4 py-3 bg-black/30 outline-none text-sm font-semibold placeholder:text-current placeholder:opacity-60"
+                      style={{ border: `${borderWidth} solid ${theme.border}`, color: theme.text, fontFamily: bodyFont }}
                     />
                     <input
                       value={leadContact}
                       onChange={(e) => setLeadContact(e.target.value)}
                       placeholder="WhatsApp ou e-mail"
-                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold placeholder:text-current placeholder:opacity-60"
-                      style={{ borderColor: theme.border, color: theme.text, fontFamily: bodyFont }}
+                      className="w-full rounded-xl px-4 py-3 bg-black/30 outline-none text-sm font-semibold placeholder:text-current placeholder:opacity-60"
+                      style={{ border: `${borderWidth} solid ${theme.border}`, color: theme.text, fontFamily: bodyFont }}
                     />
                     <textarea
                       value={leadMessage}
                       onChange={(e) => setLeadMessage(e.target.value)}
                       placeholder="Mensagem (opcional)"
-                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold min-h-[96px] placeholder:text-current placeholder:opacity-60"
-                      style={{ borderColor: theme.border, color: theme.text, fontFamily: bodyFont }}
+                      className="w-full rounded-xl px-4 py-3 bg-black/30 outline-none text-sm font-semibold min-h-[96px] placeholder:text-current placeholder:opacity-60"
+                      style={{ border: `${borderWidth} solid ${theme.border}`, color: theme.text, fontFamily: bodyFont }}
                     />
                     <button
                       onClick={() => {
@@ -707,9 +709,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                         });
                         setLeadSent(true);
                       }}
-                      className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all hover:translate-y-[-1px]"
+                      className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest transition-all hover:translate-y-[-1px]"
                       style={{
-                        borderColor: theme.border,
+                        border: `${borderWidth} solid ${theme.border}`,
                         background: theme.primary,
                         color: primaryTextOnPrimary,
                         fontFamily: buttonFont,
@@ -724,7 +726,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
             {/* NPS */}
             {hasNpsAccess && profile.enableNps && (
-              <section className="rounded-2xl border p-5 space-y-4" style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.03)' }}>
+              <section className="rounded-2xl p-5 space-y-4" style={{ border: `${borderWidth} solid ${theme.border}`, background: 'rgba(255,255,255,0.03)' }}>
                 <div className="flex items-center justify-between">
                   <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.text }}>
                     Avaliação
@@ -733,7 +735,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                 </div>
 
                 {npsSent ? (
-                  <div className="rounded-xl border p-4 text-sm font-bold" style={{ borderColor: theme.border, color: theme.text }}>
+                  <div className="rounded-xl p-4 text-sm font-bold" style={{ border: `${borderWidth} solid ${theme.border}`, color: theme.text }}>
                     ⭐ Obrigado pela sua avaliação!
                   </div>
                 ) : (
@@ -743,9 +745,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                         <button
                           key={i}
                           onClick={() => setNpsScore(i)}
-                          className="rounded-lg py-2 text-[10px] font-black border transition-all"
+                          className="rounded-lg py-2 text-[10px] font-black transition-all"
                           style={{
-                            borderColor: theme.border,
+                            border: `${borderWidth} solid ${theme.border}`,
                             background: npsScore === i ? theme.primary : 'transparent',
                             color: npsScore === i ? primaryTextOnPrimary : theme.text,
                             fontFamily: buttonFont,
@@ -759,8 +761,8 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                       value={npsComment}
                       onChange={(e) => setNpsComment(e.target.value)}
                       placeholder="Comentário (opcional)"
-                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold min-h-[96px] placeholder:text-current placeholder:opacity-60"
-                      style={{ borderColor: theme.border, color: theme.text, fontFamily: bodyFont }}
+                      className="w-full rounded-xl px-4 py-3 bg-black/30 outline-none text-sm font-semibold min-h-[96px] placeholder:text-current placeholder:opacity-60"
+                      style={{ border: `${borderWidth} solid ${theme.border}`, color: theme.text, fontFamily: bodyFont }}
                     />
                     <button
                       onClick={() => {
@@ -783,10 +785,10 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                         });
                         setNpsSent(true);
                       }}
-                      className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all hover:translate-y-[-1px] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest transition-all hover:translate-y-[-1px] disabled:opacity-50 disabled:cursor-not-allowed"
                       disabled={npsScore === null}
                       style={{
-                        borderColor: theme.border,
+                        border: `${borderWidth} solid ${theme.border}`,
                         background: theme.primary,
                         color: primaryTextOnPrimary,
                         fontFamily: buttonFont,
@@ -804,15 +806,15 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
         {/* Wallet Modal (placeholder visual) */}
         {showWalletModal && (
           <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="w-full max-w-[520px] rounded-[2.2rem] border bg-zinc-950/90 p-6 space-y-4"
-              style={{ borderColor: theme.border }}
+            <div className="w-full max-w-[520px] rounded-[2.2rem] bg-zinc-950/90 p-6 space-y-4"
+              style={{ border: `${borderWidth} solid ${theme.border}` }}
             >
               <div className="flex items-center justify-between">
                 <div className="text-sm font-black" style={{ color: theme.text }}>Wallet / Salvar</div>
                 <button
                   onClick={() => setShowWalletModal(false)}
-                  className="w-10 h-10 rounded-2xl border flex items-center justify-center"
-                  style={{ borderColor: theme.border, color: theme.text }}
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center"
+                  style={{ border: `${borderWidth} solid ${theme.border}`, color: theme.text }}
                 >
                   <LucideIcons.X size={18} />
                 </button>
@@ -822,9 +824,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
               </div>
               <button
                 onClick={() => setShowWalletModal(false)}
-                className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all hover:translate-y-[-1px]"
+                className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest transition-all hover:translate-y-[-1px]"
                 style={{
-                  borderColor: theme.border,
+                  border: `${borderWidth} solid ${theme.border}`,
                   background: theme.primary,
                   color: primaryTextOnPrimary,
                   fontFamily: buttonFont,

@@ -19,7 +19,8 @@ import {
   Check,
   ShieldAlert,
   Lock,
-  Zap
+  Zap,
+  Frame
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useNavigate } from 'react-router-dom';
@@ -393,26 +394,56 @@ const DesignTab: React.FC<Props> = ({ profile, onUpdate }) => {
 
         <div className="space-y-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Raio de Curvatura</h3>
-            <span className="text-xs font-mono font-black text-blue-500 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">{profile.theme.radius}</span>
+            <div className="flex items-center gap-2">
+              <Frame size={14} className="text-zinc-500" />
+              <h3 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Bordas e Curvas</h3>
+            </div>
           </div>
-          <div className="bg-zinc-900/40 p-10 rounded-[2.5rem] border border-white/5 shadow-inner">
-            <input 
-              type="range" 
-              min="0" 
-              max="40" 
-              value={parseInt(profile.theme.radius)}
-              onChange={(e) => updateTheme({ radius: `${e.target.value}px` })}
-              className="w-full h-1.5 bg-zinc-800 accent-white rounded-full appearance-none cursor-pointer"
-            />
-            <div className="flex justify-between mt-8 px-1">
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-8 h-8 rounded-sm border-2 border-zinc-800"></div>
-                <span className="text-[8px] font-black uppercase text-zinc-700 tracking-widest">Reto</span>
+          
+          <div className="bg-zinc-900/40 p-10 rounded-[2.5rem] border border-white/5 shadow-inner space-y-10">
+            {/* Raio de Curvatura */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-black uppercase text-zinc-600 tracking-widest">Raio de Curvatura</span>
+                <span className="text-xs font-mono font-black text-blue-500 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">{profile.theme.radius}</span>
               </div>
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-8 h-8 rounded-full border-2 border-zinc-800"></div>
-                <span className="text-[8px] font-black uppercase text-zinc-700 tracking-widest">Círculo</span>
+              <input 
+                type="range" 
+                min="0" 
+                max="40" 
+                value={parseInt(profile.theme.radius)}
+                onChange={(e) => updateTheme({ radius: `${e.target.value}px` })}
+                className="w-full h-1.5 bg-zinc-800 accent-white rounded-full appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between px-1">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-8 h-8 rounded-sm border-2 border-zinc-800"></div>
+                  <span className="text-[8px] font-black uppercase text-zinc-700 tracking-widest">Reto</span>
+                </div>
+                <div className="flex flex-col items-center gap-2">
+                  <div className="w-8 h-8 rounded-full border-2 border-zinc-800"></div>
+                  <span className="text-[8px] font-black uppercase text-zinc-700 tracking-widest">Círculo</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Espessura da Borda */}
+            <div className="space-y-4 border-t border-white/5 pt-8">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-black uppercase text-zinc-600 tracking-widest">Espessura da Borda</span>
+                <span className="text-xs font-mono font-black text-blue-500 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">{profile.theme.borderWidth || '1px'}</span>
+              </div>
+              <input 
+                type="range" 
+                min="0" 
+                max="8" 
+                value={parseInt(profile.theme.borderWidth || '1')}
+                onChange={(e) => updateTheme({ borderWidth: `${e.target.value}px` })}
+                className="w-full h-1.5 bg-zinc-800 accent-white rounded-full appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between px-1">
+                <span className="text-[8px] font-black uppercase text-zinc-700 tracking-widest">Fina</span>
+                <span className="text-[8px] font-black uppercase text-zinc-700 tracking-widest">Grossa</span>
               </div>
             </div>
           </div>
