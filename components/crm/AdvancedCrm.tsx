@@ -1,10 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { LeadCapture, LeadStatus } from '../../types';
 import { updateStorage } from '../../lib/storage';
 import { 
-  Search, Filter, ChevronDown, X, Calendar, User, MessageSquare, 
-  CheckCircle2, AlertCircle, DollarSign, Send, Save, Trash2, 
-  Download, Activity, MoreHorizontal, UserCheck
+  Search, ChevronDown, X, User, MessageSquare, 
+  AlertCircle, DollarSign, Send, Save, Trash2, 
+  Download, Activity, UserCheck
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -22,21 +22,27 @@ const statusConfig: Record<LeadStatus, { label: string; color: string; bg: strin
   'arquivado': { label: 'Arquivado', color: 'text-zinc-600', bg: 'bg-zinc-800' },
 };
 
-const AdvancedCrm: React.FC<Props> = ({ leads }) => {
+const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads }) => {
+  const [localLeads, setLocalLeads] = useState<LeadCapture[]>(initialLeads);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
   const [selectedLead, setSelectedLead] = useState<LeadCapture | null>(null);
   const [noteInput, setNoteInput] = useState('');
 
+  // Sincroniza estado local se a prop mudar (ex: navegação)
+  useEffect(() => {
+    setLocalLeads(initialLeads);
+  }, [initialLeads]);
+
   const stats = useMemo(() => {
-    const total = leads.length;
-    const novos = leads.filter(l => l.status === 'novo').length;
-    const fechados = leads.filter(l => l.status === 'fechado').length;
+    const total = localLeads.length;
+    const novos = localLeads.filter(l => l.status === 'novo').length;
+    const fechados = localLeads.filter(l => l.status === 'fechado').length;
     return { total, novos, fechados, conversion: total > 0 ? (fechados / total) * 100 : 0 };
-  }, [leads]);
+  }, [localLeads]);
 
   const filteredLeads = useMemo(() => {
-    return leads.filter(lead => {
+    return localLeads.filter(lead => {
       const contactStr = lead.contact || '';
       const nameStr = lead.name || '';
       const matchesSearch = nameStr.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -44,11 +50,11 @@ const AdvancedCrm: React.FC<Props> = ({ leads }) => {
       const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
-  }, [leads, searchTerm, statusFilter]);
+  }, [localLeads, searchTerm, statusFilter]);
 
   const exportToCsv = () => {
     const headers = ['Nome', 'Contato', 'Status', 'Data', 'Mensagem'];
-    const rows = leads.map(l => [l.name, l.contact || '', l.status, new Date(l.createdAt).toLocaleString(), l.message || '']);
+    const rows = localLeads.map(l => [l.name, l.contact || '', l.status, new Date(l.createdAt).toLocaleString(), l.message || '']);
     const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].map(e => e.join(",")).join("\n");
     const link = document.createElement("a");
     link.setAttribute("href", encodeURI(csvContent));
@@ -59,22 +65,55 @@ const AdvancedCrm: React.FC<Props> = ({ leads }) => {
   };
 
   const updateLeadStatus = (leadId: string, newStatus: LeadStatus) => {
+    const ts = new Date().toISOString();
     updateStorage(prev => ({
       ...prev,
       leads: prev.leads.map(l => l.id === leadId ? { 
         ...l, status: newStatus, 
-        history: [...(l.history || []), { status: newStatus, date: new Date().toISOString() }] 
+        history: [...(l.history || []), { status: newStatus, date: ts }] 
       } : l)
     }));
-    if (selectedLead?.id === leadId) setSelectedLead(prev => prev ? ({...prev, status: newStatus}) : null);
+
+    setLocalLeads(prev => prev.map(l => l.id === leadId ? { 
+      ...l, status: newStatus, 
+      history: [...(l.history || []), { status: newStatus, date: ts }] 
+    } : l));
+
+    if (selectedLead?.id === leadId) {
+      setSelectedLead(prev => prev ? ({
+        ...prev, 
+        status: newStatus,
+        history: [...(prev.history || []), { status: newStatus, date: ts }]
+      }) : null);
+    }
   };
 
   const saveNote = () => {
     if (!selectedLead || !noteInput.trim()) return;
-    const updatedNotes = `${selectedLead.notes || ''}\n[${new Date().toLocaleDateString()}]: ${noteInput}`;
-    updateStorage(prev => ({ ...prev, leads: prev.leads.map(l => l.id === selectedLead.id ? { ...l, notes: updatedNotes } : l) }));
+    const ts = new Date().toLocaleDateString();
+    const newNote = `[${ts}]: ${noteInput}`;
+    const updatedNotes = selectedLead.notes ? `${selectedLead.notes}\n${newNote}` : newNote;
+
+    updateStorage(prev => ({ 
+      ...prev, 
+      leads: prev.leads.map(l => l.id === selectedLead.id ? { ...l, notes: updatedNotes } : l) 
+    }));
+
+    setLocalLeads(prev => prev.map(l => l.id === selectedLead.id ? { ...l, notes: updatedNotes } : l));
     setSelectedLead({ ...selectedLead, notes: updatedNotes });
     setNoteInput('');
+  };
+
+  const deleteLead = (leadId: string) => {
+    if (!window.confirm("Deseja realmente excluir este lead permanentemente?")) return;
+
+    updateStorage(prev => ({
+      ...prev,
+      leads: prev.leads.filter(l => l.id !== leadId)
+    }));
+
+    setLocalLeads(prev => prev.filter(l => l.id !== leadId));
+    if (selectedLead?.id === leadId) setSelectedLead(null);
   };
 
   return (
@@ -138,20 +177,38 @@ const AdvancedCrm: React.FC<Props> = ({ leads }) => {
                       </div>
                     </td>
                     <td className="p-8">
-                      <span className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border ${statusConfig[lead.status]?.bg || 'bg-zinc-800'} ${statusConfig[lead.status]?.color || 'text-zinc-400'} border-current/20`}>
+                      <span className={clsx(
+                        "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border border-current/20",
+                        statusConfig[lead.status]?.bg || 'bg-zinc-800',
+                        statusConfig[lead.status]?.color || 'text-zinc-400'
+                      )}>
                         {statusConfig[lead.status]?.label || 'Desconhecido'}
                       </span>
                     </td>
                     <td className="p-8 text-right">
-                      <button onClick={() => setSelectedLead(lead)} className="bg-white text-black px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg shadow-white/5">
-                        Ficha do Lead
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => setSelectedLead(lead)} className="bg-white text-black px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg">
+                          Ficha
+                        </button>
+                        <button 
+                          onClick={() => deleteLead(lead.id)}
+                          className="p-3 text-zinc-600 hover:text-red-500 transition-all hover:bg-red-500/10 rounded-xl"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          {filteredLeads.length === 0 && (
+            <div className="p-20 text-center">
+              <User size={48} className="mx-auto text-zinc-800 mb-4" />
+              <div className="text-zinc-600 font-black uppercase tracking-widest text-xs">Nenhum lead encontrado</div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -176,7 +233,7 @@ const AdvancedCrm: React.FC<Props> = ({ leads }) => {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <a href={(selectedLead.contact || '').includes('@') ? `mailto:${selectedLead.contact}` : `https://wa.me/${(selectedLead.contact || '').replace(/\D/g, '')}`} target="_blank" className="bg-white text-black py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 shadow-xl shadow-white/5">
+                <a href={(selectedLead.contact || '').includes('@') ? `mailto:${selectedLead.contact}` : `https://wa.me/${(selectedLead.contact || '').replace(/\D/g, '')}`} target="_blank" className="bg-white text-black py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 shadow-xl">
                   <Send size={18} /> Iniciar Contato
                 </a>
                 <div className="relative">
@@ -216,6 +273,13 @@ const AdvancedCrm: React.FC<Props> = ({ leads }) => {
                   ))}
                 </div>
               </div>
+
+              <button 
+                onClick={() => deleteLead(selectedLead.id)}
+                className="w-full py-4 text-red-500/50 hover:text-red-500 text-[10px] font-black uppercase tracking-widest transition-all"
+              >
+                Excluir Lead Permanentemente
+              </button>
             </div>
           </div>
         </div>
