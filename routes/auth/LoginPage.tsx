@@ -70,10 +70,9 @@ const LoginPage: React.FC = () => {
       </div>
 
       <div className="w-full max-w-md z-10 animate-in fade-in zoom-in-95 duration-700">
-        <div className="text-center mb-10">
+        <div className="text-center mb-10 flex flex-col items-center">
           <Link to="/" className="inline-flex items-center gap-2 mb-6 group">
-            <div className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center font-bold text-3xl shadow-2xl shadow-blue-500/20 transition-transform group-hover:scale-110">L</div>
-            <span className="font-black text-4xl tracking-tighter">LinkFlow</span>
+            <img src="/logo.png" className="h-16 md:h-20 w-auto object-contain" alt="PageFlow" />
           </Link>
           <h1 className="text-zinc-400 font-medium px-4">Entre na sua conta para gerenciar seus perfis digitais.</h1>
         </div>

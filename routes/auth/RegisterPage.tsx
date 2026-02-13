@@ -67,10 +67,9 @@ const RegisterPage: React.FC = () => {
       </div>
 
       <div className="w-full max-w-md z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 flex flex-col items-center">
           <Link to="/" className="inline-flex items-center gap-2 mb-6 group">
-            <div className="w-12 h-12 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center font-bold text-2xl shadow-xl transition-transform group-hover:scale-110">L</div>
-            <span className="font-black text-3xl tracking-tighter">LinkFlow</span>
+            <img src="/logo.png" className="h-16 md:h-20 w-auto object-contain" alt="PageFlow" />
           </Link>
           <h1 className="text-2xl font-black tracking-tight mb-2">Comece seu Legado Digital</h1>
           <p className="text-zinc-500 text-sm font-medium">Crie seu primeiro cartão digital em menos de 1 minuto.</p>

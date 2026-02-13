@@ -49,7 +49,7 @@ const TopBar: React.FC<TopBarProps> = ({ title, showBack }) => {
             </button>
           ) : (
             <Link to={isAdmin ? "/admin" : "/app"} className="flex-shrink-0">
-              <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-blue-600/20">L</div>
+              <img src="/logo.png" className="h-8 md:h-10 w-auto object-contain" alt="PageFlow" />
             </Link>
           )}
           

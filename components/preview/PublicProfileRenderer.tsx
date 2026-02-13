@@ -649,10 +649,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                 href={isPreview ? "#" : "/#/"} 
                 target={isPreview ? "_self" : "_blank"}
                 rel="noopener noreferrer"
-                className="group flex flex-col items-center transition-all hover:scale-110 active:scale-95"
+                className="group transition-all hover:scale-110 active:scale-95"
               >
-                <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-purple-600 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg shadow-blue-600/20 mb-1 group-hover:shadow-blue-600/40">L</div>
-                <span className="text-[7px] font-black uppercase tracking-[0.4em] opacity-40 group-hover:opacity-100">LinkFlow</span>
+                <img src="/logo.png" className="h-8 md:h-10 w-auto object-contain opacity-60 group-hover:opacity-100 transition-opacity" alt="PageFlow" />
               </a>
             </footer>
           )}
