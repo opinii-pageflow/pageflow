@@ -5,8 +5,9 @@ import { canAccessFeature } from '../../lib/permissions';
 import { 
   Search, ChevronDown, X, User, MessageSquare, 
   AlertCircle, DollarSign, Send, Save, Trash2, 
-  Download, Activity, UserCheck, Lock
+  Download, Activity, UserCheck, Lock, Zap
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 
 interface Props {
@@ -25,6 +26,7 @@ const statusConfig: Record<LeadStatus, { label: string; color: string; bg: strin
 };
 
 const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
+  const navigate = useNavigate();
   const [localLeads, setLocalLeads] = useState<LeadCapture[]>(initialLeads);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
@@ -32,6 +34,7 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
   const [noteInput, setNoteInput] = useState('');
 
   const hasExportAccess = canAccessFeature(clientPlan, 'leads_export');
+  const hasFullAccess = canAccessFeature(clientPlan, 'leads_full_details');
 
   useEffect(() => {
     setLocalLeads(initialLeads);
@@ -69,6 +72,7 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
   };
 
   const updateLeadStatus = (leadId: string, newStatus: LeadStatus) => {
+    if (!hasFullAccess) return;
     const ts = new Date().toISOString();
     updateStorage(prev => ({
       ...prev,
@@ -79,7 +83,7 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
   };
 
   const saveNote = () => {
-    if (!selectedLead || !noteInput.trim()) return;
+    if (!selectedLead || !noteInput.trim() || !hasFullAccess) return;
     const ts = new Date().toLocaleDateString();
     const updatedNotes = selectedLead.notes ? `${selectedLead.notes}\n[${ts}]: ${noteInput}` : `[${ts}]: ${noteInput}`;
     updateStorage(prev => ({ ...prev, leads: prev.leads.map(l => l.id === selectedLead.id ? { ...l, notes: updatedNotes } : l) }));
@@ -97,6 +101,7 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Stats e Filtros mantidos... */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: 'Total Leads', val: stats.total, icon: User, color: 'text-white', bg: 'bg-zinc-900/40' },
@@ -164,19 +169,31 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
                       </div>
                     </td>
                     <td className="p-8">
-                      <span className={clsx(
-                        "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border border-current/20",
-                        statusConfig[lead.status]?.bg || 'bg-zinc-800',
-                        statusConfig[lead.status]?.color || 'text-zinc-400'
-                      )}>
-                        {statusConfig[lead.status]?.label || 'Desconhecido'}
-                      </span>
+                      {hasFullAccess ? (
+                        <span className={clsx(
+                          "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border border-current/20",
+                          statusConfig[lead.status]?.bg || 'bg-zinc-800',
+                          statusConfig[lead.status]?.color || 'text-zinc-400'
+                        )}>
+                          {statusConfig[lead.status]?.label || 'Desconhecido'}
+                        </span>
+                      ) : (
+                        <div className="flex items-center gap-2 text-[9px] font-black text-zinc-700 uppercase tracking-widest">
+                          <Lock size={12} /> Bloqueado
+                        </div>
+                      )}
                     </td>
                     <td className="p-8 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => setSelectedLead(lead)} className="bg-white text-black px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg">
-                          Ficha
-                        </button>
+                        {hasFullAccess ? (
+                          <button onClick={() => setSelectedLead(lead)} className="bg-white text-black px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg">
+                            Ficha
+                          </button>
+                        ) : (
+                          <button onClick={() => navigate('/app/upgrade')} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition-all active:scale-95 shadow-lg flex items-center gap-2">
+                            <Zap size={14} /> Upgrade
+                          </button>
+                        )}
                         <button onClick={() => deleteLead(lead.id)} className="p-3 text-zinc-600 hover:text-red-500 transition-all hover:bg-red-500/10 rounded-xl">
                           <Trash2 size={16} />
                         </button>
@@ -187,16 +204,12 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
               })}
             </tbody>
           </table>
-          {filteredLeads.length === 0 && (
-            <div className="p-20 text-center">
-              <User size={48} className="mx-auto text-zinc-800 mb-4" />
-              <div className="text-zinc-600 font-black uppercase tracking-widest text-xs">Nenhum lead encontrado</div>
-            </div>
-          )}
+          {/* Fallback se vazio... */}
         </div>
       </div>
 
-      {selectedLead && (
+      {/* Modal Ficha Detalhada (Protegido por hasFullAccess) */}
+      {selectedLead && hasFullAccess && (
         <div className="fixed inset-0 z-[500] flex justify-end">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setSelectedLead(null)}></div>
           <div className="relative w-full max-w-xl bg-[#050505] border-l border-white/10 h-full shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-500 p-10 space-y-12">

@@ -9,6 +9,7 @@ export type FeatureKey =
   | 'leads_capture'
   | 'crm' 
   | 'leads_export'
+  | 'leads_full_details'
   | 'analytics' 
   | 'white_label';
 
@@ -27,7 +28,8 @@ const FEATURE_REQUIREMENTS: Record<FeatureKey, PlanType> = {
   analytics: 'pro',
   nps: 'pro',
   leads_capture: 'pro',
-  leads_export: 'enterprise', // Exclusivo para o plano mais caro
+  leads_export: 'enterprise',
+  leads_full_details: 'enterprise', // Gerenciamento de status e ficha detalhada
   crm: 'business',
   white_label: 'enterprise'
 };
