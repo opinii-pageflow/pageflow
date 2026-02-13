@@ -28,6 +28,11 @@ const LandingPage: React.FC = () => {
   const data = getStorage();
   const showcaseIds = (data.landing?.showcaseProfileIds || []).concat(['', '']).slice(0, 2);
 
+  // Determina o link de demonstração baseado no primeiro perfil da vitrine
+  const firstShowcaseId = showcaseIds[0];
+  const demoProfile = firstShowcaseId ? data.profiles.find(p => p.id === firstShowcaseId) : null;
+  const demoUrl = demoProfile ? `/u/${demoProfile.slug}` : '/u/israel';
+
   const getClientPlan = (profileId: string) => {
     const p = data.profiles.find(pr => pr.id === profileId);
     if (!p) return 'starter' as const;
@@ -151,7 +156,7 @@ const LandingPage: React.FC = () => {
               Criar Perfil <ArrowRight size={18} />
             </button>
             <Link 
-              to="/u/israel" 
+              to={demoUrl} 
               className="px-12 py-6 rounded-[2rem] border border-white/10 text-zinc-400 hover:text-white hover:bg-white/5 transition-all font-black text-xs uppercase tracking-[0.2em] flex items-center gap-4 active:scale-95"
             >
               Ver Demonstração <ExternalLink size={18} />
