@@ -478,18 +478,18 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                       className="rounded-2xl border p-4 transition-all hover:translate-y-[-1px]"
                       style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.04)' }}
                     >
-                      <div className="flex gap-3">
+                      <div className="flex gap-4 items-center">
                         {item.imageUrl ? (
-                          <img src={item.imageUrl} alt={item.title} className="w-14 h-14 rounded-xl object-cover border" style={{ borderColor: theme.border }} />
+                          <img src={item.imageUrl} alt={item.title} className="w-20 h-20 rounded-xl object-cover border flex-shrink-0" style={{ borderColor: theme.border }} />
                         ) : (
-                          <div className="w-14 h-14 rounded-xl border flex items-center justify-center" style={{ borderColor: theme.border, color: theme.muted }}>
-                            <LucideIcons.Package size={18} />
+                          <div className="w-20 h-20 rounded-xl border flex items-center justify-center flex-shrink-0" style={{ borderColor: theme.border, color: theme.muted }}>
+                            <LucideIcons.Package size={24} />
                           </div>
                         )}
 
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
-                            <div className="font-black truncate" style={{ color: theme.text }}>
+                            <div className="font-black truncate text-base" style={{ color: theme.text }}>
                               {item.title}
                             </div>
                             {item.priceText && (
@@ -499,7 +499,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                             )}
                           </div>
                           {item.description && (
-                            <div className="text-xs mt-1 line-clamp-2" style={{ color: theme.muted }}>
+                            <div className="text-xs mt-1 line-clamp-2" style={{ color: theme.text, opacity: 0.8 }}>
                               {item.description}
                             </div>
                           )}
