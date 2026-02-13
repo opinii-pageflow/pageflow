@@ -193,6 +193,7 @@ const LandingPage: React.FC = () => {
               </h2>
               <p className="text-zinc-500 text-lg font-medium leading-relaxed">
                 Seja para consolidar a força da sua marca corporativa ou destacar sua trajetória profissional, o PageFlow entrega o visual que você precisa. Crie hubs de links inteligentes que se adaptam ao seu estilo.
+              </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
