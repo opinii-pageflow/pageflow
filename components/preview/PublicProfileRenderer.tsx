@@ -5,6 +5,8 @@ import { Profile, AnalyticsSource, PlanType } from '../../types';
 import { formatLink } from '../../lib/linkHelpers';
 import { trackEvent } from '../../lib/analytics';
 import { canAccessFeature } from '../../lib/permissions';
+import { extractYouTubeId } from '../../lib/youtube';
+import { updateStorage } from '../../lib/storage';
 import * as LucideIcons from 'lucide-react';
 import clsx from 'clsx';
 
@@ -101,9 +103,25 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
   const hasSchedulingAccess = canAccessFeature(clientPlan, 'scheduling');
   const hasPixAccess = canAccessFeature(clientPlan, 'pix');
+  const hasCatalogAccess = canAccessFeature(clientPlan, 'catalog');
+  const hasPortfolioAccess = canAccessFeature(clientPlan, 'portfolio');
+  const hasVideosAccess = canAccessFeature(clientPlan, 'videos');
+  const hasLeadCaptureAccess = canAccessFeature(clientPlan, 'leads_capture');
+  const hasNpsAccess = canAccessFeature(clientPlan, 'nps');
 
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  
+  // Lead Capture State
+  const [leadName, setLeadName] = useState('');
+  const [leadContact, setLeadContact] = useState('');
+  const [leadMessage, setLeadMessage] = useState('');
+  const [leadSent, setLeadSent] = useState(false);
+
+  // NPS State
+  const [npsScore, setNpsScore] = useState<number | null>(null);
+  const [npsComment, setNpsComment] = useState('');
+  const [npsSent, setNpsSent] = useState(false);
 
   const layout = (profile.layoutTemplate || 'Minimal Card').trim();
 
@@ -117,9 +135,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
   const primaryTextOnPrimary = pickReadableOn(theme.primary);
 
-  // ✅ Capa por template: altura e overlay (SEM apagar com opacity)
   const coverConfig = useMemo(() => {
-    // valores padrão
     let heightClass = 'h-36';
     let overlay = 'from-black/10 via-black/25 to-black/70';
 
@@ -133,7 +149,6 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
       overlay = 'from-black/10 via-black/30 to-black/80';
     }
 
-    // layouts não focados: capa menor, overlay um pouco mais forte (mas imagem continua viva)
     if (!['Hero Banner', 'Cover Clean', 'Magazine'].includes(layout)) {
       heightClass = 'h-32';
       overlay = 'from-black/15 via-black/30 to-black/75';
@@ -246,6 +261,52 @@ NOTE:Perfil digital criado com LinkFlow.
     setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
   };
 
+  const handleLeadSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isPreview) {
+      alert("Modo Preview: Lead seria enviado.");
+      setLeadSent(true);
+      return;
+    }
+    updateStorage(prev => ({
+      ...prev,
+      leads: [...prev.leads, {
+        id: Math.random().toString(36).substring(7),
+        clientId: profile.clientId,
+        profileId: profile.id,
+        name: leadName,
+        contact: leadContact,
+        message: leadMessage,
+        status: 'novo',
+        createdAt: new Date().toISOString(),
+        source: source
+      }]
+    }));
+    setLeadSent(true);
+  };
+
+  const handleNpsSubmit = () => {
+    if (npsScore === null) return;
+    if (isPreview) {
+      alert("Modo Preview: NPS enviado.");
+      setNpsSent(true);
+      return;
+    }
+    updateStorage(prev => ({
+      ...prev,
+      nps: [...prev.nps, {
+        id: Math.random().toString(36).substring(7),
+        clientId: profile.clientId,
+        profileId: profile.id,
+        score: npsScore,
+        comment: npsComment,
+        createdAt: new Date().toISOString(),
+        source: source
+      }]
+    }));
+    setNpsSent(true);
+  };
+
   const getButtonStyle = (): React.CSSProperties => {
     let backgroundColor: string;
     let color: string;
@@ -347,12 +408,16 @@ NOTE:Perfil digital criado com LinkFlow.
   const activeSlots = (profile.nativeSlots || []).filter(s => s.isActive);
   const avatarSrc = safeString(profile.avatarUrl, 'https://picsum.photos/seed/avatar/200/200');
 
+  // Filtros de itens ativos
+  const activeCatalog = (profile.catalogItems || []).filter(i => i.isActive).sort((a,b) => a.sortOrder - b.sortOrder);
+  const activePortfolio = (profile.portfolioItems || []).filter(i => i.isActive).sort((a,b) => a.sortOrder - b.sortOrder);
+  const activeVideos = (profile.youtubeVideos || []).filter(i => i.isActive).sort((a,b) => a.sortOrder - b.sortOrder);
+
   return (
     <div style={bgStyle} className="w-full flex flex-col items-center overflow-x-hidden no-scrollbar">
       <div className="relative z-10 w-full px-4 flex flex-col items-center pt-8 pb-20">
         <main className="w-full max-w-[520px] p-0 space-y-6" style={shellCardStyle}>
           <div className="relative">
-            {/* ✅ Capa SEM opacity */}
             {profile.coverUrl && (
               <div className={clsx("w-full overflow-hidden relative", coverConfig.heightClass)}>
                 <img src={profile.coverUrl} className="w-full h-full object-cover" alt="Cover" />
@@ -410,6 +475,84 @@ NOTE:Perfil digital criado com LinkFlow.
 
             {renderLinks()}
 
+            {/* Catálogo */}
+            {hasCatalogAccess && activeCatalog.length > 0 && (
+              <div className="w-full space-y-4 pt-4">
+                <h3 className="text-center text-[10px] font-black uppercase tracking-widest opacity-60">Produtos & Serviços</h3>
+                <div className="grid gap-3">
+                  {activeCatalog.map(item => (
+                    <div key={item.id} className="p-4 rounded-2xl flex gap-4 items-start" style={proCardStyle}>
+                      {item.imageUrl && (
+                        <img src={item.imageUrl} alt={item.title} className="w-20 h-20 rounded-xl object-cover flex-shrink-0 bg-black/20" />
+                      )}
+                      <div className="flex-1 min-w-0 text-left">
+                        <h4 className="font-bold text-sm truncate">{item.title}</h4>
+                        {item.description && <p className="text-xs opacity-70 line-clamp-2 mt-1">{item.description}</p>}
+                        {item.priceText && <p className="text-sm font-black mt-2" style={{ color: theme.primary }}>{item.priceText}</p>}
+                        {item.ctaLink && (
+                          <a 
+                            href={item.ctaLink} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="mt-3 inline-block px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-opacity hover:opacity-80"
+                            style={{ background: theme.primary, color: primaryTextOnPrimary }}
+                          >
+                            {item.ctaLabel || 'Ver mais'}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Portfólio */}
+            {hasPortfolioAccess && activePortfolio.length > 0 && (
+              <div className="w-full space-y-4 pt-4">
+                <h3 className="text-center text-[10px] font-black uppercase tracking-widest opacity-60">Portfólio</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {activePortfolio.map(item => (
+                    <div key={item.id} className="relative aspect-square rounded-2xl overflow-hidden group bg-black/20" style={{ border: `1px solid ${theme.border}` }}>
+                      <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                      {item.title && (
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                          <span className="text-xs font-bold text-white truncate w-full">{item.title}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Vídeos */}
+            {hasVideosAccess && activeVideos.length > 0 && (
+              <div className="w-full space-y-4 pt-4">
+                <h3 className="text-center text-[10px] font-black uppercase tracking-widest opacity-60">Vídeos</h3>
+                <div className="space-y-4">
+                  {activeVideos.map(video => {
+                    const videoId = extractYouTubeId(video.url);
+                    if (!videoId) return null;
+                    return (
+                      <div key={video.id} className="rounded-2xl overflow-hidden aspect-video bg-black shadow-lg" style={{ border: `1px solid ${theme.border}` }}>
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          src={`https://www.youtube.com/embed/${videoId}`}
+                          title={video.title || 'YouTube video'}
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Agendamento */}
             {hasSchedulingAccess && profile.enableScheduling && (
               <div className="w-full p-6" style={proCardStyle}>
                 <div className="flex items-center justify-between mb-4">
@@ -472,10 +615,100 @@ NOTE:Perfil digital criado com LinkFlow.
               </div>
             )}
 
+            {/* Captura de Leads */}
+            {hasLeadCaptureAccess && profile.enableLeadCapture && (
+              <div className="w-full p-6" style={proCardStyle}>
+                <div className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-4 text-center">Entre em Contato</div>
+                
+                {leadSent ? (
+                  <div className="text-center py-6 animate-in fade-in zoom-in">
+                    <div className="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                       <LucideIcons.Check size={24} />
+                    </div>
+                    <h4 className="font-bold text-sm">Mensagem Enviada!</h4>
+                    <p className="text-xs opacity-60 mt-1">Entraremos em contato em breve.</p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleLeadSubmit} className="space-y-3">
+                    <input 
+                      type="text" required placeholder="Seu Nome" 
+                      value={leadName} onChange={e => setLeadName(e.target.value)}
+                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-white/30 placeholder:text-white/30"
+                      style={{ color: theme.text }}
+                    />
+                    <input 
+                      type="text" required placeholder="Seu Contato (Email ou WhatsApp)" 
+                      value={leadContact} onChange={e => setLeadContact(e.target.value)}
+                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-white/30 placeholder:text-white/30"
+                      style={{ color: theme.text }}
+                    />
+                    <textarea 
+                      placeholder="Como podemos ajudar?" 
+                      value={leadMessage} onChange={e => setLeadMessage(e.target.value)}
+                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-white/30 placeholder:text-white/30 h-24 resize-none"
+                      style={{ color: theme.text }}
+                    />
+                    <button 
+                      type="submit"
+                      className="w-full py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+                      style={{ background: theme.primary, color: primaryTextOnPrimary }}
+                    >
+                      Enviar Mensagem
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+
+            {/* NPS */}
+            {hasNpsAccess && profile.enableNps && !npsSent && (
+               <div className="w-full p-6" style={proCardStyle}>
+                  <div className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-4 text-center">Avalie nossa página</div>
+                  <div className="flex justify-between gap-1 mb-4">
+                     {[0,1,2,3,4,5,6,7,8,9,10].map(score => (
+                        <button 
+                           key={score}
+                           onClick={() => setNpsScore(score)}
+                           className={clsx(
+                             "w-7 h-9 rounded-md text-[10px] font-bold transition-all flex items-center justify-center",
+                             npsScore === score ? "bg-white text-black scale-110" : "bg-black/20 hover:bg-white/10"
+                           )}
+                           style={{ color: npsScore === score ? '#000' : theme.text }}
+                        >
+                           {score}
+                        </button>
+                     ))}
+                  </div>
+                  {npsScore !== null && (
+                     <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                        <textarea 
+                           placeholder="Deixe um comentário opcional..." 
+                           value={npsComment} onChange={e => setNpsComment(e.target.value)}
+                           className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-xs outline-none focus:border-white/30 placeholder:text-white/30 h-16 resize-none"
+                           style={{ color: theme.text }}
+                        />
+                        <button 
+                           onClick={handleNpsSubmit}
+                           className="w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+                           style={{ background: theme.primary, color: primaryTextOnPrimary }}
+                        >
+                           Enviar Avaliação
+                        </button>
+                     </div>
+                  )}
+               </div>
+            )}
+            
+            {hasNpsAccess && profile.enableNps && npsSent && (
+               <div className="w-full p-4 text-center opacity-60 text-xs font-bold uppercase tracking-widest border border-dashed border-white/10 rounded-xl">
+                  Obrigado pela avaliação!
+               </div>
+            )}
+
             {hasPixAccess && profile.pixKey && (
               <div className="w-full p-6" style={proCardStyle}>
                 <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
+                  <div className="min-w-0 text-left">
                     <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Pix</div>
                     <div className="font-bold text-sm truncate">{profile.pixKey}</div>
                   </div>
@@ -502,7 +735,7 @@ NOTE:Perfil digital criado com LinkFlow.
         </main>
       </div>
 
-      {/* Wallet Modal (MVP) — mantido igual ao seu */}
+      {/* Wallet Modal */}
       {showWalletModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-zinc-900 border border-white/10 w-full max-w-sm rounded-[2rem] p-8 relative animate-in slide-in-from-bottom-10 duration-300">
