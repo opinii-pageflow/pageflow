@@ -383,6 +383,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   const activePortfolio = (profile.portfolioItems || []).filter(i => i.isActive).sort((a,b) => a.sortOrder - b.sortOrder);
   const activeVideos = (profile.youtubeVideos || []).filter(i => i.isActive).sort((a,b) => a.sortOrder - b.sortOrder);
 
+  // NPS redirect logic
+  const canRedirectNps = npsScore !== null && npsScore >= 9 && profile.npsRedirectUrl;
+
   return (
     <div style={bgStyle} className="w-full flex flex-col items-center overflow-x-hidden no-scrollbar">
       <div className="relative z-10 w-full px-4 flex flex-col items-center pt-8 pb-20">
@@ -774,8 +777,26 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                 </div>
 
                 {npsSent ? (
-                  <div className="rounded-xl p-4 text-sm font-bold" style={{ border: `${borderWidth} solid ${theme.border}`, color: theme.text }}>
-                    ⭐ Obrigado pela sua avaliação!
+                  <div className="space-y-4">
+                    <div className="rounded-xl p-4 text-sm font-bold" style={{ border: `${borderWidth} solid ${theme.border}`, color: theme.text }}>
+                      ⭐ Obrigado pela sua avaliação!
+                    </div>
+                    {canRedirectNps && (
+                      <a
+                        href={profile.npsRedirectUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest text-center transition-all hover:translate-y-[-1px]"
+                        style={{
+                          border: `${borderWidth} solid ${theme.border}`,
+                          background: theme.primary,
+                          color: primaryTextOnPrimary,
+                          fontFamily: buttonFont,
+                        }}
+                      >
+                        Avaliar no Google
+                      </a>
+                    )}
                   </div>
                 ) : (
                   <>

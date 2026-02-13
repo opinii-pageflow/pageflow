@@ -168,6 +168,7 @@ export interface Profile {
   youtubeVideos?: YoutubeVideoItem[];
   enableLeadCapture?: boolean;
   enableNps?: boolean;
+  npsRedirectUrl?: string; // Adicionado
   hideBranding?: boolean;
 
   // Scheduling

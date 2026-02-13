@@ -14,7 +14,8 @@ import {
   Clock, 
   Link as LinkIcon, 
   AlertCircle,
-  Smartphone
+  Smartphone,
+  Star
 } from 'lucide-react';
 import clsx from 'clsx';
 import { CatalogItem, PortfolioItem, Profile, YoutubeVideoItem, PlanType, SchedulingSlot } from '../../types';
@@ -303,43 +304,73 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
       </section>
 
       {/* Toggles (CRM e NPS protegidos pelo plano Business) */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[{
-          key: 'enableLeadCapture',
-          feature: 'crm' as const,
-          title: 'Captura de Leads',
-          desc: 'Formulário para o visitante deixar nome/contato.'
-        }, {
-          key: 'enableNps',
-          feature: 'nps' as const,
-          title: 'Avaliação NPS',
-          desc: 'Nota 0-10 e comentário para virar dashboard.'
-        }].map((t) => {
-          const hasFeatureAccess = canAccessFeature(clientPlan, t.feature);
-          return (
-            <div key={t.key} className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-6 flex items-center justify-between gap-4 relative overflow-hidden">
-              <div className="min-w-0">
-                <div className="font-black text-base flex items-center gap-2">
-                  {t.title}
-                  {!hasFeatureAccess && <Lock size={12} className="text-zinc-600" />}
+      <section className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[{
+            key: 'enableLeadCapture',
+            feature: 'crm' as const,
+            title: 'Captura de Leads',
+            desc: 'Formulário para o visitante deixar nome/contato.'
+          }, {
+            key: 'enableNps',
+            feature: 'nps' as const,
+            title: 'Avaliação NPS',
+            desc: 'Nota 0-10 e comentário para virar dashboard.'
+          }].map((t) => {
+            const hasFeatureAccess = canAccessFeature(clientPlan, t.feature);
+            return (
+              <div key={t.key} className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-6 flex items-center justify-between gap-4 relative overflow-hidden">
+                <div className="min-w-0">
+                  <div className="font-black text-base flex items-center gap-2">
+                    {t.title}
+                    {!hasFeatureAccess && <Lock size={12} className="text-zinc-600" />}
+                  </div>
+                  <div className="text-zinc-500 text-xs">{t.desc}</div>
+                  {!hasFeatureAccess && <div className="text-[8px] font-black uppercase text-blue-500 mt-2">Disponível no Business</div>}
                 </div>
-                <div className="text-zinc-500 text-xs">{t.desc}</div>
-                {!hasFeatureAccess && <div className="text-[8px] font-black uppercase text-blue-500 mt-2">Disponível no Business</div>}
+                <button
+                  disabled={!hasFeatureAccess}
+                  onClick={() => onUpdate({ [t.key]: !((profile as any)[t.key]) } as any)}
+                  className={clsx(
+                    "px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
+                    (profile as any)[t.key] ? "bg-white text-black" : "bg-white/5 border border-white/10 text-zinc-400",
+                    !hasFeatureAccess && "opacity-30 cursor-not-allowed"
+                  )}
+                >
+                  {(profile as any)[t.key] ? 'Ligado' : 'Desligado'}
+                </button>
               </div>
-              <button
-                disabled={!hasFeatureAccess}
-                onClick={() => onUpdate({ [t.key]: !((profile as any)[t.key]) } as any)}
-                className={clsx(
-                  "px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
-                  (profile as any)[t.key] ? "bg-white text-black" : "bg-white/5 border border-white/10 text-zinc-400",
-                  !hasFeatureAccess && "opacity-30 cursor-not-allowed"
-                )}
-              >
-                {(profile as any)[t.key] ? 'Ligado' : 'Desligado'}
-              </button>
+            );
+          })}
+        </div>
+
+        {/* Campo adicional para URL do Google Meu Negócio se NPS estiver ativo */}
+        {profile.enableNps && canAccessFeature(clientPlan, 'nps') && (
+          <div className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-8 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                <Star size={18} className="text-amber-400" />
+              </div>
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Google Review</div>
+                <div className="font-black text-lg">Direcionamento NPS</div>
+              </div>
             </div>
-          );
-        })}
+            
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Link do Google Meu Negócio</label>
+              <input
+                value={profile.npsRedirectUrl || ''}
+                onChange={(e) => onUpdate({ npsRedirectUrl: e.target.value })}
+                placeholder="Ex: https://g.page/r/..."
+                className="w-full rounded-2xl bg-black/30 border border-white/10 px-5 py-4 text-sm outline-none focus:border-white/30"
+              />
+              <p className="text-[10px] text-zinc-500 ml-1">
+                Se preenchido, usuários que avaliarem com 9 ou 10 verão um botão para avaliar também no Google.
+              </p>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Catálogo */}
