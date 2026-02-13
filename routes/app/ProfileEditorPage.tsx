@@ -62,19 +62,16 @@ const ProfileEditorPage: React.FC = () => {
     setLoading(false);
   }, [profileId, navigate]);
 
-  // Lógica para detectar se precisa de scroll e mostrar a seta
   useEffect(() => {
     const checkScroll = () => {
       if (!scrollContainerRef.current) return;
       const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-      // Mostra a seta se estiver no topo e houver conteúdo escondido abaixo
       setShowScrollArrow(scrollTop < 50 && scrollHeight > clientHeight + 100);
     };
 
     const container = scrollContainerRef.current;
     if (container) {
       container.addEventListener('scroll', checkScroll);
-      // Pequeno delay para garantir que o conteúdo da tab carregou
       const timer = setTimeout(checkScroll, 300);
       return () => {
         container.removeEventListener('scroll', checkScroll);
@@ -155,13 +152,13 @@ const ProfileEditorPage: React.FC = () => {
   }
 
   const editorTabs = [
-    { id: 'profile', label: 'Perfil', icon: <User size={16} /> },
-    { id: 'links', label: 'Links', icon: <LinkIcon size={16} /> },
-    { id: 'design', label: 'Design', icon: <Palette size={16} /> },
-    { id: 'templates', label: 'Layout', icon: <Layout size={16} /> },
-    { id: 'fonts', label: 'Fontes', icon: <Type size={16} /> },
-    { id: 'share', label: 'Share', icon: <Share2 size={16} /> },
-    { id: 'pro', label: 'Pro', icon: <Zap size={16} /> },
+    { id: 'profile', label: 'Perfil', icon: <User size={14} /> },
+    { id: 'links', label: 'Links', icon: <LinkIcon size={14} /> },
+    { id: 'design', label: 'Design', icon: <Palette size={14} /> },
+    { id: 'templates', label: 'Layout', icon: <Layout size={14} /> },
+    { id: 'fonts', label: 'Fontes', icon: <Type size={14} /> },
+    { id: 'share', label: 'Share', icon: <Share2 size={14} /> },
+    { id: 'pro', label: 'Pro', icon: <Zap size={14} /> },
   ];
 
   return (
@@ -268,21 +265,22 @@ const ProfileEditorPage: React.FC = () => {
           "flex-1 lg:flex-none lg:w-[42%] flex flex-col bg-[#050505] border-r border-white/5 transition-all duration-500 z-10",
           showMobilePreview ? "-translate-x-full lg:translate-x-0 opacity-0 lg:opacity-100" : "translate-x-0 opacity-100"
         )}>
-          <div className="bg-black/40 backdrop-blur-xl sticky top-0 z-20 border-b border-white/5 p-3 overflow-hidden">
-            <div className="flex overflow-x-auto no-scrollbar gap-2">
+          {/* Aba de Menus Ajustada para visibilidade total */}
+          <div className="bg-black/40 backdrop-blur-xl sticky top-0 z-20 border-b border-white/5 p-2">
+            <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-1.5">
               {editorTabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={clsx(
-                    "flex items-center gap-2 px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap active:scale-95",
+                    "flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95",
                     activeTab === tab.id 
                       ? "bg-white text-black shadow-lg" 
                       : "text-zinc-500 hover:text-white hover:bg-white/5"
                   )}
                 >
                   {tab.icon}
-                  {tab.label}
+                  <span className="hidden xs:inline">{tab.label}</span>
                 </button>
               ))}
             </div>
@@ -302,7 +300,6 @@ const ProfileEditorPage: React.FC = () => {
               {activeTab === 'pro' && <ProTab profile={profile} clientPlan={clientPlan} onUpdate={handleUpdateProfile} />}
             </div>
 
-            {/* Scroll Indicator Arrow */}
             {showScrollArrow && (
               <button 
                 onClick={handleScrollToBottom}
