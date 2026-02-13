@@ -269,7 +269,7 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="mb-20 text-center md:text-left space-y-4">
             <div className="text-blue-500 text-[10px] font-black uppercase tracking-[0.3em]">O Futuro é Digital</div>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter">Recursos <span className="text-zinc-700">SaaS Premium</span></h2>
+            <h2 className="text-4xl md:text-6xl font-black tracking-tighter">Recursos <span className="text-lime-400">SaaS Premium</span></h2>
             <p className="text-zinc-500 max-w-xl text-lg font-medium leading-relaxed">Desenvolvido para máxima conversão e autoridade visual.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
