@@ -98,7 +98,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   const theme = (profile as any)?.theme || {
     primary: '#3b82f6',
     text: '#ffffff',
-    muted: 'rgba(255,255,255,0.7)', // Fallback muted
+    muted: 'rgba(255,255,255,0.7)', 
     border: 'rgba(255,255,255,0.10)',
     cardBg: 'rgba(0,0,0,0.30)',
     shadow: '0 12px 40px rgba(0,0,0,0.35)',
@@ -110,7 +110,6 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
     backgroundValueSecondary: '#0A0A0A',
   };
 
-  // Garante que muted existe
   if (!theme.muted) theme.muted = 'rgba(255,255,255,0.7)';
 
   const fonts = (profile as any)?.fonts || {
@@ -132,13 +131,11 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
   
-  // Lead Capture State
   const [leadName, setLeadName] = useState('');
   const [leadContact, setLeadContact] = useState('');
   const [leadMessage, setLeadMessage] = useState('');
   const [leadSent, setLeadSent] = useState(false);
 
-  // NPS State
   const [npsScore, setNpsScore] = useState<number | null>(null);
   const [npsComment, setNpsComment] = useState('');
   const [npsSent, setNpsSent] = useState(false);
@@ -331,7 +328,6 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   const activeSlots = (profile.nativeSlots || []).filter(s => s.isActive);
   const avatarSrc = safeString(profile.avatarUrl, 'https://picsum.photos/seed/avatar/200/200');
 
-  // Filtros de itens ativos
   const activeCatalog = (profile.catalogItems || []).filter(i => i.isActive).sort((a,b) => a.sortOrder - b.sortOrder);
   const activePortfolio = (profile.portfolioItems || []).filter(i => i.isActive).sort((a,b) => a.sortOrder - b.sortOrder);
   const activeVideos = (profile.youtubeVideos || []).filter(i => i.isActive).sort((a,b) => a.sortOrder - b.sortOrder);
@@ -420,7 +416,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
               <div className="rounded-2xl border p-5" style={{ borderColor: theme.border, background: 'rgba(0,0,0,0.25)' }}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
+                    <div className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.text }}>
                       PIX
                     </div>
                     <div className="text-sm font-black mt-1" style={{ color: theme.text }}>
@@ -445,7 +441,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
             {hasCatalogAccess && activeCatalog.length > 0 && (
               <section className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.text }}>
                     Catálogo
                   </h3>
                 </div>
@@ -502,7 +498,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
             {/* Portfolio */}
             {hasPortfolioAccess && activePortfolio.length > 0 && (
               <section className="space-y-3">
-                <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
+                <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.text }}>
                   Portfólio
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
@@ -530,7 +526,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
             {/* Videos */}
             {hasVideosAccess && activeVideos.length > 0 && (
               <section className="space-y-3">
-                <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
+                <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.text }}>
                   Vídeos
                 </h3>
                 <div className="grid grid-cols-1 gap-4">
@@ -558,7 +554,6 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                       );
                     }
                     
-                    // Fallback se não for YouTube reconhecido
                     return (
                       <a
                         key={v.id}
@@ -593,7 +588,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
             {hasSchedulingAccess && profile.enableScheduling && (
               <section className="rounded-2xl border p-5 space-y-4" style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.03)' }}>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.text }}>
                     Agendamento
                   </h3>
                   <LucideIcons.CalendarClock size={18} style={{ color: theme.primary }} />
@@ -654,7 +649,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
             {hasLeadCaptureAccess && profile.enableLeadCapture && (
               <section className="rounded-2xl border p-5 space-y-4" style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.03)' }}>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.text }}>
                     Fale comigo
                   </h3>
                   <LucideIcons.MessageSquareText size={18} style={{ color: theme.primary }} />
@@ -727,7 +722,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
             {hasNpsAccess && profile.enableNps && (
               <section className="rounded-2xl border p-5 space-y-4" style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.03)' }}>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.text }}>
                     Avaliação
                   </h3>
                   <LucideIcons.Star size={18} style={{ color: theme.primary }} />
