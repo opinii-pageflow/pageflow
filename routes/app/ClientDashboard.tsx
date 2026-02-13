@@ -124,7 +124,7 @@ const ClientDashboard: React.FC = () => {
         )}
 
         {activeTab === 'crm' && hasCrmAccess ? (
-          <AdvancedCrm leads={allLeads} />
+          <AdvancedCrm leads={allLeads} clientPlan={client?.plan} />
         ) : (
           <>
             <header className="mb-12 flex flex-col md:flex-row items-start md:items-end justify-between gap-8">

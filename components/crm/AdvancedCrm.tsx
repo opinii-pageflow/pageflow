@@ -101,7 +101,6 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Stats e Filtros mantidos... */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: 'Total Leads', val: stats.total, icon: User, color: 'text-white', bg: 'bg-zinc-900/40' },
@@ -204,11 +203,15 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
               })}
             </tbody>
           </table>
-          {/* Fallback se vazio... */}
+          {filteredLeads.length === 0 && (
+            <div className="p-20 text-center">
+              <User size={48} className="mx-auto text-zinc-800 mb-4" />
+              <div className="text-zinc-600 font-black uppercase tracking-widest text-xs">Nenhum lead encontrado</div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Modal Ficha Detalhada (Protegido por hasFullAccess) */}
       {selectedLead && hasFullAccess && (
         <div className="fixed inset-0 z-[500] flex justify-end">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setSelectedLead(null)}></div>
