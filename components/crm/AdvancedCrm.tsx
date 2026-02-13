@@ -185,11 +185,17 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
                     <td className="p-8 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {hasFullAccess ? (
-                          <button onClick={() => setSelectedLead(lead)} className="bg-white text-black px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg">
+                          <button 
+                            onClick={() => setSelectedLead(lead)} 
+                            className="bg-white text-black px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-lg"
+                          >
                             Ficha
                           </button>
                         ) : (
-                          <button onClick={() => navigate('/app/upgrade')} className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition-all active:scale-95 shadow-lg flex items-center gap-2">
+                          <button 
+                            onClick={() => navigate('/app/upgrade')} 
+                            className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-500 transition-all active:scale-95 shadow-lg flex items-center gap-2"
+                          >
                             <Zap size={14} /> Upgrade
                           </button>
                         )}
