@@ -355,6 +355,27 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
     }
   };
 
+  const downloadVCard = () => {
+    const vCardData = [
+      'BEGIN:VCARD',
+      'VERSION:3.0',
+      `FN:${profile.displayName}`,
+      `TITLE:${profile.headline}`,
+      `NOTE:${profile.bioShort}`,
+      `URL:${window.location.href}`,
+      'END:VCARD'
+    ].join('\n');
+
+    const blob = new Blob([vCardData], { type: 'text/vcard;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${profile.slug}.vcf`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const activeSlots = (profile.nativeSlots || []).filter(s => s.isActive);
   const avatarSrc = safeString(profile.avatarUrl, 'https://picsum.photos/seed/avatar/200/200');
 
@@ -416,11 +437,11 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
           </div>
 
           <div className="px-6 pb-8 space-y-6">
-            {/* Top Actions - CORRIGIDO: Removido grid-cols-1 para permitir tamanho natural */}
+            {/* Top Actions */}
             <div className="flex justify-start w-full">
               <button
                 onClick={() => setShowWalletModal(true)}
-                className="rounded-xl px-3 py-1.5 font-black text-[9px] uppercase tracking-widest transition-all hover:translate-y-[-1px]"
+                className="rounded-lg px-3 py-2 font-black text-[10px] uppercase tracking-widest transition-all hover:translate-y-[-1px]"
                 style={{
                   border: `${borderWidth} solid ${theme.border}`,
                   background: theme.buttonStyle === 'glass' ? 'rgba(255,255,255,0.06)' : 'transparent',
@@ -428,8 +449,8 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                   fontFamily: buttonFont,
                 }}
               >
-                <span className="inline-flex items-center justify-center gap-1.5">
-                  <LucideIcons.Bookmark size={12} />
+                <span className="inline-flex items-center gap-2">
+                  <LucideIcons.Bookmark size={14} />
                   Salvar Contato
                 </span>
               </button>
@@ -841,15 +862,27 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                 </button>
               </div>
               <div className="text-xs font-semibold opacity-80" style={{ color: theme.muted }}>
-                Aqui você pode evoluir depois com: QR Code, Apple Wallet, Google Wallet e vCard.
+                Salve os dados de contato diretamente no seu telefone.
               </div>
               <button
-                onClick={() => setShowWalletModal(false)}
+                onClick={downloadVCard}
                 className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest transition-all hover:translate-y-[-1px]"
                 style={{
                   border: `${borderWidth} solid ${theme.border}`,
                   background: theme.primary,
                   color: primaryTextOnPrimary,
+                  fontFamily: buttonFont,
+                }}
+              >
+                Baixar vCard
+              </button>
+              <button
+                onClick={() => setShowWalletModal(false)}
+                className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest transition-all hover:translate-y-[-1px]"
+                style={{
+                  border: `${borderWidth} solid ${theme.border}`,
+                  background: 'transparent',
+                  color: theme.text,
                   fontFamily: buttonFont,
                 }}
               >
