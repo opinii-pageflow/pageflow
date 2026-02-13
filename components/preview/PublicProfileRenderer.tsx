@@ -51,6 +51,28 @@ const pickReadableOn = (hexBg: string, light = '#F8FAFC', dark = '#0B1220') => {
   return lum > 0.62 ? dark : light;
 };
 
+const getIcon = (type: string) => {
+  switch (type) {
+    case 'whatsapp': return LucideIcons.MessageCircle;
+    case 'instagram': return LucideIcons.Instagram;
+    case 'linkedin': return LucideIcons.Linkedin;
+    case 'website': return LucideIcons.Globe;
+    case 'phone': case 'mobile': return LucideIcons.Phone;
+    case 'email': return LucideIcons.Mail;
+    case 'maps': return LucideIcons.MapPin;
+    case 'youtube': return LucideIcons.Youtube;
+    case 'github': return LucideIcons.Github;
+    case 'facebook': return LucideIcons.Facebook;
+    case 'twitter': case 'x': return LucideIcons.Twitter;
+    case 'tiktok': return LucideIcons.Music2;
+    case 'telegram': return LucideIcons.Send;
+    case 'threads': return LucideIcons.AtSign;
+    case 'twitch': return LucideIcons.Tv;
+    case 'discord': return LucideIcons.MessageSquare;
+    default: return LucideIcons.Link;
+  }
+};
+
 const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan, source = 'direct' }) => {
   const { theme, fonts, buttons } = profile;
   const hasSchedulingAccess = canAccessFeature(clientPlan, 'scheduling');
@@ -205,21 +227,35 @@ NOTE:Perfil digital criado com LinkFlow.
     const activeButtons = (buttons || []).filter(b => b.enabled);
     return (
       <div className={clsx(isGrid ? "grid grid-cols-2 gap-3" : "flex flex-col gap-3", "w-full")}>
-        {activeButtons.map((btn, idx) => (
-          <a
-            key={btn.id}
-            href={isPreview ? '#' : formatLink(btn.type, btn.value)}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => handleLinkClick(btn.id)}
-            style={getButtonStyle(btn, idx)}
-            className="group hover:translate-y-[-2px]"
-          >
-            {/* Ícone opcional se quiser implementar no grid */}
-            <div className="font-black truncate w-full">{btn.label}</div>
-            {!isGrid && <LucideIcons.ChevronRight size={12} className="opacity-40" />}
-          </a>
-        ))}
+        {activeButtons.map((btn, idx) => {
+          const Icon = getIcon(btn.type);
+          return (
+            <a
+              key={btn.id}
+              href={isPreview ? '#' : formatLink(btn.type, btn.value)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => handleLinkClick(btn.id)}
+              style={getButtonStyle(btn, idx)}
+              className="group hover:translate-y-[-2px]"
+            >
+              {isGrid ? (
+                <>
+                  <Icon size={24} />
+                  <div className="font-black truncate w-full">{btn.label}</div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Icon size={20} />
+                    <span className="font-black truncate">{btn.label}</span>
+                  </div>
+                  <LucideIcons.ChevronRight size={16} className="opacity-40" />
+                </>
+              )}
+            </a>
+          );
+        })}
       </div>
     );
   };
