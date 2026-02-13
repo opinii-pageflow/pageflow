@@ -1,52 +1,225 @@
-import React from 'react';
-import { Profile, PlanType } from '../../types';
-import PublicProfileRenderer from './PublicProfileRenderer';
+export type UserRole = 'admin' | 'client';
+export type PlanType = 'starter' | 'pro' | 'business' | 'enterprise';
+export type BackgroundType = 'solid' | 'gradient' | 'image';
+export type ButtonStyle = 'solid' | 'outline' | 'glass';
+export type VisibilityMode = 'public' | 'private' | 'password';
+export type AnalyticsSource = 'direct' | 'qr' | 'nfc' | string; // Permitir strings customizadas (UTMs)
+export type EventType = 'view' | 'click';
+export type ProfileType = 'personal' | 'business'; // Novo tipo adicionado
 
-interface Props {
-  profile: Profile;
-  clientPlan?: PlanType;
+// ===== Pro Modules =====
+export type CatalogItemKind = 'product' | 'service';
+
+export interface CatalogItem {
+  id: string;
+  profileId: string;
+  kind: CatalogItemKind;
+  title: string;
+  description?: string;
+  priceText?: string;
+  imageUrl?: string;
+  ctaLabel?: string;
+  ctaLink?: string;
+  sortOrder: number;
+  isActive: boolean;
 }
 
-const PhonePreview: React.FC<Props> = ({ profile, clientPlan }) => {
-  return (
-    <div className="relative group perspective-1000 w-full flex items-center justify-center">
-      {/* Chassis Externo Sombreado */}
-      <div
-        className="relative mx-auto bg-[#050505] rounded-[3rem] border-[1px] border-white/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] ring-1 ring-white/5 flex items-center justify-center p-[6px] transition-transform duration-1000 group-hover:scale-[1.01]"
-        style={{
-          // Preview mais fiel ao "padrão real" (iPhone-like) e menos "esticada"
-          // Importante: baseia tamanho na largura (não na altura), evitando distorção em telas grandes
-          aspectRatio: '9 / 19.5',
-          width: 'clamp(300px, 28vw, 380px)',
-          maxWidth: '380px',
-        }}
-      >
-        {/* Tela Bezel-less */}
-        <div className="relative w-full h-full bg-black rounded-[2.6rem] overflow-hidden border-[1px] border-[#080808]">
-          {/* Dynamic Island */}
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-16 h-4 bg-black rounded-full z-[100] border border-white/5 flex items-center justify-center">
-            <div className="w-1 h-1 rounded-full bg-zinc-900" />
-          </div>
+export interface PortfolioItem {
+  id: string;
+  profileId: string;
+  title?: string;
+  imageUrl: string;
+  sortOrder: number;
+  isActive: boolean;
+}
 
-          {/* Conteúdo do App */}
-          <div className="w-full h-full overflow-y-auto no-scrollbar bg-black">
-            <div className="min-h-full flex flex-col">
-              <PublicProfileRenderer profile={profile} isPreview={true} clientPlan={clientPlan} />
-            </div>
-          </div>
+export interface YoutubeVideoItem {
+  id: string;
+  profileId: string;
+  title?: string;
+  url: string;
+  sortOrder: number;
+  isActive: boolean;
+}
 
-          {/* Home Indicator */}
-          <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-16 h-1 bg-white/10 rounded-full z-50 pointer-events-none" />
+// ===== Scheduling =====
+export interface SchedulingSlot {
+  id: string;
+  dayOfWeek: number; // 0 (Dom) a 6 (Sab)
+  startTime: string; // "HH:mm"
+  endTime: string;   // "HH:mm"
+  isActive: boolean;
+}
 
-          {/* Subtle Glass Reflex */}
-          <div className="absolute inset-0 pointer-events-none bg-gradient-to-tr from-white/[0.01] via-transparent to-transparent opacity-30 z-40" />
-        </div>
-      </div>
+export type LeadStatus = 'novo' | 'contatado' | 'negociando' | 'fechado' | 'perdido' | 'respondido' | 'arquivado';
 
-      {/* Dynamic Floor Shadow */}
-      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-3/5 h-8 bg-blue-600/10 blur-[40px] -z-10 rounded-full" />
-    </div>
-  );
-};
+export interface LeadHistoryItem {
+  status: LeadStatus;
+  date: string;
+  note?: string;
+}
 
-export default PhonePreview;
+export interface LeadCapture {
+  id: string;
+  clientId: string;
+  profileId: string;
+  name: string;
+  contact: string;
+  phone?: string; 
+  email?: string; 
+  message?: string;
+  status: LeadStatus;
+  notes?: string; // Notas internas
+  history?: LeadHistoryItem[]; // Histórico de mudanças
+  createdAt: string;
+  source: AnalyticsSource;
+}
+
+export interface NpsEntry {
+  id: string;
+  clientId: string;
+  profileId: string;
+  score: number;
+  comment?: string;
+  createdAt: string;
+  source: AnalyticsSource;
+}
+
+export interface UserAuth {
+  id: string;
+  role: UserRole;
+  clientId?: string;
+  name: string;
+  email: string;
+}
+
+export interface Client {
+  id: string;
+  name: string;
+  slug: string;
+  plan: PlanType;
+  maxProfiles: number;
+  maxTemplates?: number;
+  createdAt: string;
+  isActive: boolean;
+  password?: string;
+  email?: string;
+}
+
+export interface ProfileButton {
+  id: string;
+  profileId: string;
+  type: string;
+  label: string;
+  value: string;
+  enabled: boolean;
+  visibility: 'public' | 'private';
+  pinned: boolean;
+  sortOrder: number;
+}
+
+export interface Theme {
+  primary: string;
+  backgroundType: BackgroundType;
+  backgroundValue: string;
+  backgroundValueSecondary?: string;
+  backgroundDirection?: string;
+  cardBg: string;
+  text: string;
+  muted: string;
+  border: string;
+  radius: string;
+  shadow: string;
+  buttonStyle: ButtonStyle;
+
+  // Opcional: permite usar ícones “brand” (coloridos) no público/preview.
+  // Mantém retrocompatibilidade: se não existir, usa "mono".
+  iconStyle?: 'mono' | 'brand';
+}
+
+export interface Fonts {
+  headingFont: string;
+  bodyFont: string;
+  buttonFont: string;
+}
+
+export interface Profile {
+  id: string;
+  clientId: string;
+  slug: string;
+  profileType: ProfileType; // Campo adicionado
+  displayName: string;
+  headline: string;
+  bioShort: string;
+  bioLong: string;
+  avatarUrl: string;
+  coverUrl: string;
+  buttons: ProfileButton[];
+  theme: Theme;
+  layoutTemplate: string;
+  fonts: Fonts;
+  visibilityMode: VisibilityMode;
+  password?: string;
+  createdAt: string;
+  updatedAt: string;
+
+  pixKey?: string;
+  catalogItems?: CatalogItem[];
+  portfolioItems?: PortfolioItem[];
+  youtubeVideos?: YoutubeVideoItem[];
+  enableLeadCapture?: boolean;
+  enableNps?: boolean;
+  hideBranding?: boolean;
+
+  // Scheduling
+  enableScheduling?: boolean;
+  schedulingMode?: 'external' | 'native';
+  externalBookingUrl?: string;
+  nativeSlots?: SchedulingSlot[];
+  bookingWhatsapp?: string;
+}
+
+export interface UtmParams {
+  source?: string;
+  medium?: string;
+  campaign?: string;
+  content?: string;
+  term?: string;
+}
+
+export interface AnalyticsEvent {
+  id: string;
+  clientId: string;
+  profileId: string;
+  type: EventType;
+  linkId?: string;
+  source: AnalyticsSource;
+  utm?: UtmParams;
+  referrer?: string;
+  landingPath?: string;
+  ts: number;
+}
+
+export interface AnalyticsSummary {
+  totalViews: number;
+  totalClicks: number;
+  ctr: number;
+  viewsByDate: { date: string; value: number }[];
+  clicksByDate: { date: string; value: number }[];
+  sources: { name: string; value: number }[];
+  topLinks: { label: string; clicks: number; percentage: number }[];
+  peakHours: { hour: number; value: number }[];
+  utmSummary: {
+    sources: { name: string; value: number }[];
+    mediums: { name: string; value: number }[];
+    campaigns: { name: string; value: number }[];
+  };
+}
+
+export interface AppData {
+  version: number;
+  clients: Client[];
+  profiles: Profile[];
+  events: AnalyticsEvent[];
+  leads: LeadCapture[];
+}
