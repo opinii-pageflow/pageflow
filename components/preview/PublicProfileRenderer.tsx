@@ -157,15 +157,38 @@ NOTE:Perfil digital criado com LinkFlow.
   };
 
   const getButtonStyle = (_btn: any, index: number): React.CSSProperties => {
+    let backgroundColor: string;
+    let color: string;
+    let border: string;
+
+    switch (theme.buttonStyle) {
+      case 'solid':
+        backgroundColor = theme.primary;
+        color = primaryTextOnPrimary;
+        border = `1px solid ${theme.primary}`;
+        break;
+      case 'outline':
+        backgroundColor = 'transparent';
+        color = theme.text;
+        border = `1.5px solid ${theme.primary}`;
+        break;
+      case 'glass':
+      default:
+        backgroundColor = theme.cardBg;
+        color = theme.text;
+        border = `1px solid ${theme.border}`;
+        break;
+    }
+
     const base: React.CSSProperties = {
       borderRadius: theme.radius,
       fontFamily: buttonFont,
       transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-      border: `1px solid ${theme.border}`,
+      border: border,
       padding: isGrid ? '1.5rem 1rem' : '0.95rem 1.15rem',
       width: '100%',
-      backgroundColor: theme.buttonStyle === 'solid' ? theme.primary : theme.cardBg,
-      color: theme.buttonStyle === 'solid' ? primaryTextOnPrimary : theme.text,
+      backgroundColor: backgroundColor,
+      color: color,
       fontSize: '0.92rem',
       fontWeight: 800,
       display: 'flex',
