@@ -28,14 +28,14 @@ export const PLANS: Record<PlanType, Plan> = {
     name: 'Business',
     maxProfiles: 10,
     monthlyPrice: 49,
-    features: ['Até 10 Perfis Ativos', 'Gestão de Leads (CRM)', 'Dashboard de NPS', 'Múltiplos Usuários'],
+    features: ['Até 10 Perfis Ativos', 'Captura de Leads', 'Dashboard de NPS', 'Templates Avançados'],
   },
   enterprise: {
     id: 'enterprise',
     name: 'Enterprise',
     maxProfiles: 25,
     monthlyPrice: 99,
-    features: ['Até 25 Perfis Ativos', 'Suporte Prioritário', 'Domínio Próprio', 'Remoção Total da Marca'],
+    features: ['Até 25 Perfis Ativos', 'CRM Completo (Pipeline & Fichas)', 'Exportação em Planilha', 'Remoção Total da Marca'],
   },
 };
 

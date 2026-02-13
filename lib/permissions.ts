@@ -11,7 +11,8 @@ export type FeatureKey =
   | 'leads_export'
   | 'leads_full_details'
   | 'analytics' 
-  | 'white_label';
+  | 'white_label'
+  | 'premium_templates';
 
 const PLAN_RANK: Record<PlanType, number> = {
   starter: 0,
@@ -28,11 +29,22 @@ const FEATURE_REQUIREMENTS: Record<FeatureKey, PlanType> = {
   analytics: 'pro',
   nps: 'pro',
   leads_capture: 'pro',
+  premium_templates: 'pro', // Bloqueia templates avançados no Starter
   leads_export: 'enterprise',
-  leads_full_details: 'enterprise', // Gerenciamento de status e ficha detalhada
-  crm: 'business',
+  leads_full_details: 'enterprise', 
+  crm: 'enterprise', // CRM Completo apenas no Enterprise
   white_label: 'enterprise'
 };
+
+/**
+ * Lista de templates considerados "Essenciais" (disponíveis no Starter)
+ */
+export const ESSENTIAL_TEMPLATES = [
+  'Minimal Card',
+  'Button List Bold',
+  'Avatar Left',
+  'Corporate'
+];
 
 /**
  * Verifica se um plano tem acesso a um determinado recurso.
@@ -45,4 +57,13 @@ export const canAccessFeature = (clientPlan: PlanType | undefined, feature: Feat
   const requiredRank = PLAN_RANK[requiredPlan];
 
   return currentRank >= requiredRank;
+};
+
+/**
+ * Verifica se o usuário pode usar um template específico
+ */
+export const canUseTemplate = (clientPlan: PlanType | undefined, templateId: string): boolean => {
+  if (!clientPlan) return false;
+  if (ESSENTIAL_TEMPLATES.includes(templateId)) return true;
+  return canAccessFeature(clientPlan, 'premium_templates');
 };
