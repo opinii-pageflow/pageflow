@@ -848,7 +848,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
           {!profile.hideBranding && (
             <div className="w-full flex justify-center pb-8 pt-4">
                 <a href="/" target="_blank" rel="noopener noreferrer" className="opacity-40 hover:opacity-100 transition-opacity">
-                    <img src="/logo.png" alt="PageFlow" className="h-5 w-auto" />
+                    <img src="/logo.png" alt="PageFlow" className="h-8 w-auto" />
                 </a>
             </div>
           )}
