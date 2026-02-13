@@ -41,6 +41,15 @@ export interface YoutubeVideoItem {
   isActive: boolean;
 }
 
+// ===== Scheduling =====
+export interface SchedulingSlot {
+  id: string;
+  dayOfWeek: number; // 0 (Dom) a 6 (Sab)
+  startTime: string; // "HH:mm"
+  endTime: string;   // "HH:mm"
+  isActive: boolean;
+}
+
 export type LeadStatus = 'novo' | 'contatado' | 'negociando' | 'fechado' | 'perdido' | 'respondido' | 'arquivado';
 
 export interface LeadHistoryItem {
@@ -155,6 +164,13 @@ export interface Profile {
   enableLeadCapture?: boolean;
   enableNps?: boolean;
   hideBranding?: boolean;
+
+  // Scheduling
+  enableScheduling?: boolean;
+  schedulingMode?: 'external' | 'native';
+  externalBookingUrl?: string;
+  nativeSlots?: SchedulingSlot[];
+  bookingWhatsapp?: string;
 }
 
 export interface UtmParams {

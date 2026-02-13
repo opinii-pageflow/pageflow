@@ -1,7 +1,23 @@
 import React, { useRef } from 'react';
-import { Plus, Trash2, Lock, Sparkles, ArrowUp, ArrowDown, Image, Youtube, QrCode, Upload } from 'lucide-react';
+import { 
+  Plus, 
+  Trash2, 
+  Lock, 
+  Sparkles, 
+  ArrowUp, 
+  ArrowDown, 
+  Image, 
+  Youtube, 
+  QrCode, 
+  Upload, 
+  Calendar, 
+  Clock, 
+  Link as LinkIcon, 
+  AlertCircle,
+  Smartphone
+} from 'lucide-react';
 import clsx from 'clsx';
-import { CatalogItem, PortfolioItem, Profile, YoutubeVideoItem, PlanType } from '../../types';
+import { CatalogItem, PortfolioItem, Profile, YoutubeVideoItem, PlanType, SchedulingSlot } from '../../types';
 import { canAccessFeature } from '../../lib/permissions';
 
 type Props = {
@@ -10,11 +26,13 @@ type Props = {
   onUpdate: (updates: Partial<Profile>) => void;
 };
 
+const DAYS_OF_WEEK = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
 const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
-  // Proteção de acesso à aba Pro (precisa de pelo menos o plano Pro)
   const hasProAccess = canAccessFeature(clientPlan, 'catalog');
+  const hasBusinessAccess = canAccessFeature(clientPlan, 'scheduling');
 
   if (!hasProAccess) {
     return (
@@ -33,10 +51,12 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
   const catalog = (profile.catalogItems || []) as CatalogItem[];
   const portfolio = (profile.portfolioItems || []) as PortfolioItem[];
   const videos = (profile.youtubeVideos || []) as YoutubeVideoItem[];
+  const slots = (profile.nativeSlots || []) as SchedulingSlot[];
 
   const updateCatalog = (items: CatalogItem[]) => onUpdate({ catalogItems: items });
   const updatePortfolio = (items: PortfolioItem[]) => onUpdate({ portfolioItems: items });
   const updateVideos = (items: YoutubeVideoItem[]) => onUpdate({ youtubeVideos: items });
+  const updateSlots = (newSlots: SchedulingSlot[]) => onUpdate({ nativeSlots: newSlots });
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, itemId: string) => {
     const file = e.target.files?.[0];
@@ -56,6 +76,19 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
     return next;
   };
 
+  const addSlot = () => {
+    const next: SchedulingSlot = {
+      id: Math.random().toString(36).slice(2),
+      dayOfWeek: 1,
+      startTime: '09:00',
+      endTime: '18:00',
+      isActive: true
+    };
+    updateSlots([...slots, next]);
+  };
+
+  const isExternalUrlMissing = profile.enableScheduling && profile.schedulingMode === 'external' && !profile.externalBookingUrl;
+
   return (
     <div className="space-y-8">
       <div className="flex items-start justify-between gap-4">
@@ -64,11 +97,168 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
             <span className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
               <Sparkles size={18} className="text-emerald-400" />
             </span>
-            Pro
+            Pro & Business
           </h2>
-          <p className="text-zinc-500 text-sm mt-2">Tudo que aumenta conversão: portfólio, catálogo, Pix, vídeos, leads e NPS.</p>
+          <p className="text-zinc-500 text-sm mt-2">Expanda as funcionalidades do seu perfil com módulos avançados.</p>
         </div>
       </div>
+
+      {/* AGENDAMENTO */}
+      <section className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-8 space-y-8">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+              <Calendar size={18} />
+            </div>
+            <div>
+              <div className="font-black text-lg flex items-center gap-2">
+                Agenda e Agendamento
+                {!hasBusinessAccess && <Lock size={14} className="text-zinc-600" />}
+              </div>
+              <p className="text-zinc-500 text-xs">Permita que clientes reservem seu tempo direto no perfil.</p>
+            </div>
+          </div>
+          <button
+            disabled={!hasBusinessAccess}
+            onClick={() => onUpdate({ enableScheduling: !profile.enableScheduling })}
+            className={clsx(
+              "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+              profile.enableScheduling ? "bg-white text-black" : "bg-white/5 border border-white/10 text-zinc-500",
+              !hasBusinessAccess && "opacity-30 cursor-not-allowed"
+            )}
+          >
+            {profile.enableScheduling ? 'Ativo' : 'Inativo'}
+          </button>
+        </div>
+
+        {!hasBusinessAccess && (
+          <div className="bg-blue-600/5 border border-blue-600/20 rounded-2xl p-4 flex items-center gap-4">
+             <div className="p-3 bg-blue-600/10 rounded-xl"><Smartphone className="text-blue-400" size={20} /></div>
+             <div className="flex-1">
+                <div className="text-[10px] font-black uppercase text-blue-400 tracking-widest">Recurso Business</div>
+                <div className="text-xs text-zinc-500 font-medium">Faça upgrade para o Plano Business para liberar o agendamento nativo.</div>
+             </div>
+          </div>
+        )}
+
+        {profile.enableScheduling && hasBusinessAccess && (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="grid grid-cols-2 gap-3 p-1.5 bg-black/40 rounded-2xl border border-white/5">
+              <button
+                onClick={() => onUpdate({ schedulingMode: 'external' })}
+                className={clsx(
+                  "py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                  profile.schedulingMode === 'external' ? "bg-white text-black" : "text-zinc-500"
+                )}
+              >
+                Externo (Link)
+              </button>
+              <button
+                onClick={() => onUpdate({ schedulingMode: 'native' })}
+                className={clsx(
+                  "py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                  profile.schedulingMode === 'native' ? "bg-white text-black" : "text-zinc-500"
+                )}
+              >
+                Nativo (Slots)
+              </button>
+            </div>
+
+            {profile.schedulingMode === 'external' ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">URL de Agendamento</label>
+                  <div className="relative">
+                    <LinkIcon className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
+                    <input
+                      value={profile.externalBookingUrl || ''}
+                      onChange={(e) => onUpdate({ externalBookingUrl: e.target.value })}
+                      placeholder="Ex: calendly.com/voce"
+                      className={clsx(
+                        "w-full bg-black/40 border rounded-2xl pl-12 pr-5 py-4 text-sm outline-none transition-all",
+                        isExternalUrlMissing ? "border-red-500/50" : "border-white/10 focus:border-white/30"
+                      )}
+                    />
+                  </div>
+                  {isExternalUrlMissing && (
+                    <div className="flex items-center gap-1.5 text-red-500 text-[10px] font-black uppercase ml-1">
+                      <AlertCircle size={12} /> URL obrigatória no modo externo
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Slots Semanais</div>
+                  <button
+                    onClick={addSlot}
+                    className="p-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-white transition-all"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {slots.map((slot) => (
+                    <div key={slot.id} className="grid grid-cols-12 gap-3 bg-black/20 border border-white/5 p-4 rounded-2xl items-center">
+                      <div className="col-span-4">
+                        <select
+                          value={slot.dayOfWeek}
+                          onChange={(e) => updateSlots(slots.map(s => s.id === slot.id ? { ...s, dayOfWeek: parseInt(e.target.value) } : s))}
+                          className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-black uppercase outline-none"
+                        >
+                          {DAYS_OF_WEEK.map((d, i) => <option key={i} value={i}>{d}</option>)}
+                        </select>
+                      </div>
+                      <div className="col-span-3">
+                        <input
+                          type="time"
+                          value={slot.startTime}
+                          onChange={(e) => updateSlots(slots.map(s => s.id === slot.id ? { ...s, startTime: e.target.value } : s))}
+                          className="w-full bg-zinc-900 border border-white/10 rounded-xl px-2 py-2 text-[10px] font-bold outline-none"
+                        />
+                      </div>
+                      <div className="col-span-3">
+                        <input
+                          type="time"
+                          value={slot.endTime}
+                          onChange={(e) => updateSlots(slots.map(s => s.id === slot.id ? { ...s, endTime: e.target.value } : s))}
+                          className="w-full bg-zinc-900 border border-white/10 rounded-xl px-2 py-2 text-[10px] font-bold outline-none"
+                        />
+                      </div>
+                      <div className="col-span-2 flex justify-end">
+                        <button
+                          onClick={() => updateSlots(slots.filter(s => s.id !== slot.id))}
+                          className="p-2 text-zinc-600 hover:text-red-500"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {slots.length === 0 && <div className="text-[10px] text-zinc-600 italic text-center py-4">Nenhum slot definido. Adicione seus horários.</div>}
+                </div>
+              </div>
+            )}
+
+            <div className="pt-4 border-t border-white/5 space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Confirmar por WhatsApp (Opcional)</label>
+                <div className="relative">
+                  < smartphone className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
+                  <input
+                    value={profile.bookingWhatsapp || ''}
+                    onChange={(e) => onUpdate({ bookingWhatsapp: e.target.value })}
+                    placeholder="Ex: 5511999999999"
+                    className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-sm outline-none focus:border-white/30"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* Pix */}
       <section className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-8">

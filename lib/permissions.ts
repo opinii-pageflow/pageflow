@@ -11,6 +11,7 @@ export type FeatureKey =
   | 'leads_export'
   | 'leads_full_details'
   | 'analytics' 
+  | 'scheduling'
   | 'white_label';
 
 const PLAN_RANK: Record<PlanType, number> = {
@@ -31,7 +32,8 @@ const FEATURE_REQUIREMENTS: Record<FeatureKey, PlanType> = {
   leads_export: 'enterprise',
   leads_full_details: 'enterprise',
   crm: 'business',
-  white_label: 'pro' // Alterado de enterprise para pro conforme solicitado
+  scheduling: 'business', // Adicionado como Business
+  white_label: 'pro' 
 };
 
 /**
