@@ -399,10 +399,10 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
           <div className="px-6 pb-8 space-y-6">
             {/* Top Actions */}
-            <div className="grid grid-cols-1 gap-3">
+            <div className="flex justify-start w-full">
               <button
                 onClick={() => setShowWalletModal(true)}
-                className="rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest transition-all hover:translate-y-[-1px]"
+                className="rounded-lg px-3 py-2 font-black text-[10px] uppercase tracking-widest transition-all hover:translate-y-[-1px]"
                 style={{
                   border: `${borderWidth} solid ${theme.border}`,
                   background: theme.buttonStyle === 'glass' ? 'rgba(255,255,255,0.06)' : 'transparent',
@@ -410,8 +410,8 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                   fontFamily: buttonFont,
                 }}
               >
-                <span className="inline-flex items-center justify-center gap-2">
-                  <LucideIcons.Bookmark size={16} />
+                <span className="inline-flex items-center gap-2">
+                  <LucideIcons.Bookmark size={14} />
                   Salvar Contato
                 </span>
               </button>
