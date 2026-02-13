@@ -58,44 +58,78 @@ const getIcon = (type: string) => {
   switch (type) {
     case 'whatsapp': return LucideIcons.MessageCircle;
     case 'instagram': return LucideIcons.Instagram;
-    case 'facebook': return LucideIcons.Facebook;
-    case 'tiktok': return LucideIcons.Music2;
-    case 'youtube': return LucideIcons.Youtube;
     case 'linkedin': return LucideIcons.Linkedin;
-    case 'email': return LucideIcons.Mail;
-    case 'phone': return LucideIcons.Phone;
     case 'website': return LucideIcons.Globe;
-    case 'pix': return LucideIcons.QrCode;
+    case 'phone':
+    case 'mobile': return LucideIcons.Phone;
+    case 'email': return LucideIcons.Mail;
     case 'maps': return LucideIcons.MapPin;
-    case 'catalog': return LucideIcons.ShoppingBag;
-    case 'portfolio': return LucideIcons.Image;
-    case 'lead': return LucideIcons.Send;
-    case 'nps': return LucideIcons.Star;
-    case 'schedule': return LucideIcons.Calendar;
+    case 'youtube': return LucideIcons.Youtube;
+    case 'github': return LucideIcons.Github;
+    case 'facebook': return LucideIcons.Facebook;
+    case 'twitter':
+    case 'x': return LucideIcons.Twitter;
+    case 'tiktok': return LucideIcons.Music2;
+    case 'telegram': return LucideIcons.Send;
+    case 'threads': return LucideIcons.AtSign;
+    case 'twitch': return LucideIcons.Tv;
+    case 'discord': return LucideIcons.MessageSquare;
     default: return LucideIcons.Link;
   }
 };
 
-const PublicProfileRenderer: React.FC<Props> = ({
-  profile,
-  isPreview = false,
-  clientPlan = 'starter',
-  source = 'direct'
-}) => {
-  const theme = profile.theme;
-  const fonts = profile.fonts;
-  const buttons = profile.buttons || [];
+// Cores oficiais aproximadas para ícones "brand" (sem dependências extras).
+// Mantém retrocompatibilidade: se o tema não tiver iconStyle, permanece monocromático.
+const getBrandColor = (type: string): string | null => {
+  switch (type) {
+    case 'whatsapp': return '#25D366';
+    case 'instagram': return '#E1306C';
+    case 'youtube': return '#FF0000';
+    case 'linkedin': return '#0A66C2';
+    case 'facebook': return '#1877F2';
+    case 'tiktok': return '#00F2EA';
+    case 'telegram': return '#229ED9';
+    case 'twitter':
+    case 'x': return '#1D9BF0';
+    case 'github': return '#FFFFFF';
+    default: return null;
+  }
+};
 
+const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan, source = 'direct' }) => {
+  const theme = (profile as any)?.theme || {
+    primary: '#3b82f6',
+    text: '#ffffff',
+    border: 'rgba(255,255,255,0.10)',
+    cardBg: 'rgba(0,0,0,0.30)',
+    shadow: '0 12px 40px rgba(0,0,0,0.35)',
+    radius: '18px',
+    buttonStyle: 'glass',
+    backgroundType: 'color',
+    backgroundValue: '#0A0A0A',
+    backgroundDirection: 'to bottom',
+    backgroundValueSecondary: '#0A0A0A',
+  };
+
+  const fonts = (profile as any)?.fonts || {
+    headingFont: 'Poppins',
+    bodyFont: 'Inter',
+    buttonFont: 'Inter',
+  };
+
+  const buttons = Array.isArray((profile as any)?.buttons) ? (profile as any).buttons : [];
+
+  const hasSchedulingAccess = canAccessFeature(clientPlan, 'scheduling');
+  const hasPixAccess = canAccessFeature(clientPlan, 'pix');
   const hasCatalogAccess = canAccessFeature(clientPlan, 'catalog');
   const hasPortfolioAccess = canAccessFeature(clientPlan, 'portfolio');
-  const hasYoutubeAccess = canAccessFeature(clientPlan, 'youtube');
-  const hasLeadCaptureAccess = canAccessFeature(clientPlan, 'leadCapture');
+  const hasVideosAccess = canAccessFeature(clientPlan, 'videos');
+  const hasLeadCaptureAccess = canAccessFeature(clientPlan, 'leads_capture');
   const hasNpsAccess = canAccessFeature(clientPlan, 'nps');
-  const hasSchedulingAccess = canAccessFeature(clientPlan, 'scheduling');
 
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
-
+  
   // Lead Capture State
   const [leadName, setLeadName] = useState('');
   const [leadContact, setLeadContact] = useState('');
@@ -109,86 +143,9 @@ const PublicProfileRenderer: React.FC<Props> = ({
 
   const layout = (profile.layoutTemplate || 'Minimal Card').trim();
 
-  type ButtonLayout =
-    | 'list'
-    | 'listBold'
-    | 'grid'
-    | 'iconGrid'
-    | 'twoColumns'
-    | 'chips'
-    | 'stacked'
-    | 'pills';
-
-  type HeaderLayout = 'center' | 'left' | 'split' | 'sidebar';
-
-  type CoverMode = 'none' | 'top' | 'full';
-
-  const templateConfig = useMemo(() => {
-    const base = {
-      headerLayout: 'center' as HeaderLayout,
-      buttonLayout: 'list' as ButtonLayout,
-      avatarSize: 'md' as 'md' | 'lg',
-      avatarShape: 'round' as 'round' | 'squircle',
-      coverMode: 'top' as CoverMode,
-      headerPaddingClass: 'px-6 pb-6 relative' as string,
-      contentPaddingClass: 'px-6 pb-6 space-y-6' as string,
-      buttonRadiusClass: '' as string,
-      buttonExtraClass: '' as string,
-      showVerifiedBadge: false,
-      enableNeonGlow: false,
-    };
-
-    switch (layout) {
-      case 'Button Grid':
-        return { ...base, buttonLayout: 'grid' as ButtonLayout };
-      case 'Icon Grid':
-        return { ...base, buttonLayout: 'iconGrid' as ButtonLayout };
-      case 'Two Columns':
-        return { ...base, buttonLayout: 'twoColumns' as ButtonLayout };
-      case 'Creator':
-        return { ...base, buttonLayout: 'iconGrid' as ButtonLayout, buttonExtraClass: 'tracking-wide' };
-      case 'Chips':
-        return { ...base, buttonLayout: 'chips' as ButtonLayout, buttonRadiusClass: 'rounded-full' };
-      case 'Rounded Pills':
-        return { ...base, buttonLayout: 'pills' as ButtonLayout, buttonRadiusClass: 'rounded-full' };
-      case 'Stacked Cards':
-        return { ...base, buttonLayout: 'stacked' as ButtonLayout };
-      case 'Button List Bold':
-        return { ...base, buttonLayout: 'listBold' as ButtonLayout };
-      case 'Neon':
-        return { ...base, enableNeonGlow: true, buttonExtraClass: 'shadow-[0_0_0_1px_rgba(255,255,255,0.06)]' };
-      case 'Glassmorphism':
-        return { ...base, buttonExtraClass: 'backdrop-blur-xl' };
-      case 'Verified Pro':
-        return { ...base, showVerifiedBadge: true };
-      case 'Corporate':
-        return { ...base, headerLayout: 'left' as HeaderLayout, avatarShape: 'squircle' as const, buttonExtraClass: 'uppercase tracking-wider text-[11px]' };
-      case 'Avatar Left':
-        return { ...base, headerLayout: 'left' as HeaderLayout };
-      case 'Split Header':
-        return { ...base, headerLayout: 'split' as HeaderLayout };
-      case 'Sidebar':
-        return { ...base, headerLayout: 'sidebar' as HeaderLayout, buttonLayout: 'list' as ButtonLayout };
-      case 'Big Avatar':
-        return { ...base, avatarSize: 'lg' as const };
-      case 'Magazine':
-        return { ...base, headerLayout: 'left' as HeaderLayout, buttonLayout: 'twoColumns' as ButtonLayout };
-      case 'Hero Banner':
-        return { ...base, coverMode: 'full' as CoverMode, buttonLayout: 'listBold' as ButtonLayout };
-      case 'Cover Clean':
-        return { ...base, coverMode: 'top' as CoverMode, buttonLayout: 'list' as ButtonLayout };
-      case 'Full Cover':
-        return { ...base, coverMode: 'full' as CoverMode, buttonLayout: 'grid' as ButtonLayout, avatarSize: 'lg' as const };
-      case 'Full Cover Overlay':
-        return { ...base, coverMode: 'full' as CoverMode, buttonLayout: 'list' as ButtonLayout, enableNeonGlow: true };
-      default:
-        return base;
-    }
-  }, [layout]);
-
-  const isGrid = ['grid', 'iconGrid', 'twoColumns'].includes(templateConfig.buttonLayout);
-  const isLeft = ['left', 'split', 'sidebar'].includes(templateConfig.headerLayout);
-  const isBigAvatar = templateConfig.avatarSize === 'lg';
+  const isGrid = ['Button Grid', 'Icon Grid', 'Two Columns', 'Creator', 'Magazine'].includes(layout);
+  const isLeft = ['Avatar Left', 'Corporate', 'Split Header', 'Magazine'].includes(layout);
+  const isBigAvatar = ['Big Avatar'].includes(layout);
 
   const headingFont = normalizeFontStack(fonts?.headingFont || 'Poppins');
   const bodyFont = normalizeFontStack(fonts?.bodyFont || 'Inter');
@@ -196,13 +153,10 @@ const PublicProfileRenderer: React.FC<Props> = ({
 
   const primaryTextOnPrimary = pickReadableOn(theme.primary);
 
-  const VerifiedBadgeIcon = (LucideIcons as any).BadgeCheck || (LucideIcons as any).Badge || (LucideIcons as any).CheckCircle;
-
   const coverConfig = useMemo(() => {
     let heightClass = 'h-36';
     let overlay = 'from-black/10 via-black/25 to-black/70';
 
-    // Templates com capa mais presente
     if (['Hero Banner', 'Cover Clean'].includes(layout)) {
       heightClass = 'h-52';
       overlay = 'from-black/5 via-black/20 to-black/75';
@@ -213,14 +167,7 @@ const PublicProfileRenderer: React.FC<Props> = ({
       overlay = 'from-black/10 via-black/30 to-black/80';
     }
 
-    // Full-bleed: ocupa todo o topo do card (mais alto e com overlay mais suave)
-    if (['Full Cover', 'Full Cover Overlay'].includes(layout)) {
-      heightClass = 'h-72';
-      overlay = 'from-black/0 via-black/15 to-black/75';
-    }
-
-    // Padrão (demais templates)
-    if (!['Hero Banner', 'Cover Clean', 'Magazine', 'Full Cover', 'Full Cover Overlay'].includes(layout)) {
+    if (!['Hero Banner', 'Cover Clean', 'Magazine'].includes(layout)) {
       heightClass = 'h-32';
       overlay = 'from-black/15 via-black/30 to-black/75';
     }
@@ -229,255 +176,102 @@ const PublicProfileRenderer: React.FC<Props> = ({
   }, [layout]);
 
   const bgComputed = useMemo(() => {
-    const bgValue = safeString(theme.backgroundValue, '#0A0A0A');
-
     if (theme.backgroundType === 'gradient') {
-      const dir = safeString(theme.backgroundDirection, 'to bottom');
-      const b = safeString(theme.backgroundValueSecondary, bgValue);
-      return {
-        backgroundImage: `linear-gradient(${dir}, ${bgValue}, ${b})`,
-        backgroundColor: 'transparent',
-        backgroundAttachment: 'scroll',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundSize: 'cover',
-      } as React.CSSProperties;
+      const dir = theme.backgroundDirection || 'to bottom';
+      return `linear-gradient(${dir}, ${theme.backgroundValue}, ${theme.backgroundValueSecondary || theme.backgroundValue})`;
     }
-
     if (theme.backgroundType === 'image') {
-      const attachment = isPreview ? 'scroll' : 'fixed';
+      return `url(${theme.backgroundValue})`;
+    }
+    return theme.backgroundValue || '#0A0A0A';
+  }, [theme.backgroundType, theme.backgroundDirection, theme.backgroundValue, theme.backgroundValueSecondary]);
+
+  const bgStyle: React.CSSProperties = useMemo(() => {
+    if (theme.backgroundType === 'image') {
       return {
-        backgroundImage: `url(${bgValue})`,
-        backgroundColor: '#0A0A0A',
-        backgroundAttachment: attachment,
+        backgroundImage: bgComputed,
+        backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        backgroundSize: 'cover',
-      } as React.CSSProperties;
+        minHeight: '100vh'
+      };
     }
+    return {
+      background: bgComputed,
+      minHeight: '100vh'
+    };
+  }, [theme.backgroundType, bgComputed]);
 
-    return { backgroundColor: bgValue } as React.CSSProperties;
-  }, [theme.backgroundType, theme.backgroundValue, theme.backgroundDirection, theme.backgroundValueSecondary, isPreview]);
+  const shellCardStyle: React.CSSProperties = useMemo(() => {
+    return {
+      background: theme.cardBg,
+      border: `1px solid ${theme.border}`,
+      borderRadius: theme.radius,
+      boxShadow: theme.shadow,
+      overflow: 'hidden',
+    };
+  }, [theme.cardBg, theme.border, theme.radius, theme.shadow]);
 
-  const bgStyle: React.CSSProperties = {
-    ...bgComputed,
-    minHeight: isPreview ? '100%' : '100vh',
-    height: isPreview ? '100%' : 'auto',
-    color: theme.text,
-    fontFamily: bodyFont,
-    transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-  };
-
-  const proCardStyle: React.CSSProperties = {
-    borderRadius: `calc(${theme.radius} + 6px)`,
-    border: `1px solid ${theme.border}`,
-    background: theme.cardBg,
-    boxShadow: theme.shadow,
-    backdropFilter: 'blur(24px)',
-  };
-
-  const shellCardStyle: React.CSSProperties = {
-    borderRadius: `calc(${theme.radius} + 14px)`,
-    border: `1px solid ${theme.border}`,
-    background: theme.cardBg,
-    boxShadow: theme.shadow,
-    backdropFilter: 'blur(26px)',
-    position: 'relative',
-    overflow: 'hidden',
-  };
-
-  const handleLinkClick = (btnId: string) => {
+  const handleLinkClick = (linkId?: string) => {
     if (isPreview) return;
-    trackEvent({ profileId: profile.id, clientId: profile.clientId, type: 'click', linkId: btnId, source });
+    trackEvent(profile.clientId, profile.id, 'click', linkId, source);
   };
 
-  const handleSaveContact = () => {
-    if (isPreview) return;
+  const getButtonStyle = () => {
+    const baseBorder = `1px solid ${theme.border}`;
+    const backgroundColor =
+      theme.buttonStyle === 'solid'
+        ? theme.primary
+        : theme.buttonStyle === 'outline'
+          ? 'transparent'
+          : 'rgba(255,255,255,0.08)';
 
-    try {
-      const vcard = [
-        'BEGIN:VCARD',
-        'VERSION:3.0',
-        `FN:${profile.displayName}`,
-        profile.headline ? `TITLE:${profile.headline}` : '',
-        profile.bioShort ? `NOTE:${profile.bioShort}` : '',
-        'END:VCARD',
-      ].filter(Boolean).join('\n');
+    const color =
+      theme.buttonStyle === 'solid'
+        ? primaryTextOnPrimary
+        : theme.text;
 
-      const blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${(profile.displayName || 'contato').replace(/\s+/g, '_')}.vcf`;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      trackEvent({ profileId: profile.id, clientId: profile.clientId, type: 'click', linkId: 'save_contact', source });
-    } catch (e) {
-      alert('Não foi possível salvar o contato. Tente novamente.');
-    }
-  };
-
-  const handleLeadSubmit = () => {
-    if (!hasLeadCaptureAccess) return;
-
-    if (!leadName.trim() || !leadContact.trim()) {
-      alert('Preencha nome e contato.');
-      return;
-    }
-
-    setLeadSent(true);
-
-    if (!isPreview) {
-      trackEvent({ profileId: profile.id, clientId: profile.clientId, type: 'click', linkId: 'lead_submit', source });
-    }
-  };
-
-  const handleNpsSubmit = () => {
-    if (!hasNpsAccess) return;
-
-    if (npsScore === null) {
-      alert('Selecione uma nota.');
-      return;
-    }
-
-    setNpsSent(true);
-
-    if (!isPreview) {
-      trackEvent({ profileId: profile.id, clientId: profile.clientId, type: 'click', linkId: `nps_${npsScore}`, source });
-    }
-  };
-
-  const getButtonStyle = (): React.CSSProperties => {
-    let backgroundColor: string;
-    let color: string;
-    let border: string;
-
+    let border = baseBorder;
     switch (theme.buttonStyle) {
       case 'solid':
-        backgroundColor = theme.primary;
-        color = primaryTextOnPrimary;
-        border = `1px solid ${theme.primary}`;
-        break;
-      case 'outline':
-        backgroundColor = 'transparent';
-        color = theme.text;
-        border = `1.5px solid ${theme.primary}`;
+        border = '1px solid rgba(255,255,255,0.12)';
         break;
       case 'glass':
-      default:
-        backgroundColor = theme.cardBg;
-        color = theme.text;
+        border = `1px solid ${theme.border}`;
+        break;
+      case 'outline':
         border = `1px solid ${theme.border}`;
         break;
     }
 
-    const variant = templateConfig.buttonLayout;
-
-    const radius =
-      variant === 'chips' || variant === 'pills' ? '999px' : theme.radius;
-
-    const padding =
-      variant === 'chips'
-        ? '0.6rem 0.95rem'
-        : variant === 'grid'
-        ? '1.05rem 1rem'
-        : variant === 'iconGrid'
-        ? '1.2rem 1rem'
-        : variant === 'listBold'
-        ? '1.05rem 1.2rem'
-        : '0.95rem 1.15rem';
-
-    const fontSize =
-      variant === 'chips' ? '0.82rem' : variant === 'listBold' ? '0.98rem' : '0.92rem';
-
-    const flexDirection =
-      variant === 'iconGrid' ? 'column' : 'row';
-
-    const justifyContent =
-      variant === 'grid'
-        ? 'flex-start'
-        : variant === 'chips'
-        ? 'center'
-        : variant === 'iconGrid'
-        ? 'center'
-        : 'space-between';
-
-    const textAlign =
-      variant === 'iconGrid' ? 'center' : 'left';
-
     return {
-      borderRadius: radius,
+      borderRadius: theme.radius,
       fontFamily: buttonFont,
       transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
       border,
-      padding,
-      width: variant === 'chips' ? 'auto' : '100%',
+      padding: isGrid ? '1.5rem 1rem' : '0.95rem 1.15rem',
+      width: '100%',
       backgroundColor,
       color,
-      fontSize,
-      fontWeight: 900,
+      fontSize: '0.92rem',
+      fontWeight: 800,
       display: 'flex',
-      flexDirection,
+      flexDirection: isGrid ? 'column' : 'row',
       alignItems: 'center',
-      justifyContent,
-      gap: variant === 'iconGrid' ? '0.65rem' : '0.5rem',
-      textAlign,
-      boxShadow:
-        templateConfig.enableNeonGlow
-          ? `0 0 18px rgba(0,0,0,0.20), 0 0 28px ${theme.primary}26`
-          : undefined,
+      justifyContent: isGrid ? 'center' : 'space-between',
+      gap: isGrid ? '0.75rem' : '0.5rem',
+      textAlign: 'center',
     };
   };
 
   const renderLinks = () => {
     const activeButtons = buttons.filter((b: any) => b?.enabled);
-
-    const variant = templateConfig.buttonLayout;
-
-    const containerClass = clsx(
-      'w-full',
-      variant === 'chips'
-        ? 'flex flex-wrap gap-2 justify-center'
-        : variant === 'grid'
-        ? 'grid grid-cols-2 gap-3'
-        : variant === 'iconGrid'
-        ? 'grid grid-cols-2 gap-3'
-        : variant === 'twoColumns'
-        ? 'grid grid-cols-2 gap-3'
-        : 'flex flex-col gap-3'
-    );
-
+    const iconStyle = (theme as any)?.iconStyle === 'brand' ? 'brand' : 'mono';
     return (
-      <div className={containerClass}>
+      <div className={clsx(isGrid ? "grid grid-cols-2 gap-3" : "flex flex-col gap-3", "w-full")}>
         {activeButtons.map((btn: any, idx: number) => {
           const Icon = getIcon(btn.type);
-
-          const stackedStyle: React.CSSProperties | undefined =
-            variant === 'stacked'
-              ? {
-                  transform: `translateY(${Math.min(idx, 4) * 2}px)`,
-                  boxShadow:
-                    idx === 0
-                      ? theme.shadow
-                      : `0 ${8 + Math.min(idx, 4) * 3}px ${18 + Math.min(idx, 4) * 6}px rgba(0,0,0,0.22)`,
-                }
-              : undefined;
-
-          const className = clsx(
-            'group active:scale-[0.99] hover:translate-y-[-2px] transition-all',
-            variant === 'chips'
-              ? 'border hover:bg-white/5'
-              : 'border',
-            templateConfig.buttonExtraClass
-          );
-
-          const style: React.CSSProperties = {
-            ...getButtonStyle(),
-            ...(stackedStyle || {}),
-            borderColor: theme.border,
-          };
-
+          const brandColor = iconStyle === 'brand' ? getBrandColor(btn.type) : null;
           return (
             <a
               key={btn.id || `${btn.type}-${idx}`}
@@ -485,38 +279,18 @@ const PublicProfileRenderer: React.FC<Props> = ({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => handleLinkClick(btn.id)}
-              style={style}
-              className={className}
+              style={getButtonStyle()}
+              className="group hover:translate-y-[-2px]"
             >
-              {variant === 'chips' ? (
+              {isGrid ? (
                 <>
-                  <Icon size={18} />
-                  <span className="font-black whitespace-nowrap">{btn.label}</span>
-                </>
-              ) : variant === 'iconGrid' ? (
-                <>
-                  <Icon size={26} />
-                  <div className="font-black truncate w-full text-center">{btn.label}</div>
-                </>
-              ) : variant === 'grid' ? (
-                <>
-                  <div className="flex items-center gap-3 min-w-0 w-full">
-                    <Icon size={20} />
-                    <span className="font-black truncate">{btn.label}</span>
-                  </div>
-                </>
-              ) : variant === 'twoColumns' ? (
-                <>
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Icon size={20} />
-                    <span className="font-black truncate">{btn.label}</span>
-                  </div>
-                  <LucideIcons.ChevronRight size={16} className="opacity-40" />
+                  <Icon size={24} color={brandColor || undefined} />
+                  <div className="font-black truncate w-full">{btn.label}</div>
                 </>
               ) : (
                 <>
                   <div className="flex items-center gap-3 min-w-0">
-                    <Icon size={20} />
+                    <Icon size={20} color={brandColor || undefined} />
                     <span className="font-black truncate">{btn.label}</span>
                   </div>
                   <LucideIcons.ChevronRight size={16} className="opacity-40" />
@@ -550,481 +324,493 @@ const PublicProfileRenderer: React.FC<Props> = ({
   const avatarSrc = safeString(profile.avatarUrl, 'https://picsum.photos/seed/avatar/200/200');
 
   // Filtros de itens ativos
-  const activeCatalog = (profile.catalogItems || []).filter(i => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
-  const activePortfolio = (profile.portfolioItems || []).filter(i => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
-  const activeVideos = (profile.youtubeVideos || []).filter(i => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
+  const activeCatalog = (profile.catalogItems || []).filter(i => i.isActive).sort((a,b) => a.sortOrder - b.sortOrder);
+  const activePortfolio = (profile.portfolioItems || []).filter(i => i.isActive).sort((a,b) => a.sortOrder - b.sortOrder);
+  const activeVideos = (profile.youtubeVideos || []).filter(i => i.isActive).sort((a,b) => a.sortOrder - b.sortOrder);
 
   return (
     <div style={bgStyle} className="w-full flex flex-col items-center overflow-x-hidden no-scrollbar">
       <div className="relative z-10 w-full px-4 flex flex-col items-center pt-8 pb-20">
         <main className="w-full max-w-[520px] p-0 space-y-6" style={shellCardStyle}>
           <div className="relative">
-            {/* ===== Cover ===== */}
-            {profile.coverUrl && templateConfig.coverMode === 'top' && (
+            {profile.coverUrl && (
               <div className={clsx("w-full overflow-hidden relative", coverConfig.heightClass)}>
                 <img src={profile.coverUrl} className="w-full h-full object-cover" alt="Cover" />
                 <div className={clsx("absolute inset-0 bg-gradient-to-b", coverConfig.overlay)} />
               </div>
             )}
 
-            {profile.coverUrl && templateConfig.coverMode === 'full' && (
-              <div className={clsx("w-full overflow-hidden relative", coverConfig.heightClass)}>
+            <div className={clsx("px-6 pb-6 relative", profile.coverUrl ? "-mt-12" : "pt-8")}>
+              <div className={clsx("flex gap-4", isLeft ? "flex-row items-end text-left" : "flex-col items-center text-center")}>
                 <img
-                  src={profile.coverUrl}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  alt="Cover"
-                />
-                <div className={clsx("absolute inset-0 bg-gradient-to-b", coverConfig.overlay)} />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(255,255,255,0.10),transparent_55%),radial-gradient(circle_at_80%_60%,rgba(255,255,255,0.08),transparent_55%)]" />
-                <div className="relative h-full flex flex-col justify-end px-6 pb-6 pt-10">
-                  <div
-                    className={clsx(
-                      "flex gap-4",
-                      templateConfig.headerLayout === 'center'
-                        ? "flex-col items-center text-center"
-                        : templateConfig.headerLayout === 'split'
-                        ? "flex-row items-end justify-between text-left"
-                        : "flex-row items-end text-left"
-                    )}
-                  >
-                    <img
-                      src={avatarSrc}
-                      className={clsx(
-                        "border-4 object-cover shadow-2xl bg-zinc-900",
-                        templateConfig.avatarShape === 'squircle' ? "rounded-2xl" : "rounded-full",
-                        isBigAvatar ? "w-40 h-40" : "w-24 h-24"
-                      )}
-                      style={{ borderColor: theme.cardBg }}
-                      alt={profile.displayName || 'Perfil'}
-                    />
-
-                    <div className="flex-1 min-w-0 pb-1">
-                      <div className={clsx("flex items-center gap-2", templateConfig.headerLayout === 'center' ? "justify-center" : "justify-start")}>
-                        <h1 className="text-2xl font-black tracking-tight leading-tight" style={{ fontFamily: headingFont }}>
-                          {profile.displayName}
-                        </h1>
-                        {templateConfig.showVerifiedBadge && (
-                          <span
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black tracking-wider border"
-                            style={{ borderColor: theme.border, background: theme.cardBg, color: theme.text }}
-                            title="Perfil verificado"
-                          >
-                            <VerifiedBadgeIcon size={14} />
-                            PRO
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm opacity-85 mt-1 font-medium">{profile.headline}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ===== Header (sem full cover) ===== */}
-            {templateConfig.coverMode !== 'full' && (
-              <div className={clsx("px-6 pb-6 relative", profile.coverUrl ? "-mt-12" : "pt-8")}>
-                <div
+                  src={avatarSrc}
+                  alt="Avatar"
                   className={clsx(
-                    "flex gap-4",
-                    templateConfig.headerLayout === 'center'
-                      ? "flex-col items-center text-center"
-                      : templateConfig.headerLayout === 'split'
-                      ? "flex-row items-end justify-between text-left"
-                      : templateConfig.headerLayout === 'sidebar'
-                      ? "flex-row items-start text-left"
-                      : "flex-row items-end text-left"
+                    "object-cover border-4 border-black/50 shadow-xl",
+                    isBigAvatar ? "w-28 h-28 rounded-full" : "w-20 h-20 rounded-full"
                   )}
-                >
-                  <img
-                    src={avatarSrc}
-                    className={clsx(
-                      "border-4 object-cover shadow-2xl bg-zinc-900",
-                      templateConfig.avatarShape === 'squircle' ? "rounded-2xl" : "rounded-full",
-                      isBigAvatar ? "w-40 h-40" : "w-24 h-24"
-                    )}
-                    style={{ borderColor: theme.cardBg }}
-                    alt={profile.displayName || 'Perfil'}
-                  />
+                />
 
-                  <div className="flex-1 min-w-0 pb-1">
-                    <div className={clsx("flex items-center gap-2", templateConfig.headerLayout === 'center' ? "justify-center" : "justify-start")}>
-                      <h1 className="text-2xl font-black tracking-tight leading-tight" style={{ fontFamily: headingFont }}>
-                        {profile.displayName}
-                      </h1>
-
-                      {templateConfig.showVerifiedBadge && (
-                        <span
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-black tracking-wider border"
-                          style={{ borderColor: theme.border, background: theme.cardBg, color: theme.text }}
-                          title="Perfil verificado"
-                        >
-                          <VerifiedBadgeIcon size={14} />
-                          PRO
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm opacity-80 mt-1 font-medium">{profile.headline}</p>
-                  </div>
-
-                  {templateConfig.headerLayout === 'split' && (
-                    <div className="flex items-center gap-2 pb-2">
-                      <span
-                        className="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border"
-                        style={{ borderColor: theme.border, background: theme.cardBg, color: theme.text }}
-                      >
-                        {profile.profileType === 'business' ? 'Business' : 'Personal'}
-                      </span>
-                    </div>
-                  )}
+                <div className={clsx(isLeft ? "pb-2" : "")}>
+                  <h1 className="text-2xl font-black leading-tight" style={{ fontFamily: headingFont, color: theme.text }}>
+                    {safeString(profile.displayName, 'Seu Nome')}
+                  </h1>
+                  <p className="text-sm font-semibold opacity-80 mt-1" style={{ fontFamily: bodyFont, color: theme.text }}>
+                    {safeString(profile.headline, 'Sua headline aqui')}
+                  </p>
                 </div>
               </div>
-            )}
+
+              {profile.bioShort && (
+                <p className={clsx("mt-4 text-sm leading-relaxed", isLeft ? "text-left" : "text-center")} style={{ fontFamily: bodyFont, color: theme.muted }}>
+                  {profile.bioShort}
+                </p>
+              )}
+            </div>
           </div>
 
-          <div className={templateConfig.contentPaddingClass}>
-            <div className="flex items-center gap-3 w-full">
+          <div className="px-6 pb-8 space-y-6">
+            {/* Top Actions */}
+            <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={handleSaveContact}
-                className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
-                style={{ borderColor: theme.border, color: theme.text }}
+                onClick={() => setShowWalletModal(true)}
+                className="rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all hover:translate-y-[-1px]"
+                style={{
+                  border: `1px solid ${theme.border}`,
+                  background: theme.buttonStyle === 'glass' ? 'rgba(255,255,255,0.06)' : 'transparent',
+                  color: theme.text,
+                  fontFamily: buttonFont,
+                }}
               >
-                <LucideIcons.UserPlus size={14} />
-                Salvar
+                <span className="inline-flex items-center justify-center gap-2">
+                  <LucideIcons.Bookmark size={16} />
+                  Salvar
+                </span>
               </button>
 
               <button
                 onClick={() => setShowWalletModal(true)}
-                className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
-                style={{ borderColor: theme.border, color: theme.text }}
+                className="rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all hover:translate-y-[-1px]"
+                style={{
+                  border: `1px solid ${theme.border}`,
+                  background: theme.buttonStyle === 'glass' ? 'rgba(255,255,255,0.06)' : 'transparent',
+                  color: theme.text,
+                  fontFamily: buttonFont,
+                }}
               >
-                <LucideIcons.WalletCards size={14} />
-                Wallet
+                <span className="inline-flex items-center justify-center gap-2">
+                  <LucideIcons.Wallet size={16} />
+                  Wallet
+                </span>
               </button>
             </div>
 
-            {profile.bioShort && (
-              <p className={clsx("text-sm leading-relaxed opacity-70", isLeft ? "text-left" : "text-center")}>
-                {profile.bioShort}
-              </p>
-            )}
-
             {renderLinks()}
 
-            {/* Catálogo */}
-            {hasCatalogAccess && activeCatalog.length > 0 && (
-              <div className="w-full space-y-4 pt-4">
+            {/* PIX */}
+            {hasPixAccess && profile.pixKey && (
+              <div className="rounded-2xl border p-5" style={{ borderColor: theme.border, background: 'rgba(0,0,0,0.25)' }}>
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-black tracking-wide">Catálogo</h2>
-                  <LucideIcons.ShoppingBag size={16} className="opacity-70" />
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
+                      PIX
+                    </div>
+                    <div className="text-sm font-black mt-1" style={{ color: theme.text }}>
+                      {profile.pixKey}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (isPreview) return;
+                      navigator.clipboard?.writeText(profile.pixKey || '');
+                    }}
+                    className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border"
+                    style={{ borderColor: theme.border, color: theme.text }}
+                  >
+                    Copiar
+                  </button>
                 </div>
-                <div className="space-y-3">
-                  {activeCatalog.map(item => (
-                    <div key={item.id} className="p-4 border rounded-2xl" style={proCardStyle}>
-                      <div className="flex items-start gap-3">
+              </div>
+            )}
+
+            {/* Catalog */}
+            {hasCatalogAccess && activeCatalog.length > 0 && (
+              <section className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
+                    Catálogo
+                  </h3>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  {activeCatalog.map((item) => (
+                    <a
+                      key={item.id}
+                      href={isPreview ? '#' : item.ctaLink || '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-2xl border p-4 transition-all hover:translate-y-[-1px]"
+                      style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.04)' }}
+                    >
+                      <div className="flex gap-3">
                         {item.imageUrl ? (
-                          <img src={item.imageUrl} className="w-16 h-16 rounded-xl object-cover" alt={item.title} />
+                          <img src={item.imageUrl} alt={item.title} className="w-14 h-14 rounded-xl object-cover border" style={{ borderColor: theme.border }} />
                         ) : (
-                          <div className="w-16 h-16 rounded-xl bg-white/5 border border-white/10 grid place-items-center">
-                            <LucideIcons.Package size={18} className="opacity-70" />
+                          <div className="w-14 h-14 rounded-xl border flex items-center justify-center" style={{ borderColor: theme.border, color: theme.muted }}>
+                            <LucideIcons.Package size={18} />
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <div className="font-black truncate">{item.title}</div>
-                              {item.description && (
-                                <div className="text-xs opacity-70 mt-1 line-clamp-2">{item.description}</div>
-                              )}
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="font-black truncate" style={{ color: theme.text }}>
+                              {item.title}
                             </div>
                             {item.priceText && (
-                              <div className="text-xs font-black opacity-85 whitespace-nowrap">{item.priceText}</div>
+                              <div className="text-[11px] font-black whitespace-nowrap" style={{ color: theme.text }}>
+                                {item.priceText}
+                              </div>
                             )}
                           </div>
-
-                          {item.ctaLink && (
-                            <a
-                              href={isPreview ? '#' : item.ctaLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 text-xs font-black mt-3 px-3 py-2 rounded-xl border hover:bg-white/5 transition-all"
-                              style={{ borderColor: theme.border, color: theme.text }}
-                            >
-                              {item.ctaLabel || 'Ver'}
-                              <LucideIcons.ExternalLink size={14} className="opacity-75" />
-                            </a>
+                          {item.description && (
+                            <div className="text-xs mt-1 line-clamp-2" style={{ color: theme.muted }}>
+                              {item.description}
+                            </div>
+                          )}
+                          {item.ctaLabel && (
+                            <div className="text-[10px] font-black uppercase tracking-widest mt-2 inline-flex items-center gap-2" style={{ color: theme.primary }}>
+                              {item.ctaLabel}
+                              <LucideIcons.ArrowUpRight size={14} />
+                            </div>
                           )}
                         </div>
                       </div>
-                    </div>
+                    </a>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
 
-            {/* Portfólio */}
+            {/* Portfolio */}
             {hasPortfolioAccess && activePortfolio.length > 0 && (
-              <div className="w-full space-y-4 pt-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-black tracking-wide">Portfólio</h2>
-                  <LucideIcons.Image size={16} className="opacity-70" />
-                </div>
-
+              <section className="space-y-3">
+                <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
+                  Portfólio
+                </h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {activePortfolio.map(item => (
-                    <div key={item.id} className="relative overflow-hidden rounded-2xl border" style={{ borderColor: theme.border }}>
-                      <img src={item.imageUrl} className="w-full h-36 object-cover" alt={item.title || 'Portfolio'} />
-                      <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black/50" />
+                  {activePortfolio.map((item) => (
+                    <a
+                      key={item.id}
+                      href={isPreview ? '#' : item.imageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-2xl border overflow-hidden transition-all hover:translate-y-[-1px]"
+                      style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.04)' }}
+                    >
+                      <img src={item.imageUrl} alt={item.title || 'Portfolio'} className="w-full h-28 object-cover" />
                       {item.title && (
-                        <div className="absolute bottom-2 left-2 right-2 text-xs font-black truncate">
+                        <div className="p-3 text-xs font-black truncate" style={{ color: theme.text }}>
                           {item.title}
                         </div>
                       )}
-                    </div>
+                    </a>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
 
-            {/* YouTube */}
-            {hasYoutubeAccess && activeVideos.length > 0 && (
-              <div className="w-full space-y-4 pt-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-black tracking-wide">YouTube</h2>
-                  <LucideIcons.Youtube size={16} className="opacity-70" />
-                </div>
-
-                <div className="space-y-3">
-                  {activeVideos.map(v => {
+            {/* Videos */}
+            {hasVideosAccess && activeVideos.length > 0 && (
+              <section className="space-y-3">
+                <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
+                  Vídeos
+                </h3>
+                <div className="grid grid-cols-1 gap-3">
+                  {activeVideos.map((v) => {
                     const id = extractYouTubeId(v.url);
-                    if (!id) return null;
-                    const thumb = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+                    const thumb = id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : '';
                     return (
                       <a
                         key={v.id}
                         href={isPreview ? '#' : v.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="block rounded-2xl overflow-hidden border hover:opacity-90 transition-all"
-                        style={{ borderColor: theme.border }}
-                        onClick={() => handleLinkClick(`yt_${v.id}`)}
+                        className="rounded-2xl border overflow-hidden transition-all hover:translate-y-[-1px]"
+                        style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.04)' }}
                       >
-                        <div className="relative">
-                          <img src={thumb} className="w-full h-44 object-cover" alt={v.title || 'YouTube'} />
-                          <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black/60" />
-                          <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between gap-2">
-                            <div className="text-xs font-black truncate">{v.title || 'Assistir'}</div>
-                            <LucideIcons.Play size={16} className="opacity-90" />
+                        {thumb ? (
+                          <img src={thumb} alt={v.title || 'Video'} className="w-full h-36 object-cover" />
+                        ) : (
+                          <div className="w-full h-36 flex items-center justify-center" style={{ color: theme.muted }}>
+                            <LucideIcons.Video size={22} />
                           </div>
+                        )}
+                        <div className="p-4 flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm font-black truncate" style={{ color: theme.text }}>
+                              {v.title || 'Vídeo'}
+                            </div>
+                            <div className="text-[10px] font-black uppercase tracking-widest mt-1" style={{ color: theme.muted }}>
+                              YouTube
+                            </div>
+                          </div>
+                          <LucideIcons.PlayCircle size={22} style={{ color: theme.primary }} />
                         </div>
                       </a>
                     );
                   })}
                 </div>
-              </div>
+              </section>
             )}
 
             {/* Scheduling */}
             {hasSchedulingAccess && profile.enableScheduling && (
-              <div className="w-full space-y-4 pt-4">
+              <section className="rounded-2xl border p-5 space-y-4" style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.03)' }}>
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-black tracking-wide">Agendamento</h2>
-                  <LucideIcons.Calendar size={16} className="opacity-70" />
+                  <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
+                    Agendamento
+                  </h3>
+                  <LucideIcons.CalendarClock size={18} style={{ color: theme.primary }} />
                 </div>
 
-                {profile.schedulingMode === 'native' && activeSlots.length > 0 && (
-                  <div className="space-y-2">
-                    {activeSlots.map(s => (
-                      <button
-                        key={s.id}
-                        onClick={() => setSelectedSlotId(s.id)}
-                        className={clsx(
-                          "w-full px-4 py-3 rounded-2xl border flex items-center justify-between gap-2 transition-all",
-                          selectedSlotId === s.id ? "bg-white/5" : "hover:bg-white/5"
-                        )}
-                        style={{ borderColor: theme.border, color: theme.text }}
-                      >
-                        <span className="text-xs font-black">
-                          {DAYS_OF_WEEK[s.dayOfWeek]} • {s.startTime}–{s.endTime}
-                        </span>
-                        {selectedSlotId === s.id ? (
-                          <LucideIcons.Check size={16} className="opacity-90" />
-                        ) : (
-                          <LucideIcons.ChevronRight size={16} className="opacity-40" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                {profile.schedulingMode === 'external' ? (
+                  <button
+                    onClick={handleBooking}
+                    className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all hover:translate-y-[-1px]"
+                    style={{
+                      borderColor: theme.border,
+                      background: theme.primary,
+                      color: primaryTextOnPrimary,
+                      fontFamily: buttonFont,
+                    }}
+                  >
+                    Abrir Agenda
+                  </button>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      {activeSlots.map((s) => (
+                        <button
+                          key={s.id}
+                          onClick={() => setSelectedSlotId(s.id)}
+                          className="rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest border transition-all"
+                          style={{
+                            borderColor: theme.border,
+                            background: selectedSlotId === s.id ? theme.primary : 'transparent',
+                            color: selectedSlotId === s.id ? primaryTextOnPrimary : theme.text,
+                            fontFamily: buttonFont,
+                          }}
+                        >
+                          {DAYS_OF_WEEK[s.dayOfWeek]} • {s.startTime}
+                        </button>
+                      ))}
+                    </div>
 
-                <button
-                  onClick={handleBooking}
-                  className="w-full py-3 rounded-2xl border font-black uppercase tracking-widest text-[10px] hover:bg-white/5 transition-all"
-                  style={{ borderColor: theme.border, color: theme.text }}
-                >
-                  Agendar
-                </button>
-              </div>
+                    <button
+                      onClick={handleBooking}
+                      disabled={!selectedSlotId}
+                      className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:translate-y-[-1px]"
+                      style={{
+                        borderColor: theme.border,
+                        background: theme.primary,
+                        color: primaryTextOnPrimary,
+                        fontFamily: buttonFont,
+                      }}
+                    >
+                      Confirmar no WhatsApp
+                    </button>
+                  </>
+                )}
+              </section>
             )}
 
             {/* Lead Capture */}
             {hasLeadCaptureAccess && profile.enableLeadCapture && (
-              <div className="w-full space-y-4 pt-4">
+              <section className="rounded-2xl border p-5 space-y-4" style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.03)' }}>
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-black tracking-wide">Fale comigo</h2>
-                  <LucideIcons.Send size={16} className="opacity-70" />
+                  <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
+                    Fale comigo
+                  </h3>
+                  <LucideIcons.MessageSquareText size={18} style={{ color: theme.primary }} />
                 </div>
 
                 {leadSent ? (
-                  <div className="p-4 rounded-2xl border text-sm" style={proCardStyle}>
-                    <div className="font-black">Mensagem enviada ✅</div>
-                    <div className="text-xs opacity-70 mt-1">Em breve entrarei em contato.</div>
+                  <div className="rounded-xl border p-4 text-sm font-bold" style={{ borderColor: theme.border, color: theme.text }}>
+                    ✅ Mensagem enviada!
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <>
                     <input
                       value={leadName}
                       onChange={(e) => setLeadName(e.target.value)}
                       placeholder="Seu nome"
-                      className="w-full px-4 py-3 rounded-2xl border bg-transparent text-sm outline-none"
-                      style={{ borderColor: theme.border, color: theme.text }}
+                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold"
+                      style={{ borderColor: theme.border, color: theme.text, fontFamily: bodyFont }}
                     />
                     <input
                       value={leadContact}
                       onChange={(e) => setLeadContact(e.target.value)}
-                      placeholder="Seu WhatsApp / E-mail"
-                      className="w-full px-4 py-3 rounded-2xl border bg-transparent text-sm outline-none"
-                      style={{ borderColor: theme.border, color: theme.text }}
+                      placeholder="WhatsApp ou e-mail"
+                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold"
+                      style={{ borderColor: theme.border, color: theme.text, fontFamily: bodyFont }}
                     />
                     <textarea
                       value={leadMessage}
                       onChange={(e) => setLeadMessage(e.target.value)}
                       placeholder="Mensagem (opcional)"
-                      className="w-full px-4 py-3 rounded-2xl border bg-transparent text-sm outline-none min-h-[92px]"
-                      style={{ borderColor: theme.border, color: theme.text }}
+                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold min-h-[96px]"
+                      style={{ borderColor: theme.border, color: theme.text, fontFamily: bodyFont }}
                     />
                     <button
-                      onClick={handleLeadSubmit}
-                      className="w-full py-3 rounded-2xl border font-black uppercase tracking-widest text-[10px] hover:bg-white/5 transition-all"
-                      style={{ borderColor: theme.border, color: theme.text }}
+                      onClick={() => {
+                        if (isPreview) return;
+                        const lead = {
+                          id: `lead_${Date.now()}`,
+                          clientId: profile.clientId,
+                          profileId: profile.id,
+                          name: leadName.trim() || 'Sem nome',
+                          contact: leadContact.trim() || 'Sem contato',
+                          message: leadMessage.trim() || '',
+                          status: 'novo',
+                          createdAt: new Date().toISOString(),
+                          source,
+                        };
+                        updateStorage((data) => {
+                          data.leads = Array.isArray(data.leads) ? data.leads : [];
+                          data.leads.unshift(lead as any);
+                          return data;
+                        });
+                        setLeadSent(true);
+                      }}
+                      className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all hover:translate-y-[-1px]"
+                      style={{
+                        borderColor: theme.border,
+                        background: theme.primary,
+                        color: primaryTextOnPrimary,
+                        fontFamily: buttonFont,
+                      }}
                     >
                       Enviar
                     </button>
-                  </div>
+                  </>
                 )}
-              </div>
+              </section>
             )}
 
             {/* NPS */}
             {hasNpsAccess && profile.enableNps && (
-              <div className="w-full space-y-4 pt-4">
+              <section className="rounded-2xl border p-5 space-y-4" style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.03)' }}>
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-black tracking-wide">Avalie</h2>
-                  <LucideIcons.Star size={16} className="opacity-70" />
+                  <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
+                    Avaliação
+                  </h3>
+                  <LucideIcons.Star size={18} style={{ color: theme.primary }} />
                 </div>
 
                 {npsSent ? (
-                  <div className="p-4 rounded-2xl border text-sm" style={proCardStyle}>
-                    <div className="font-black">Obrigado pela avaliação ⭐</div>
-                    <div className="text-xs opacity-70 mt-1">Sua opinião ajuda muito.</div>
+                  <div className="rounded-xl border p-4 text-sm font-bold" style={{ borderColor: theme.border, color: theme.text }}>
+                    ⭐ Obrigado pela sua avaliação!
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-10 gap-2">
-                      {Array.from({ length: 10 }).map((_, i) => {
-                        const score = i + 1;
-                        const active = npsScore === score;
-                        return (
-                          <button
-                            key={score}
-                            onClick={() => setNpsScore(score)}
-                            className={clsx(
-                              "py-3 rounded-xl border text-[11px] font-black transition-all",
-                              active ? "bg-white/10" : "hover:bg-white/5"
-                            )}
-                            style={{ borderColor: theme.border, color: theme.text }}
-                          >
-                            {score}
-                          </button>
-                        );
-                      })}
+                  <>
+                    <div className="grid grid-cols-11 gap-1">
+                      {Array.from({ length: 11 }).map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setNpsScore(i)}
+                          className="rounded-lg py-2 text-[10px] font-black border transition-all"
+                          style={{
+                            borderColor: theme.border,
+                            background: npsScore === i ? theme.primary : 'transparent',
+                            color: npsScore === i ? primaryTextOnPrimary : theme.text,
+                            fontFamily: buttonFont,
+                          }}
+                        >
+                          {i}
+                        </button>
+                      ))}
                     </div>
-
                     <textarea
                       value={npsComment}
                       onChange={(e) => setNpsComment(e.target.value)}
                       placeholder="Comentário (opcional)"
-                      className="w-full px-4 py-3 rounded-2xl border bg-transparent text-sm outline-none min-h-[92px]"
-                      style={{ borderColor: theme.border, color: theme.text }}
+                      className="w-full rounded-xl px-4 py-3 bg-black/30 border outline-none text-sm font-semibold min-h-[96px]"
+                      style={{ borderColor: theme.border, color: theme.text, fontFamily: bodyFont }}
                     />
-
                     <button
-                      onClick={handleNpsSubmit}
-                      className="w-full py-3 rounded-2xl border font-black uppercase tracking-widest text-[10px] hover:bg-white/5 transition-all"
-                      style={{ borderColor: theme.border, color: theme.text }}
+                      onClick={() => {
+                        if (isPreview) return;
+                        if (npsScore === null) return;
+                        const entry = {
+                          id: `nps_${Date.now()}`,
+                          clientId: profile.clientId,
+                          profileId: profile.id,
+                          score: npsScore,
+                          comment: npsComment.trim() || '',
+                          createdAt: new Date().toISOString(),
+                          source,
+                        };
+                        updateStorage((data) => {
+                          data.events = Array.isArray(data.events) ? data.events : [];
+                          (data as any).nps = Array.isArray((data as any).nps) ? (data as any).nps : [];
+                          (data as any).nps.unshift(entry);
+                          return data;
+                        });
+                        setNpsSent(true);
+                      }}
+                      className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all hover:translate-y-[-1px] disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={npsScore === null}
+                      style={{
+                        borderColor: theme.border,
+                        background: theme.primary,
+                        color: primaryTextOnPrimary,
+                        fontFamily: buttonFont,
+                      }}
                     >
-                      Enviar
+                      Enviar Avaliação
                     </button>
-                  </div>
+                  </>
                 )}
-              </div>
+              </section>
             )}
           </div>
         </main>
 
-        {/* Wallet Modal */}
+        {/* Wallet Modal (placeholder visual) */}
         {showWalletModal && (
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center p-4">
-            <div
-              className="w-full max-w-[520px] rounded-3xl border overflow-hidden"
-              style={{ borderColor: theme.border, background: theme.cardBg, boxShadow: theme.shadow }}
+          <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="w-full max-w-[520px] rounded-[2.2rem] border bg-zinc-950/90 p-6 space-y-4"
+              style={{ borderColor: theme.border }}
             >
-              <div className="p-5 flex items-center justify-between">
-                <div className="font-black tracking-wide">Adicionar na Wallet</div>
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-black" style={{ color: theme.text }}>Wallet / Salvar</div>
                 <button
                   onClick={() => setShowWalletModal(false)}
-                  className="w-10 h-10 rounded-2xl border grid place-items-center hover:bg-white/5 transition-all"
+                  className="w-10 h-10 rounded-2xl border flex items-center justify-center"
                   style={{ borderColor: theme.border, color: theme.text }}
                 >
                   <LucideIcons.X size={18} />
                 </button>
               </div>
-
-              <div className="px-5 pb-5 space-y-4">
-                <div className="text-sm opacity-80 leading-relaxed">
-                  Em breve: integração direta com Apple Wallet / Google Wallet.
-                  Por enquanto, você pode salvar o contato e fixar o link na tela inicial.
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleSaveContact}
-                    className="flex-1 py-3 rounded-2xl border font-black uppercase tracking-widest text-[10px] hover:bg-white/5 transition-all"
-                    style={{ borderColor: theme.border, color: theme.text }}
-                  >
-                    Salvar Contato
-                  </button>
-
-                  <button
-                    onClick={() => setShowWalletModal(false)}
-                    className="flex-1 py-3 rounded-2xl border font-black uppercase tracking-widest text-[10px] hover:bg-white/5 transition-all"
-                    style={{ borderColor: theme.border, color: theme.text }}
-                  >
-                    Fechar
-                  </button>
-                </div>
+              <div className="text-xs font-semibold opacity-80" style={{ color: theme.muted }}>
+                Aqui você pode evoluir depois com: QR Code, Apple Wallet, Google Wallet e vCard.
               </div>
+              <button
+                onClick={() => setShowWalletModal(false)}
+                className="w-full rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all hover:translate-y-[-1px]"
+                style={{
+                  borderColor: theme.border,
+                  background: theme.primary,
+                  color: primaryTextOnPrimary,
+                  fontFamily: buttonFont,
+                }}
+              >
+                Fechar
+              </button>
             </div>
           </div>
         )}
       </div>
-
-      {/* Branding */}
-      {!profile.hideBranding && (
-        <div className="pb-8 text-xs opacity-60">
-          Criado com <span className="font-black">LinkFlow</span>
-        </div>
-      )}
     </div>
   );
 };
