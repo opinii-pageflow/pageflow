@@ -160,28 +160,6 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="mt-24 relative w-full max-w-5xl mx-auto group perspective-1000">
-          <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20 blur-[100px] opacity-30 group-hover:opacity-50 transition-all duration-1000 pointer-events-none" />
-          <div className="bg-zinc-900/40 border border-white/10 rounded-[3rem] p-4 backdrop-blur-3xl shadow-2xl relative z-10 transform-gpu group-hover:rotate-x-2 transition-all duration-1000">
-             <div className="bg-black/80 rounded-[2.5rem] overflow-hidden aspect-video flex items-center justify-center relative">
-                <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/5 to-transparent pointer-events-none" />
-                <div className="text-zinc-800 font-black text-4xl opacity-20 uppercase tracking-[1em] pointer-events-none">PageFlow Cloud</div>
-                {/* iPhone Frame Placeholder */}
-                <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 w-72 h-[500px] bg-black border-[8px] border-zinc-800 rounded-[3.5rem] shadow-2xl overflow-hidden hidden md:block">
-                   <div className="w-full h-full bg-gradient-to-b from-blue-900/20 to-black p-4">
-                      <div className="w-12 h-12 rounded-2xl bg-white/10 mb-4" />
-                      <div className="w-full h-4 bg-white/5 rounded-full mb-2" />
-                      <div className="w-3/4 h-4 bg-white/5 rounded-full mb-8" />
-                      <div className="space-y-3">
-                         {[1,2,3,4].map(i => <div key={i} className="w-full h-12 bg-white/5 rounded-2xl border border-white/5" />)}
-                      </div>
-                   </div>
-                </div>
-             </div>
-          </div>
-        </div>
-      </section>
-
       {/* Showcase Profiles (admin-editável) */}
       <section className="py-24 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
