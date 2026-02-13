@@ -15,7 +15,14 @@ import {
   Grid3X3,
   Shield,
   Briefcase,
-  UserCircle2
+  UserCircle2,
+  Zap,
+  Smartphone,
+  Layers,
+  LayoutGrid,
+  Grip,
+  Rows3,
+  Palette
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -28,20 +35,18 @@ type Tpl = {
   id: string;
   label: string;
   icon: React.ReactNode;
-  preview: React.ReactNode;
 };
 
-const ThumbShell: React.FC<{ active: boolean; locked: boolean; label: string; icon: React.ReactNode; children: React.ReactNode }> = ({
+const ThumbShell: React.FC<{ active: boolean; locked: boolean; label: string; icon: React.ReactNode }> = ({
   active,
   locked,
   label,
   icon,
-  children,
 }) => {
   return (
     <div
       className={clsx(
-        'w-full aspect-[4/5] rounded-xl border transition-all relative overflow-hidden flex flex-col',
+        'w-full aspect-square rounded-2xl border transition-all relative overflow-hidden flex flex-col items-center justify-center gap-2 p-2',
         active
           ? 'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/10'
           : 'border-white/10 bg-zinc-950/40 hover:border-white/25',
@@ -49,36 +54,30 @@ const ThumbShell: React.FC<{ active: boolean; locked: boolean; label: string; ic
       )}
     >
       {locked && (
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-10 flex items-center justify-center">
-          <div className="bg-zinc-900/80 p-1.5 rounded-lg border border-white/10 shadow-2xl">
-            <Lock size={12} className="text-zinc-400" />
-          </div>
+        <div className="absolute top-2 right-2 z-10">
+          <Lock size={10} className="text-zinc-500" />
         </div>
       )}
-      <div className="px-2 pt-2 flex items-center justify-between">
-        <div
-          className={clsx(
-            'w-6 h-6 rounded-lg flex items-center justify-center',
-            active ? 'bg-blue-500/20 text-blue-200' : 'bg-white/5 text-white/70'
-          )}
-        >
-          {icon}
-        </div>
-        {active && (
-          <div className="bg-blue-500 text-white rounded-full p-0.5 shadow-sm">
-            <Check size={10} />
-          </div>
-        )}
+      
+      <div className={clsx(
+        'w-10 h-10 rounded-xl flex items-center justify-center transition-all',
+        active ? 'bg-blue-500 text-white' : 'bg-white/5 text-zinc-500 group-hover:text-zinc-300'
+      )}>
+        {icon}
       </div>
-      <div className="flex-1 px-2 pb-2 pt-1">{children}</div>
-      <div
-        className={clsx(
-          'py-1 px-1 text-[8px] font-black uppercase tracking-[0.18em] text-center border-t',
-          active ? 'border-blue-500/20 text-blue-200' : 'border-white/10 text-white/40'
-        )}
-      >
+
+      <div className={clsx(
+        'text-[8px] font-black uppercase tracking-widest text-center truncate w-full px-1',
+        active ? 'text-blue-400' : 'text-zinc-600'
+      )}>
         {label}
       </div>
+
+      {active && (
+        <div className="absolute top-2 left-2 text-blue-500">
+          <Check size={12} strokeWidth={4} />
+        </div>
+      )}
     </div>
   );
 };
@@ -89,28 +88,40 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
   const client = data.clients.find(c => c.id === user?.clientId);
 
   const templates: Tpl[] = [
-    { id: 'Minimal Card', label: 'Minimal Card', icon: <Layout size={14} />, preview: <div className="h-full flex flex-col items-center justify-center"><div className="w-8 h-8 rounded-full bg-white/10 mb-2" /><div className="w-full h-2 bg-white/5 rounded-full" /></div> },
-    { id: 'Full Cover Hero', label: 'Full Hero', icon: <Maximize2 size={14} />, preview: <div className="h-full bg-white/10 rounded-lg" /> },
-    { id: 'Dynamic Overlap', label: 'Overlap', icon: <Square size={14} />, preview: <div className="h-full flex flex-col"><div className="h-1/2 bg-white/10" /><div className="h-1/2 bg-zinc-900 border" /></div> },
-    { id: 'Cover Centered', label: 'Centered', icon: <ImageIcon size={14} />, preview: <div className="h-full flex flex-col items-center justify-center"><div className="w-10 h-10 rounded-full bg-white/10" /></div> },
-    { id: 'Magazine', label: 'Magazine', icon: <Newspaper size={14} />, preview: <div className="h-full grid grid-cols-2 gap-1"><div className="bg-white/10" /><div className="bg-white/5" /></div> },
-    { id: 'Avatar Left', label: 'Avatar Left', icon: <PanelLeft size={14} />, preview: <div className="h-full flex gap-2"><div className="w-8 h-8 bg-white/10 rounded-lg" /><div className="flex-1 h-2 bg-white/5 mt-2" /></div> },
-    { id: 'Button Grid', label: 'Grid', icon: <Grid3X3 size={14} />, preview: <div className="h-full grid grid-cols-2 gap-1 mt-2"><div className="h-4 bg-white/10" /><div className="h-4 bg-white/10" /></div> },
-    { id: 'Glassmorphism', label: 'Glass', icon: <Shield size={14} />, preview: <div className="h-full bg-white/5 border border-white/10 backdrop-blur-sm" /> },
-    { id: 'Corporate', label: 'Corporate', icon: <Briefcase size={14} />, preview: <div className="h-full space-y-2"><div className="h-2 bg-white/10 w-1/2" /><div className="h-6 bg-white/5" /></div> },
-    { id: 'Creator', label: 'Creator', icon: <UserCircle2 size={14} />, preview: <div className="h-full flex flex-col items-center"><div className="w-10 h-10 rounded-full bg-white/10 mb-2" /><div className="w-full h-8 bg-white/5" /></div> }
+    // Essenciais / Starter
+    { id: 'Minimal Card', label: 'Minimal Card', icon: <Layout size={20} /> },
+    { id: 'Button List Bold', label: 'Bold List', icon: <Rows3 size={20} /> },
+    { id: 'Avatar Left', label: 'Avatar Left', icon: <PanelLeft size={20} /> },
+    { id: 'Corporate', label: 'Corporate', icon: <Briefcase size={20} /> },
+    { id: 'Button Grid', label: 'Button Grid', icon: <Grid3X3 size={20} /> },
+    { id: 'Light Clean', label: 'Light Clean', icon: <Palette size={20} /> },
+    
+    // Pro / Premium (Capa e Estilo)
+    { id: 'Full Cover Hero', label: 'Full Hero', icon: <Maximize2 size={20} /> },
+    { id: 'Dynamic Overlap', label: 'Overlap', icon: <Square size={20} /> },
+    { id: 'Cover Centered', label: 'Centered', icon: <ImageIcon size={20} /> },
+    { id: 'Cover Clean', label: 'Cover Clean', icon: <ImageIcon size={20} /> },
+    { id: 'Hero Banner', label: 'Hero Banner', icon: <RectangleHorizontal size={20} /> },
+    { id: 'Magazine', label: 'Magazine', icon: <Newspaper size={20} /> },
+    { id: 'Glassmorphism', label: 'Glass', icon: <Shield size={20} /> },
+    { id: 'Creator', label: 'Creator', icon: <UserCircle2 size={20} /> },
+    { id: 'Neon', label: 'Neon', icon: <Zap size={20} /> },
+    { id: 'Dark Elegant', label: 'Elegant', icon: <Smartphone size={20} /> },
+    { id: 'Stacked Cards', label: 'Stacked', icon: <Layers size={20} /> },
+    { id: 'Icon Grid', label: 'Icon Grid', icon: <LayoutGrid size={20} /> },
+    { id: 'Split Header', label: 'Split Header', icon: <Grip size={20} /> },
   ];
 
   return (
-    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-1 duration-300">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-1 duration-300">
       <header className="flex items-center justify-between px-1">
-        <h3 className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Biblioteca de Layouts</h3>
-        <div className="text-[8px] font-black text-blue-400 uppercase tracking-widest bg-blue-400/5 px-2 py-0.5 rounded">
-          {profile.layoutTemplate}
+        <div>
+          <h3 className="text-xl font-bold tracking-tight">Biblioteca de Layouts</h3>
+          <p className="text-xs text-zinc-500">Selecione a estrutura visual do seu perfil.</p>
         </div>
       </header>
 
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
         {templates.map((tpl) => {
           const active = profile.layoutTemplate === tpl.id;
           const locked = !canUseTemplate(client?.plan, tpl.id);
@@ -125,17 +136,18 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
                 locked && "cursor-not-allowed"
               )}
             >
-              <ThumbShell active={active} locked={locked} label={tpl.label} icon={tpl.icon}>
-                {tpl.preview}
-              </ThumbShell>
+              <ThumbShell active={active} locked={locked} label={tpl.label} icon={tpl.icon} />
             </button>
           );
         })}
       </div>
 
-      <div className="p-4 bg-zinc-950/30 border border-white/5 rounded-2xl">
-        <p className="text-[9px] text-zinc-500 font-bold leading-relaxed uppercase tracking-wider text-center">
-          Templates com <Lock size={8} className="inline mx-1" /> requerem plano Pro ou superior.
+      <div className="p-4 bg-zinc-900/40 border border-white/5 rounded-2xl flex items-center gap-4">
+        <div className="w-10 h-10 bg-blue-600/10 text-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+          <Zap size={20} />
+        </div>
+        <p className="text-[10px] text-zinc-500 font-bold leading-relaxed uppercase tracking-wider">
+          Templates com <Lock size={10} className="inline mx-1" /> requerem plano <b>Pro ou superior</b>.
         </p>
       </div>
     </div>
