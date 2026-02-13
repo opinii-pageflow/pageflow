@@ -314,6 +314,11 @@ const DesignTab: React.FC<Props> = ({ profile, onUpdate }) => {
             value={profile.theme.text}
             onChange={(hex) => updateTheme({ text: hex })}
           />
+          <ColorPickerButton 
+            label="Cor da Borda"
+            value={profile.theme.border.startsWith('#') ? profile.theme.border : '#ffffff'}
+            onChange={(hex) => updateTheme({ border: hex })}
+          />
         </div>
       </section>
 
