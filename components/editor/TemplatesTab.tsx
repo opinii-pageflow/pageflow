@@ -10,6 +10,109 @@ interface Props {
 const TemplateThumb: React.FC<{ type: string; active: boolean }> = ({ type, active }) => {
   const renderMockup = () => {
     switch (type) {
+      case 'Full Bleed':
+        return (
+          <div className="w-full h-full flex flex-col p-1.5">
+            <div className="w-full h-3 rounded-md bg-current/10" />
+            <div className="mt-1 flex items-center gap-1">
+              <div className="w-4 h-4 rounded-full bg-current/20" />
+              <div className="flex-1">
+                <div className="w-3/4 h-0.5 bg-current/20 rounded-full" />
+                <div className="w-1/2 h-0.5 bg-current/10 rounded-full mt-0.5" />
+              </div>
+            </div>
+            <div className="mt-2 space-y-0.5">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="w-full h-1 bg-current/10 rounded-sm" />
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'Rounded Pills':
+        return (
+          <div className="w-full h-full flex flex-col p-1.5">
+            <div className="w-5 h-5 rounded-full bg-current/18 mx-auto" />
+            <div className="mt-1 w-2/3 h-0.5 bg-current/22 rounded-full mx-auto" />
+            <div className="mt-2 space-y-1">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="w-full h-1.5 bg-current/10 rounded-full" />
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'Hero Banner':
+        return (
+          <div className="w-full h-full p-1.5 flex flex-col">
+            <div className="w-full h-10 rounded-md bg-current/10" />
+            <div className="-mt-3 w-6 h-6 rounded-full bg-current/18 mx-auto border border-current/10" />
+            <div className="mt-1 w-2/3 h-0.5 bg-current/22 rounded-full mx-auto" />
+            <div className="mt-2 space-y-0.5">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="w-full h-1 bg-current/10 rounded-sm" />
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'Avatar Left':
+        return (
+          <div className="w-full h-full p-1.5">
+            <div className="flex gap-1">
+              <div className="w-7 h-7 rounded-xl bg-current/18" />
+              <div className="flex-1 pt-1">
+                <div className="w-3/4 h-0.5 bg-current/22 rounded-full" />
+                <div className="w-1/2 h-0.5 bg-current/10 rounded-full mt-0.5" />
+              </div>
+            </div>
+            <div className="mt-2 space-y-0.5">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="w-full h-1 bg-current/10 rounded-sm" />
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'Compact':
+        return (
+          <div className="w-full h-full p-1.5 flex flex-col">
+            <div className="w-4 h-4 rounded-full bg-current/18 mx-auto" />
+            <div className="mt-1 w-3/5 h-0.5 bg-current/22 rounded-full mx-auto" />
+            <div className="mt-2 space-y-0.5">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="w-full h-0.5 bg-current/10 rounded-full" />
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'Button Grid':
+        return (
+          <div className="w-full h-full p-1.5 flex flex-col">
+            <div className="w-4 h-4 rounded-full bg-current/18 mx-auto" />
+            <div className="mt-1 w-2/3 h-0.5 bg-current/22 rounded-full mx-auto" />
+            <div className="mt-2 grid grid-cols-2 gap-0.5 flex-1">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="bg-current/10 rounded-[2px]" />
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'Stacked Cards':
+        return (
+          <div className="w-full h-full p-1.5 flex flex-col">
+            <div className="w-4 h-4 rounded-full bg-current/18 mx-auto" />
+            <div className="mt-1 w-2/3 h-0.5 bg-current/22 rounded-full mx-auto" />
+            <div className="mt-2 space-y-1">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="w-full h-3 bg-current/8 rounded-md border border-current/10" />
+              ))}
+            </div>
+          </div>
+        );
+
       case 'Minimal Card':
         return (
           <div className="w-full h-full flex flex-col gap-0.5 p-1.5">
@@ -121,7 +224,10 @@ const TemplateThumb: React.FC<{ type: string; active: boolean }> = ({ type, acti
             <div className="w-3 h-3 rounded-full bg-current/20 mx-auto mb-1" />
             <div className="space-y-0.5">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className={`w-full h-1.5 bg-current/12 rounded-[2px] ${i % 2 === 0 ? 'rotate-[1deg]' : '-rotate-[1deg]'}`} />
+                <div
+                  key={i}
+                  className={`w-full h-1.5 bg-current/12 rounded-[2px] ${i % 2 === 0 ? 'rotate-[1deg]' : '-rotate-[1deg]'}`}
+                />
               ))}
             </div>
           </div>
@@ -172,11 +278,19 @@ const TemplateThumb: React.FC<{ type: string; active: boolean }> = ({ type, acti
   };
 
   return (
-    <div className={`w-full aspect-[4/5] rounded-lg border transition-all relative overflow-hidden flex flex-col ${active ? 'border-blue-500 bg-blue-500/10 text-blue-500 shadow-lg shadow-blue-500/10' : 'border-white/5 bg-zinc-900 text-zinc-700 group-hover:border-white/20'}`}>
-      <div className="flex-1">
-        {renderMockup()}
-      </div>
-      <div className={`py-1 px-0.5 text-[6px] font-black uppercase tracking-tighter text-center border-t ${active ? 'border-blue-500/20' : 'border-white/5'}`}>
+    <div
+      className={`w-full aspect-[4/5] rounded-lg border transition-all relative overflow-hidden flex flex-col ${
+        active
+          ? 'border-blue-500 bg-blue-500/10 text-blue-300 shadow-lg shadow-blue-500/10'
+          : 'border-white/8 bg-zinc-900/60 text-zinc-300 group-hover:border-white/20'
+      }`}
+    >
+      <div className="flex-1">{renderMockup()}</div>
+      <div
+        className={`py-1 px-0.5 text-[6px] font-black uppercase tracking-tighter text-center border-t ${
+          active ? 'border-blue-500/20' : 'border-white/5'
+        }`}
+      >
         {type}
       </div>
       {active && (
@@ -190,9 +304,28 @@ const TemplateThumb: React.FC<{ type: string; active: boolean }> = ({ type, acti
 
 const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
   const templates = [
-    "Minimal Card", "Glassmorphism", "Neon", "Corporate", "Creator", 
-    "Dark Elegant", "Light Clean", "Split Header", "Big Avatar", 
-    "Icon Grid", "Button List Bold", "Magazine"
+    // Novos
+    'Full Bleed',
+    'Hero Banner',
+    'Avatar Left',
+    'Rounded Pills',
+    'Compact',
+    'Button Grid',
+    'Stacked Cards',
+
+    // Existentes
+    'Minimal Card',
+    'Glassmorphism',
+    'Neon',
+    'Corporate',
+    'Creator',
+    'Dark Elegant',
+    'Light Clean',
+    'Split Header',
+    'Big Avatar',
+    'Icon Grid',
+    'Button List Bold',
+    'Magazine',
   ];
 
   return (
@@ -206,20 +339,16 @@ const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
 
       <div className="grid grid-cols-4 gap-2">
         {templates.map(tpl => (
-          <button
-            key={tpl}
-            onClick={() => onUpdate({ layoutTemplate: tpl })}
-            className="group active:scale-95 transition-transform"
-          >
+          <button key={tpl} onClick={() => onUpdate({ layoutTemplate: tpl })} className="group active:scale-95 transition-transform">
             <TemplateThumb type={tpl} active={profile.layoutTemplate === tpl} />
           </button>
         ))}
       </div>
-      
+
       <div className="p-3 bg-zinc-950/30 border border-white/5 rounded-xl">
-         <p className="text-[8px] text-zinc-600 font-bold leading-relaxed uppercase tracking-wider text-center">
-           Selecione um preset estrutural acima
-         </p>
+        <p className="text-[8px] text-zinc-600 font-bold leading-relaxed uppercase tracking-wider text-center">
+          Selecione um preset estrutural acima
+        </p>
       </div>
     </div>
   );
