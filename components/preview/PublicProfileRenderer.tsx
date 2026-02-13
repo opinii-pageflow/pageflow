@@ -397,7 +397,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
           <div className="px-6 pb-8 space-y-6">
             {/* Top Actions */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <button
                 onClick={() => setShowWalletModal(true)}
                 className="rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all hover:translate-y-[-1px]"
@@ -410,23 +410,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
               >
                 <span className="inline-flex items-center justify-center gap-2">
                   <LucideIcons.Bookmark size={16} />
-                  Salvar
-                </span>
-              </button>
-
-              <button
-                onClick={() => setShowWalletModal(true)}
-                className="rounded-xl px-4 py-3 font-black text-[11px] uppercase tracking-widest border transition-all hover:translate-y-[-1px]"
-                style={{
-                  border: `1px solid ${theme.border}`,
-                  background: theme.buttonStyle === 'glass' ? 'rgba(255,255,255,0.06)' : 'transparent',
-                  color: theme.text,
-                  fontFamily: buttonFont,
-                }}
-              >
-                <span className="inline-flex items-center justify-center gap-2">
-                  <LucideIcons.Wallet size={16} />
-                  Wallet
+                  Salvar Contato
                 </span>
               </button>
             </div>
