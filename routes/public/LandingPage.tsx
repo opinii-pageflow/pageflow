@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { getCurrentUser, getStorage } from '../../lib/storage';
 import { FeatureCard, PricingCard, FAQItem } from '../../components/landing/LandingUI';
-import PhoneFrame from '../../components/landing/PhoneFrame';
 import { PLANS } from '../../lib/plans';
 import clsx from 'clsx';
 import PublicProfileRenderer from '../../components/preview/PublicProfileRenderer';
@@ -136,7 +135,7 @@ const LandingPage: React.FC = () => {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-600/10 blur-[100px] pointer-events-none rounded-full" />
             
             <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85] text-white relative z-10">
-              Sua marca <br /> <span className="text-lime-400">em outro</span> nível.
+              Sua marca <br /> <span className="text-zinc-700">em outro</span> nível.
             </h1>
             <p className="text-lg md:text-2xl text-zinc-500 font-medium leading-relaxed max-w-2xl mx-auto relative z-10">
               Transforme contatos em conexões de alto valor com o cartão digital mais avançado do mercado.
@@ -190,7 +189,7 @@ const LandingPage: React.FC = () => {
               <div className="text-blue-400 text-[10px] font-black uppercase tracking-[0.3em]">Demonstração Real</div>
               <h2 className="text-4xl md:text-5xl font-black tracking-tighter">
                 Veja 2 perfis 
-                <span className="text-lime-400"> ao vivo</span>
+                <span className="text-zinc-700"> ao vivo</span>
               </h2>
               <p className="text-zinc-500 text-lg font-medium leading-relaxed">
                 Seja para consolidar a força da sua marca corporativa ou destacar sua trajetória profissional, o PageFlow entrega o visual que você precisa. Crie hubs de links inteligentes que se adaptam ao seu estilo.
@@ -239,21 +238,23 @@ const LandingPage: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Phone Frame (realista + scroll funcional no viewport) */}
-                        <PhoneFrame>
-                          {profile ? (
-                            <div className="min-h-full">
-                              <PublicProfileRenderer profile={profile} isPreview={true} clientPlan={plan} source="direct" />
-                            </div>
-                          ) : (
-                            <div className="h-full min-h-[520px] flex items-center justify-center p-10">
-                              <div className="text-center space-y-2">
-                                <div className="text-zinc-600 text-[10px] font-black uppercase tracking-[0.28em]">Sem vitrine</div>
-                                <div className="text-zinc-500 text-sm font-medium">Escolha um perfil em <span className="text-white">/admin</span> para aparecer aqui.</div>
+                        {/* Phone Frame */}
+                        <div className="rounded-[2.3rem] bg-black border border-white/10 overflow-hidden">
+                          <div className="h-[520px] overflow-hidden">
+                            {profile ? (
+                              <div className="origin-top-left scale-[0.92] w-[108%]">
+                                <PublicProfileRenderer profile={profile} isPreview={true} clientPlan={plan} source="direct" />
                               </div>
-                            </div>
-                          )}
-                        </PhoneFrame>
+                            ) : (
+                              <div className="h-full flex items-center justify-center p-10">
+                                <div className="text-center space-y-2">
+                                  <div className="text-zinc-600 text-[10px] font-black uppercase tracking-[0.28em]">Sem vitrine</div>
+                                  <div className="text-zinc-500 text-sm font-medium">Escolha um perfil em <span className="text-white">/admin</span> para aparecer aqui.</div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
@@ -268,7 +269,7 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           <div className="mb-20 text-center md:text-left space-y-4">
             <div className="text-blue-500 text-[10px] font-black uppercase tracking-[0.3em]">O Futuro é Digital</div>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter">Recursos <span className="text-lime-400">SaaS Premium</span></h2>
+            <h2 className="text-4xl md:text-6xl font-black tracking-tighter">Recursos <span className="text-zinc-700">SaaS Premium</span></h2>
             <p className="text-zinc-500 max-w-xl text-lg font-medium leading-relaxed">Desenvolvido para máxima conversão e autoridade visual.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -282,7 +283,7 @@ const LandingPage: React.FC = () => {
       <section id="precos" className="py-32 px-6 max-w-7xl mx-auto relative z-10">
         <div className="text-center mb-20 space-y-4">
           <div className="text-indigo-400 text-[10px] font-black uppercase tracking-[0.3em]">Investimento</div>
-          <h2 className="text-4xl md:text-6xl font-black tracking-tighter">Planos de <span className="text-lime-400">Expansão</span></h2>
+          <h2 className="text-4xl md:text-6xl font-black tracking-tighter">Planos de <span className="text-zinc-700">Expansão</span></h2>
           <p className="text-zinc-500 max-w-lg mx-auto text-lg font-medium leading-relaxed">Selecione a infraestrutura ideal para o seu perfil profissional.</p>
         </div>
 
@@ -338,7 +339,7 @@ const LandingPage: React.FC = () => {
         <div className="max-w-4xl mx-auto">
           <div className="mb-16 text-center">
             <div className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em] mb-4">FAQ</div>
-            <h2 className="text-4xl font-black tracking-tight">Perguntas <span className="text-lime-400">Frequentes</span></h2>
+            <h2 className="text-4xl font-black tracking-tight">Perguntas <span className="text-zinc-700">Frequentes</span></h2>
           </div>
           <div className="space-y-2 mb-20 bg-zinc-900/20 p-8 rounded-[3rem] border border-white/5">
             <FAQItem 

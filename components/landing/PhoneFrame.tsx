@@ -1,7 +1,7 @@
 import React from 'react';
 import clsx from 'clsx';
 
-type PhoneFrameProps = {
+type Props = {
   /** Conteúdo renderizado “dentro da tela” */
   children: React.ReactNode;
   /** Ajustes no container externo (o “corpo do celular”) */
@@ -12,18 +12,7 @@ type PhoneFrameProps = {
   notch?: boolean;
 };
 
-/**
- * PhoneFrame
- * - Frame visual realista de smartphone
- * - Viewport interno com scroll vertical funcional
- * - Não interfere em navegação da página (não usa position: fixed)
- */
-const PhoneFrame: React.FC<PhoneFrameProps> = ({
-  children,
-  className,
-  viewportClassName,
-  notch = true,
-}) => {
+const PhoneFrame: React.FC<Props> = ({ children, className, viewportClassName, notch = true }) => {
   return (
     <div
       className={clsx(
@@ -45,8 +34,8 @@ const PhoneFrame: React.FC<PhoneFrameProps> = ({
         {/* Viewport com scroll real */}
         <div
           className={clsx(
-            'relative w-full overflow-y-auto overflow-x-hidden overscroll-contain',
-            // altura padrão do “telefone” (mantém responsivo e evita corte)
+            'relative w-full overflow-y-auto overflow-x-hidden overscroll-contain no-scrollbar',
+            // altura padrão do “telefone” (pode ser sobrescrita)
             'h-[520px] md:h-[560px]',
             viewportClassName
           )}

@@ -219,435 +219,335 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
     let vCard = `BEGIN:VCARD
 VERSION:3.0
 FN:${name}
+N:${name};;;;
+TITLE:${headline}
+URL:${url}
+NOTE:Perfil digital criado com LinkFlow.
 `;
-    if (headline) vCard += `TITLE:${headline}\n`;
+
     if (phone) vCard += `TEL;TYPE=CELL:${phone}\n`;
     if (email) vCard += `EMAIL:${email}\n`;
-    vCard += `URL:${url}\nEND:VCARD`;
+    if (profile.avatarUrl && profile.avatarUrl.startsWith('http')) {
+      vCard += `PHOTO;VALUE=URI:${profile.avatarUrl}\n`;
+    }
+
+    vCard += `END:VCARD`;
 
     const blob = new Blob([vCard], { type: 'text/vcard;charset=utf-8' });
+    const downloadUrl = window.URL.createObjectURL(blob);
+
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${name}.vcf`;
+    a.href = downloadUrl;
+    a.setAttribute('download', `${profile.slug || 'contato'}.vcf`);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+
+    setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
   };
 
-  const showCover = !!(profile.coverImageUrl || (profile as any)?.coverUrl);
-  const coverUrl = (profile.coverImageUrl || (profile as any)?.coverUrl || '').trim();
-  const avatarUrl = (profile.avatarUrl || '').trim();
+  const getButtonStyle = (): React.CSSProperties => {
+    let backgroundColor: string;
+    let color: string;
+    let border: string;
 
-  const displayName = safeString(profile.displayName, 'Seu Nome');
-  const headline = safeString(profile.headline, 'Sua headline / profissão');
-  const bio = safeString((profile as any)?.bio, '');
-
-  const buttonStyle = safeString(theme.buttonStyle, 'glass');
-
-  const buttonBase = useMemo(() => {
-    const base = 'w-full flex items-center gap-3 px-4 py-3 font-black text-[11px] uppercase tracking-[0.18em] transition-all active:scale-[0.99]';
-
-    if (buttonStyle === 'solid') {
-      return clsx(base, 'rounded-2xl');
+    switch (theme.buttonStyle) {
+      case 'solid':
+        backgroundColor = theme.primary;
+        color = primaryTextOnPrimary;
+        border = `1px solid ${theme.primary}`;
+        break;
+      case 'outline':
+        backgroundColor = 'transparent';
+        color = theme.text;
+        border = `1.5px solid ${theme.primary}`;
+        break;
+      case 'glass':
+      default:
+        backgroundColor = theme.cardBg;
+        color = theme.text;
+        border = `1px solid ${theme.border}`;
+        break;
     }
 
-    if (buttonStyle === 'outline') {
-      return clsx(base, 'rounded-2xl bg-transparent');
-    }
-
-    // glass default
-    return clsx(base, 'rounded-2xl');
-  }, [buttonStyle]);
-
-  const buttonInlineStyle = useMemo(() => {
-    if (buttonStyle === 'solid') {
-      return {
-        background: theme.primary,
-        color: primaryTextOnPrimary,
-        border: `1px solid ${theme.primary}`,
-        boxShadow: '0 14px 30px rgba(0,0,0,0.25)',
-        fontFamily: buttonFont,
-      } as React.CSSProperties;
-    }
-
-    if (buttonStyle === 'outline') {
-      return {
-        background: 'transparent',
-        color: theme.text,
-        border: `1px solid ${theme.border}`,
-        fontFamily: buttonFont,
-      } as React.CSSProperties;
-    }
-
-    // glass
     return {
-      background: 'rgba(255,255,255,0.06)',
-      color: theme.text,
-      border: `1px solid ${theme.border}`,
-      backdropFilter: 'blur(20px)',
+      borderRadius: theme.radius,
       fontFamily: buttonFont,
-    } as React.CSSProperties;
-  }, [buttonStyle, theme.primary, theme.text, theme.border, primaryTextOnPrimary, buttonFont]);
-
-  const containerClass = useMemo(() => {
-    if (isPreview) return 'w-full h-full';
-    return 'min-h-screen w-full';
-  }, [isPreview]);
-
-  const innerClass = useMemo(() => {
-    if (isPreview) return 'w-full h-full';
-    return 'w-full max-w-lg mx-auto px-5 py-10';
-  }, [isPreview]);
-
-  const headerClass = useMemo(() => {
-    if (layout === 'Split Header') return 'flex items-start gap-4';
-    if (isLeft) return 'flex items-start gap-4';
-    if (isBigAvatar) return 'flex flex-col items-center text-center';
-    return 'flex flex-col items-center text-center';
-  }, [layout, isLeft, isBigAvatar]);
-
-  const avatarClass = useMemo(() => {
-    if (isBigAvatar) return 'w-24 h-24 rounded-[2rem] border border-white/15 bg-white/5 overflow-hidden';
-    if (layout === 'Split Header') return 'w-16 h-16 rounded-2xl border border-white/15 bg-white/5 overflow-hidden';
-    if (isLeft) return 'w-16 h-16 rounded-2xl border border-white/15 bg-white/5 overflow-hidden';
-    return 'w-20 h-20 rounded-[2.2rem] border border-white/15 bg-white/5 overflow-hidden';
-  }, [layout, isLeft, isBigAvatar]);
-
-  const titleWrapClass = useMemo(() => {
-    if (layout === 'Split Header') return 'flex-1 pt-1';
-    if (isLeft) return 'flex-1 pt-1';
-    return 'w-full mt-4';
-  }, [layout, isLeft]);
-
-  const titleClass = useMemo(() => {
-    return 'text-2xl font-black tracking-tight';
-  }, []);
-
-  const headlineClass = useMemo(() => {
-    return 'text-sm font-bold text-white/70';
-  }, []);
-
-  const coverNode = showCover ? (
-    <div className={clsx('w-full rounded-[2rem] overflow-hidden relative border border-white/10', coverConfig.heightClass)}>
-      <img
-        src={coverUrl}
-        alt="Cover"
-        className="w-full h-full object-cover"
-        loading="lazy"
-        onError={(e) => {
-          (e.currentTarget as HTMLImageElement).style.display = 'none';
-        }}
-      />
-      <div className={clsx('absolute inset-0 bg-gradient-to-b', coverConfig.overlay)} />
-    </div>
-  ) : null;
-
-  const avatarNode = (
-    <div className={avatarClass}>
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt={displayName}
-          className="w-full h-full object-cover"
-          loading="lazy"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = 'none';
-          }}
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center text-white/40">
-          <LucideIcons.User size={28} />
-        </div>
-      )}
-    </div>
-  );
-
-  const headerNode = (
-    <div className={clsx(headerClass)}>
-      {isLeft || layout === 'Split Header' ? avatarNode : null}
-
-      <div className={clsx(titleWrapClass)}>
-        <h1 className={titleClass} style={{ fontFamily: headingFont }}>
-          {displayName}
-        </h1>
-        <div className={headlineClass} style={{ fontFamily: bodyFont }}>
-          {headline}
-        </div>
-
-        {bio ? (
-          <div className="mt-3 text-[13px] leading-relaxed text-white/70 font-semibold" style={{ fontFamily: bodyFont }}>
-            {bio}
-          </div>
-        ) : null}
-
-        {!isLeft && layout !== 'Split Header' ? (
-          <div className="mt-5 flex justify-center">{avatarNode}</div>
-        ) : null}
-      </div>
-    </div>
-  );
-
-  const enabledButtons = buttons.filter((b: any) => b?.enabled);
-
-  const scheduling = (profile as any)?.scheduling || {};
-  const pix = (profile as any)?.pix || {};
-
-  const scheduleSlots = Array.isArray(scheduling?.slots) ? scheduling.slots : [];
-
-  const openPixModal = () => {
-    if (!hasPixAccess) return;
-    setShowWalletModal(true);
-  };
-
-  const closePixModal = () => setShowWalletModal(false);
-
-  const handleOpenLink = (url: string, btnId: string) => {
-    handleLinkClick(btnId);
-    if (isPreview) return;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  const renderButtons = () => {
-    if (!enabledButtons.length) {
-      return (
-        <div className="text-center text-white/45 text-xs font-black uppercase tracking-[0.18em]">
-          Adicione botões no editor
-        </div>
-      );
-    }
-
-    const ButtonWrap: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-      if (layout === 'Two Columns') return <div className="grid grid-cols-2 gap-3">{children}</div>;
-      if (layout === 'Icon Grid') return <div className="grid grid-cols-3 gap-3">{children}</div>;
-      if (layout === 'Button Grid') return <div className="grid grid-cols-2 gap-3">{children}</div>;
-      return <div className="space-y-3">{children}</div>;
+      transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+      border,
+      padding: isGrid ? '1.5rem 1rem' : '0.95rem 1.15rem',
+      width: '100%',
+      backgroundColor,
+      color,
+      fontSize: '0.92rem',
+      fontWeight: 800,
+      display: 'flex',
+      flexDirection: isGrid ? 'column' : 'row',
+      alignItems: 'center',
+      justifyContent: isGrid ? 'center' : 'space-between',
+      gap: isGrid ? '0.75rem' : '0.5rem',
+      textAlign: 'center',
     };
+  };
 
+  const renderLinks = () => {
+    const activeButtons = buttons.filter((b: any) => b?.enabled);
     return (
-      <ButtonWrap>
-        {enabledButtons.map((b: any) => {
-          const Icon = getIcon(String(b.type || 'link'));
-          const label = safeString(b.label, 'Link');
-          const value = safeString(b.value, '');
-          const href = formatLink(String(b.type || 'link'), value);
-
-          const isIconOnly = layout === 'Icon Grid';
-          const isGridLike = layout === 'Two Columns' || layout === 'Button Grid' || layout === 'Icon Grid';
-
-          const shared = (
-            <>
-              <span
-                className={clsx(
-                  'w-8 h-8 rounded-xl flex items-center justify-center',
-                  buttonStyle === 'solid' ? 'bg-black/10' : 'bg-white/10'
-                )}
-              >
-                <Icon size={18} />
-              </span>
-
-              {!isIconOnly ? (
-                <span className="flex-1 text-left leading-tight">
-                  <span className="block">{label}</span>
-                  {isGridLike ? null : (
-                    <span className="block text-[10px] font-bold tracking-normal uppercase text-white/55 mt-1">
-                      {value}
-                    </span>
-                  )}
-                </span>
-              ) : null}
-
-              {!isIconOnly ? (
-                <span className="text-white/40">
-                  <LucideIcons.ChevronRight size={18} />
-                </span>
-              ) : null}
-            </>
-          );
-
+      <div className={clsx(isGrid ? "grid grid-cols-2 gap-3" : "flex flex-col gap-3", "w-full")}>
+        {activeButtons.map((btn: any, idx: number) => {
+          const Icon = getIcon(btn.type);
           return (
-            <button
-              key={String(b.id)}
-              type="button"
-              className={buttonBase}
-              style={buttonInlineStyle}
-              onClick={() => {
-                if (!href) return;
-                handleOpenLink(href, String(b.id));
-              }}
-              title={label}
+            <a
+              key={btn.id || `${btn.type}-${idx}`}
+              href={isPreview ? '#' : formatLink(btn.type, btn.value)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => handleLinkClick(btn.id)}
+              style={getButtonStyle()}
+              className="group hover:translate-y-[-2px]"
             >
-              {shared}
-            </button>
+              {isGrid ? (
+                <>
+                  <Icon size={24} />
+                  <div className="font-black truncate w-full">{btn.label}</div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Icon size={20} />
+                    <span className="font-black truncate">{btn.label}</span>
+                  </div>
+                  <LucideIcons.ChevronRight size={16} className="opacity-40" />
+                </>
+              )}
+            </a>
           );
         })}
-      </ButtonWrap>
-    );
-  };
-
-  const renderScheduling = () => {
-    if (!hasSchedulingAccess) return null;
-    if (!scheduleSlots.length) return null;
-
-    const selected = scheduleSlots.find((s: any) => String(s.id) === String(selectedSlotId));
-
-    return (
-      <div className="mt-6">
-        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/55 mb-3">
-          Agendamento
-        </div>
-
-        <div className="grid grid-cols-1 gap-2">
-          {scheduleSlots.map((s: any) => {
-            const id = String(s.id);
-            const day = DAYS_OF_WEEK[Number(s.day) || 0] || 'Dia';
-            const start = safeString(s.start, '00:00');
-            const end = safeString(s.end, '00:00');
-            const selected = selectedSlotId === id;
-
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setSelectedSlotId(id)}
-                className={clsx(
-                  'w-full text-left rounded-2xl px-4 py-3 border transition-all',
-                  selected ? 'border-blue-500/40 bg-blue-500/10' : 'border-white/10 bg-white/5 hover:bg-white/7'
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="font-black text-[11px] uppercase tracking-[0.18em]">{day}</div>
-                  <div className="text-[10px] font-black text-white/60">{start} — {end}</div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {selected ? (
-          <button
-            type="button"
-            className="mt-3 w-full rounded-2xl px-4 py-4 font-black text-[11px] uppercase tracking-[0.2em] bg-white text-black hover:bg-zinc-200 transition-all active:scale-[0.99]"
-            onClick={() => {
-              if (isPreview) return;
-              trackEvent({ profileId: profile.id, clientId: profile.clientId, type: 'click', linkId: 'scheduling', source });
-              alert('Agendamento: integrar provider depois (placeholder).');
-            }}
-          >
-            Confirmar horário
-          </button>
-        ) : null}
       </div>
     );
   };
 
-  const renderPix = () => {
-    if (!hasPixAccess) return null;
-    const key = safeString(pix?.key, '');
-    if (!key) return null;
+  const handleBooking = () => {
+    if (profile.schedulingMode === 'external') {
+      if (profile.externalBookingUrl) window.open(profile.externalBookingUrl, '_blank');
+      return;
+    }
 
-    return (
-      <div className="mt-6">
-        <button
-          type="button"
-          onClick={openPixModal}
-          className="w-full rounded-2xl px-4 py-4 font-black text-[11px] uppercase tracking-[0.2em] bg-white/10 border border-white/15 hover:bg-white/15 transition-all active:scale-[0.99]"
-          style={{ fontFamily: buttonFont }}
-        >
-          Pagar via Pix
-        </button>
-      </div>
-    );
+    if (profile.schedulingMode === 'native' && selectedSlotId) {
+      const slot = profile.nativeSlots?.find(s => s.id === selectedSlotId);
+      if (slot && profile.bookingWhatsapp) {
+        const text = encodeURIComponent(
+          `Olá, gostaria de agendar um horário (${DAYS_OF_WEEK[slot.dayOfWeek]} das ${slot.startTime} às ${slot.endTime}) visto no seu perfil LinkFlow.`
+        );
+        window.open(`https://wa.me/${profile.bookingWhatsapp}?text=${text}`, '_blank');
+      }
+    }
   };
 
-  const pixModal = showWalletModal ? (
-    <div className="fixed inset-0 z-[999] bg-black/70 backdrop-blur-sm flex items-center justify-center p-6">
-      <div className="w-full max-w-sm bg-zinc-950 border border-white/10 rounded-[2.5rem] p-6 shadow-2xl">
-        <div className="flex items-center justify-between mb-4">
-          <div className="font-black uppercase tracking-[0.22em] text-[10px] text-white/60">Pix</div>
-          <button
-            type="button"
-            onClick={closePixModal}
-            className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 transition-all flex items-center justify-center"
-          >
-            <LucideIcons.X size={18} />
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <div className="text-white font-black text-xl">{displayName}</div>
-          <div className="text-white/60 text-sm font-semibold">Chave Pix:</div>
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 font-mono text-sm text-white break-all">
-            {safeString((pix as any)?.key, '')}
-          </div>
-
-          <button
-            type="button"
-            className="w-full rounded-2xl px-4 py-4 font-black text-[11px] uppercase tracking-[0.2em] bg-white text-black hover:bg-zinc-200 transition-all active:scale-[0.99]"
-            onClick={() => {
-              const k = safeString((pix as any)?.key, '');
-              if (!k) return;
-              navigator.clipboard?.writeText(k);
-            }}
-          >
-            Copiar chave
-          </button>
-        </div>
-      </div>
-    </div>
-  ) : null;
+  const activeSlots = (profile.nativeSlots || []).filter(s => s.isActive);
+  const avatarSrc = safeString(profile.avatarUrl, 'https://picsum.photos/seed/avatar/200/200');
 
   return (
-    <>
-      <div className={containerClass} style={bgStyle}>
-        <div className={innerClass}>
-          <div className="w-full" style={shellCardStyle}>
-            <div className="p-6">
-              {coverNode ? <div className="mb-5">{coverNode}</div> : null}
+    <div style={bgStyle} className="w-full flex flex-col items-center overflow-x-hidden no-scrollbar">
+      <div className="relative z-10 w-full px-4 flex flex-col items-center pt-8 pb-20">
+        <main className="w-full max-w-[520px] p-0 space-y-6" style={shellCardStyle}>
+          <div className="relative">
+            {/* ✅ Capa SEM opacity */}
+            {profile.coverUrl && (
+              <div className={clsx("w-full overflow-hidden relative", coverConfig.heightClass)}>
+                <img src={profile.coverUrl} className="w-full h-full object-cover" alt="Cover" />
+                <div className={clsx("absolute inset-0 bg-gradient-to-b", coverConfig.overlay)} />
+              </div>
+            )}
 
-              {headerNode}
-
-              <div className="mt-6" style={proCardStyle}>
-                <div className="p-5">
-                  {renderButtons()}
-                  {renderScheduling()}
-                  {renderPix()}
-
-                  <div className="mt-6 pt-5 border-t border-white/10 flex items-center gap-3">
-                    <button
-                      type="button"
-                      className="flex-1 rounded-2xl px-4 py-3 font-black text-[10px] uppercase tracking-[0.22em] bg-white/10 border border-white/15 hover:bg-white/15 transition-all active:scale-[0.99]"
-                      onClick={handleSaveContact}
-                      style={{ fontFamily: buttonFont }}
-                    >
-                      Salvar contato
-                    </button>
-
-                    <button
-                      type="button"
-                      className="w-12 h-12 rounded-2xl bg-white/10 border border-white/15 hover:bg-white/15 transition-all flex items-center justify-center active:scale-[0.99]"
-                      onClick={() => {
-                        if (isPreview) return;
-                        trackEvent({ profileId: profile.id, clientId: profile.clientId, type: 'click', linkId: 'share', source });
-                        navigator.clipboard?.writeText(window.location.href);
-                      }}
-                      title="Copiar link"
-                    >
-                      <LucideIcons.Share2 size={18} />
-                    </button>
-                  </div>
+            <div className={clsx("px-6 pb-6 relative", profile.coverUrl ? "-mt-12" : "pt-8")}>
+              <div className={clsx("flex gap-4", isLeft ? "flex-row items-end text-left" : "flex-col items-center text-center")}>
+                <img
+                  src={avatarSrc}
+                  className={clsx(
+                    "rounded-full border-4 object-cover shadow-2xl bg-zinc-900",
+                    isBigAvatar ? "w-40 h-40" : "w-24 h-24"
+                  )}
+                  style={{ borderColor: theme.cardBg }}
+                  alt={profile.displayName || 'Perfil'}
+                />
+                <div className="flex-1 min-w-0 pb-1">
+                  <h1 className="text-2xl font-black tracking-tight leading-tight" style={{ fontFamily: headingFont }}>
+                    {profile.displayName}
+                  </h1>
+                  <p className="text-sm opacity-80 mt-1 font-medium">{profile.headline}</p>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <div className="mt-5 text-center text-white/35 text-[10px] font-black uppercase tracking-[0.22em]">
-                Powered by LinkFlow
+          <div className="px-6 pb-6 space-y-6">
+            <div className="flex items-center gap-3 w-full">
+              <button
+                onClick={handleSaveContact}
+                className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
+                style={{ borderColor: theme.border, color: theme.text }}
+              >
+                <LucideIcons.UserPlus size={14} />
+                Salvar
+              </button>
+
+              <button
+                onClick={() => setShowWalletModal(true)}
+                className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
+                style={{ borderColor: theme.border, color: theme.text }}
+              >
+                <LucideIcons.WalletCards size={14} />
+                Wallet
+              </button>
+            </div>
+
+            {profile.bioShort && (
+              <p className={clsx("text-sm leading-relaxed opacity-70", isLeft ? "text-left" : "text-center")}>
+                {profile.bioShort}
+              </p>
+            )}
+
+            {renderLinks()}
+
+            {hasSchedulingAccess && profile.enableScheduling && (
+              <div className="w-full p-6" style={proCardStyle}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Agenda</div>
+                  <LucideIcons.Calendar size={16} className="opacity-40" />
+                </div>
+
+                {profile.schedulingMode === 'native' ? (
+                  <div className="space-y-4">
+                    {activeSlots.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-2">
+                        {activeSlots.map((slot) => (
+                          <button
+                            key={slot.id}
+                            onClick={() => setSelectedSlotId(slot.id)}
+                            className={clsx(
+                              "flex items-center justify-between p-3 rounded-xl border text-[11px] font-bold transition-all",
+                              selectedSlotId === slot.id
+                                ? "bg-white text-black border-white"
+                                : "bg-black/20 border-white/5 text-white/70"
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <LucideIcons.Clock size={12} />
+                              {DAYS_OF_WEEK[slot.dayOfWeek]}
+                            </div>
+                            <div>{slot.startTime} - {slot.endTime}</div>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-white/5 border border-dashed border-white/10 rounded-xl text-center text-[10px] opacity-40">
+                        Nenhum horário disponível.
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleBooking}
+                      disabled={!selectedSlotId}
+                      className="w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-30"
+                      style={{ background: theme.primary, color: primaryTextOnPrimary }}
+                    >
+                      Confirmar no WhatsApp
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-xs font-medium text-center opacity-60 mb-2">
+                      Agende um horário exclusivo comigo.
+                    </div>
+                    <button
+                      onClick={handleBooking}
+                      className="w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+                      style={{ background: theme.primary, color: primaryTextOnPrimary }}
+                    >
+                      Abrir Agenda Externa
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {hasPixAccess && profile.pixKey && (
+              <div className="w-full p-6" style={proCardStyle}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Pix</div>
+                    <div className="font-bold text-sm truncate">{profile.pixKey}</div>
+                  </div>
+                  <button
+                    onClick={() => navigator.clipboard.writeText(profile.pixKey || '')}
+                    className="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest"
+                    style={{ background: theme.primary, color: primaryTextOnPrimary }}
+                  >
+                    Copiar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {!profile.hideBranding && (
+            <footer className="py-6 border-t border-white/5 flex flex-col items-center gap-2">
+              <a href="/" target="_blank" className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity">
+                <img src="/logo.png" className="h-5" alt="LinkFlow" />
+                <span className="text-[10px] font-black uppercase tracking-widest">LinkFlow</span>
+              </a>
+            </footer>
+          )}
+        </main>
+      </div>
+
+      {/* Wallet Modal (MVP) — mantido igual ao seu */}
+      {showWalletModal && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-900 border border-white/10 w-full max-w-sm rounded-[2rem] p-8 relative animate-in slide-in-from-bottom-10 duration-300">
+            <button
+              onClick={() => setShowWalletModal(false)}
+              className="absolute top-4 right-4 p-2 bg-white/5 rounded-full text-zinc-400 hover:text-white"
+              type="button"
+              aria-label="Fechar"
+            >
+              <LucideIcons.X size={16} />
+            </button>
+
+            <div className="flex flex-col items-center text-center space-y-6">
+              <div className="w-16 h-16 bg-blue-600/10 rounded-[1.5rem] flex items-center justify-center text-blue-500 mb-2">
+                <LucideIcons.WalletCards size={32} />
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-white">Cartão Digital</h3>
+                <p className="text-zinc-400 text-xs leading-relaxed px-2">
+                  Salve este perfil para acesso rápido.
+                </p>
+              </div>
+
+              <div className="w-full space-y-3">
+                <button
+                  onClick={() => { handleSaveContact(); setShowWalletModal(false); }}
+                  className="w-full py-4 bg-white text-black rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  type="button"
+                >
+                  <LucideIcons.Download size={16} />
+                  Baixar Arquivo vCard
+                </button>
+                <div className="p-4 bg-white/5 rounded-xl border border-white/5 text-center">
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Dica Pro</p>
+                  <p className="text-xs text-zinc-300">
+                    Use "Adicionar à Tela de Início" no navegador do seu celular para instalar como App.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      {pixModal}
-    </>
+      )}
+    </div>
   );
 };
 
