@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Shield, Lock, Loader2, Mail, Eye, EyeOff, ChevronRight, UserPlus } from 'lucide-react';
@@ -65,9 +64,9 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-6 relative overflow-hidden">
       {/* Elementos Visuais de Background */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px]"></div>
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
       </div>
 
       <div className="w-full max-w-md z-10 animate-in fade-in zoom-in-95 duration-700">
@@ -91,7 +90,7 @@ const LoginPage: React.FC = () => {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">E-mail de Acesso</label>
               <div className="relative group">
-                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors">
+                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors pointer-events-none">
                   <Mail size={18} />
                 </div>
                 <input 
@@ -108,7 +107,7 @@ const LoginPage: React.FC = () => {
             <div className="space-y-2">
               <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Senha</label>
               <div className="relative group">
-                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-purple-500 transition-colors">
+                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-purple-500 transition-colors pointer-events-none">
                   <Lock size={18} />
                 </div>
                 <input 
@@ -122,7 +121,7 @@ const LoginPage: React.FC = () => {
                 <button 
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors"
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors z-20"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -146,7 +145,7 @@ const LoginPage: React.FC = () => {
           </form>
 
           <div className="mt-8 pt-8 border-t border-white/5 text-center">
-             <div className="mb-4 text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center justify-center gap-2">
+             <div className="mb-4 text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center justify-center gap-2 pointer-events-none">
                 <Shield size={12} />
                 Sistema Seguro & Criptografado
              </div>
@@ -158,17 +157,6 @@ const LoginPage: React.FC = () => {
                </Link>
              </p>
           </div>
-        </div>
-
-        <div className="mt-10 text-center space-y-4 opacity-40 hover:opacity-100 transition-opacity">
-          <p className="text-zinc-600 text-[10px] font-black uppercase tracking-[0.2em] leading-relaxed">
-            Dica Admin Master:<br />
-            {ADMIN_MASTER.email} / {ADMIN_MASTER.password}
-          </p>
-          <p className="text-zinc-600 text-[10px] font-black uppercase tracking-[0.2em]">
-            Dica Cliente Demo:<br />
-            israel.cruzeiro@gmail.com / 602387
-          </p>
         </div>
       </div>
     </div>

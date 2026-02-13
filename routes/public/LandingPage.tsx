@@ -120,7 +120,6 @@ const LandingPage: React.FC = () => {
           </div>
 
           <div className="space-y-6 relative">
-            {/* Title Glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-600/10 blur-[100px] pointer-events-none rounded-full" />
             
             <h1 className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85] text-white relative z-10">
@@ -148,13 +147,12 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Hero Image / Mockup */}
         <div className="mt-24 relative w-full max-w-5xl mx-auto group perspective-1000">
-          <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20 blur-[100px] opacity-30 group-hover:opacity-50 transition-all duration-1000" />
+          <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20 blur-[100px] opacity-30 group-hover:opacity-50 transition-all duration-1000 pointer-events-none" />
           <div className="bg-zinc-900/40 border border-white/10 rounded-[3rem] p-4 backdrop-blur-3xl shadow-2xl relative z-10 transform-gpu group-hover:rotate-x-2 transition-all duration-1000">
              <div className="bg-black/80 rounded-[2.5rem] overflow-hidden aspect-video flex items-center justify-center relative">
-                <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/5 to-transparent" />
-                <div className="text-zinc-800 font-black text-4xl opacity-20 uppercase tracking-[1em]">PageFlow Cloud</div>
+                <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/5 to-transparent pointer-events-none" />
+                <div className="text-zinc-800 font-black text-4xl opacity-20 uppercase tracking-[1em] pointer-events-none">PageFlow Cloud</div>
                 {/* iPhone Frame Placeholder */}
                 <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 w-72 h-[500px] bg-black border-[8px] border-zinc-800 rounded-[3.5rem] shadow-2xl overflow-hidden hidden md:block">
                    <div className="w-full h-full bg-gradient-to-b from-blue-900/20 to-black p-4">

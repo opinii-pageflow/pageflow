@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import { getStorage } from '../../lib/storage';
 import { 
@@ -14,7 +13,6 @@ import {
   ChevronRight,
   Database,
   Cpu,
-  // Fix: Added missing icon import
   Settings
 } from 'lucide-react';
 import TopBar from '../../components/common/TopBar';
@@ -52,10 +50,10 @@ const AdminDashboard: React.FC = () => {
       <TopBar title="Painel de Controle Master" />
       
       {/* Background Grid & Glows */}
-      <div className="fixed inset-0 pointer-events-none opacity-20">
+      <div className="fixed inset-0 pointer-events-none opacity-20 z-0">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
       </div>
-      <div className="fixed top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="fixed top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
 
       <main className="max-w-7xl mx-auto p-6 lg:p-10 pt-48 pb-32 relative z-10">
         
@@ -64,14 +62,14 @@ const AdminDashboard: React.FC = () => {
           className="mb-16 space-y-4 animate-in fade-in slide-in-from-left duration-1000"
           style={{ transform: `translate3d(${mousePos.x}px, ${mousePos.y}px, 0)`, transition: 'transform 0.2s ease-out' }}
         >
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full backdrop-blur-md">
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-full backdrop-blur-md pointer-events-none">
             <ShieldCheck size={14} className="text-blue-500" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-400">Ambiente Master Root</span>
           </div>
-          <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-none">
+          <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-none pointer-events-none">
             Operações <span className="text-zinc-600">Globais</span>
           </h1>
-          <p className="text-zinc-500 text-lg md:text-xl font-medium max-w-2xl">
+          <p className="text-zinc-500 text-lg md:text-xl font-medium max-w-2xl pointer-events-none">
             Monitoramento de infraestrutura SaaS, gestão de inquilinos e telemetria de performance em tempo real.
           </p>
         </header>
@@ -80,7 +78,7 @@ const AdminDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {stats.map((stat, i) => (
             <div key={i} className="bg-zinc-900/40 backdrop-blur-xl border border-white/5 p-8 rounded-[2.5rem] shadow-2xl hover:border-white/10 transition-all group overflow-hidden relative">
-              <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-10 transition-opacity">
+              <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-10 transition-opacity pointer-events-none">
                 <stat.icon size={120} />
               </div>
               <div className="flex items-center justify-between mb-8">
@@ -113,7 +111,7 @@ const AdminDashboard: React.FC = () => {
               {data.clients.slice(-4).reverse().map(client => (
                 <div key={client.id} className="flex flex-col sm:flex-row items-center justify-between p-6 bg-black/40 rounded-[2rem] border border-white/5 hover:bg-zinc-800/20 transition-all group gap-6">
                   <div className="flex items-center gap-6 w-full sm:w-auto">
-                    <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center font-black text-2xl text-zinc-400 border border-white/10 group-hover:scale-105 transition-transform">{client.name[0]}</div>
+                    <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center font-black text-2xl text-zinc-400 border border-white/10 group-hover:scale-105 transition-transform pointer-events-none">{client.name[0]}</div>
                     <div className="min-w-0">
                       <div className="font-bold text-lg text-white truncate">{client.name}</div>
                       <div className="flex items-center gap-2">
@@ -142,11 +140,11 @@ const AdminDashboard: React.FC = () => {
           {/* Infrastructure Health Widget */}
           <div className="lg:col-span-4 space-y-6">
              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[3.5rem] p-10 shadow-2xl shadow-blue-600/20 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:rotate-12 transition-transform duration-1000">
+                <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:rotate-12 transition-transform duration-1000 pointer-events-none">
                   <Server size={140} />
                 </div>
                 <div className="relative z-10 space-y-6">
-                  <div className="bg-white/20 w-14 h-14 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                  <div className="bg-white/20 w-14 h-14 rounded-2xl flex items-center justify-center backdrop-blur-md pointer-events-none">
                     <Database size={28} />
                   </div>
                   <div>
@@ -167,7 +165,7 @@ const AdminDashboard: React.FC = () => {
 
              <div className="bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3.5rem] p-10 flex flex-col justify-between shadow-2xl h-[calc(100%-250px)]">
                 <div className="space-y-4">
-                  <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-orange-500">
+                  <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-orange-500 pointer-events-none">
                     <Cpu size={24} />
                   </div>
                   <h4 className="text-xl font-black tracking-tight">Recursos do Host</h4>
