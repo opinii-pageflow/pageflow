@@ -10,7 +10,7 @@ export const ADMIN_MASTER = {
   email: 'israel.souza@ent.app.br',
   password: '602387',
   name: 'Israel Souza',
-  id: 'admin-master'
+  id: 'admin-master',
 };
 
 export const INITIAL_DATA: AppData = {
@@ -29,7 +29,7 @@ export const INITIAL_DATA: AppData = {
       maxProfiles: 3,
       createdAt: new Date().toISOString(),
       isActive: true,
-    }
+    },
   ],
   profiles: [
     {
@@ -51,7 +51,7 @@ export const INITIAL_DATA: AppData = {
       fonts: {
         headingFont: 'Poppins',
         bodyFont: 'Inter',
-        buttonFont: 'Inter'
+        buttonFont: 'Inter',
       },
       buttons: [
         { id: 'b1', profileId: 'profile-1', type: 'whatsapp', label: 'WhatsApp', value: '5511999999999', enabled: true, visibility: 'public', pinned: true, sortOrder: 0 },
@@ -71,8 +71,8 @@ export const INITIAL_DATA: AppData = {
           ctaLabel: 'Contratar',
           ctaLink: 'https://wa.me/5511999999999',
           sortOrder: 0,
-          isActive: true
-        }
+          isActive: true,
+        },
       ],
       portfolioItems: [
         { id: 'p1', profileId: 'profile-1', imageUrl: 'https://picsum.photos/seed/p1/400/400', sortOrder: 0, isActive: true },
@@ -80,17 +80,17 @@ export const INITIAL_DATA: AppData = {
         { id: 'p3', profileId: 'profile-1', imageUrl: 'https://picsum.photos/seed/p3/400/400', sortOrder: 2, isActive: true },
       ],
       youtubeVideos: [
-        { id: 'v1', profileId: 'profile-1', title: 'Como criar seu SaaS', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', sortOrder: 0, isActive: true }
+        { id: 'v1', profileId: 'profile-1', title: 'Como criar seu SaaS', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', sortOrder: 0, isActive: true },
       ],
       enableLeadCapture: true,
       enableNps: true,
-      hideBranding: false
-    }
+      hideBranding: false,
+    },
   ],
   events: [],
   leads: [],
   nps: [],
-  currentUser: null
+  currentUser: null,
 };
 
 export const getStorage = (): AppData => {
@@ -99,41 +99,71 @@ export const getStorage = (): AppData => {
     saveStorage(INITIAL_DATA);
     return INITIAL_DATA;
   }
+
   try {
     const data = JSON.parse(stored) as AppData;
-    
+
+    // ✅ garante arrays base
     if (!Array.isArray((data as any).leads)) (data as any).leads = [];
     if (!Array.isArray((data as any).nps)) (data as any).nps = [];
+    if (!Array.isArray((data as any).profiles)) (data as any).profiles = [];
+    if (!Array.isArray((data as any).clients)) (data as any).clients = [];
+    if (!Array.isArray((data as any).events)) (data as any).events = [];
 
-    if (!(data as any).landing) {
-      (data as any).landing = { showcaseProfileIds: [] };
-    }
-    if (!Array.isArray((data as any).landing.showcaseProfileIds)) {
-      (data as any).landing.showcaseProfileIds = [];
-    }
+    // ✅ landing defaults
+    if (!(data as any).landing) (data as any).landing = { showcaseProfileIds: [] };
+    if (!Array.isArray((data as any).landing.showcaseProfileIds)) (data as any).landing.showcaseProfileIds = [];
+
     const ids = (data as any).landing.showcaseProfileIds as string[];
     if (ids.length < 2) {
       const filled = [...ids];
       while (filled.length < 2) filled.push('');
       (data as any).landing.showcaseProfileIds = filled;
     }
+
     const finalIds = ((data as any).landing.showcaseProfileIds as string[]).slice(0, 2);
     if (finalIds.every(v => !v)) {
-      const top2 = (data.profiles || []).slice(0, 2).map(p => p.id);
+      const top2 = (data.profiles || []).slice(0, 2).map(p => (p as any).id);
       (data as any).landing.showcaseProfileIds = [top2[0] || '', top2[1] || ''];
     }
 
+    // ✅ migrações por profile (blindagem máxima)
     (data.profiles || []).forEach((p: any) => {
       // Migration for profileType
       if (!p.profileType) p.profileType = 'personal';
-      
+
+      // layout default
+      if (!p.layoutTemplate || typeof p.layoutTemplate !== 'string') p.layoutTemplate = 'Minimal Card';
+
+      // theme default
+      if (!p.theme) p.theme = themePresets['Azul Premium'];
+
+      // fonts default
+      if (!p.fonts) {
+        p.fonts = { headingFont: 'Poppins', bodyFont: 'Inter', buttonFont: 'Inter' };
+      } else {
+        if (!p.fonts.headingFont) p.fonts.headingFont = 'Poppins';
+        if (!p.fonts.bodyFont) p.fonts.bodyFont = 'Inter';
+        if (!p.fonts.buttonFont) p.fonts.buttonFont = p.fonts.bodyFont || 'Inter';
+      }
+
+      // arrays
       if (p.pixKey === undefined) p.pixKey = '';
+      if (!Array.isArray(p.buttons)) p.buttons = [];
       if (!Array.isArray(p.catalogItems)) p.catalogItems = [];
       if (!Array.isArray(p.portfolioItems)) p.portfolioItems = [];
       if (!Array.isArray(p.youtubeVideos)) p.youtubeVideos = [];
+      if (!Array.isArray(p.nativeSlots)) p.nativeSlots = [];
+
+      // toggles
       if (p.enableLeadCapture === undefined) p.enableLeadCapture = true;
       if (p.enableNps === undefined) p.enableNps = true;
       if (p.hideBranding === undefined) p.hideBranding = false;
+      if (p.enableScheduling === undefined) p.enableScheduling = false;
+
+      // timestamps
+      if (!p.createdAt) p.createdAt = new Date().toISOString();
+      if (!p.updatedAt) p.updatedAt = new Date().toISOString();
     });
 
     return data;
@@ -175,7 +205,7 @@ export const copyStyleToClipboard = (profile: Profile) => {
     theme: profile.theme,
     fonts: profile.fonts,
     layoutTemplate: profile.layoutTemplate,
-    sourceProfileId: profile.id
+    sourceProfileId: profile.id,
   };
   localStorage.setItem(CLIPBOARD_KEY, JSON.stringify(config));
 };
