@@ -59,6 +59,14 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
 
+  // Layout Logic
+  const layout = profile.layoutTemplate || 'Minimal Card';
+  const isGrid = ['Button Grid', 'Icon Grid', 'Creator', 'Magazine'].includes(layout);
+  const isLeft = ['Avatar Left', 'Corporate', 'Split Header', 'Magazine'].includes(layout);
+  const isCoverFocused = ['Cover Clean', 'Hero Banner', 'Magazine'].includes(layout);
+  const isBigAvatar = ['Big Avatar'].includes(layout);
+  
+  // Font Stacks
   const headingFont = normalizeFontStack(fonts?.headingFont || 'Poppins');
   const bodyFont = normalizeFontStack(fonts?.bodyFont || 'Inter');
   const buttonFont = normalizeFontStack(fonts?.buttonFont || fonts?.bodyFont || 'Inter');
@@ -89,7 +97,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   };
 
   const proCardStyle: React.CSSProperties = {
-    borderRadius: `calc(${theme.radius} + 18px)`,
+    borderRadius: `calc(${theme.radius} + 6px)`,
     border: `1px solid ${theme.border}`,
     background: theme.cardBg,
     boxShadow: theme.shadow,
@@ -112,19 +120,16 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   };
 
   const handleSaveContact = () => {
-    // 1. Extrair dados
     const name = profile.displayName || 'Contato LinkFlow';
     const headline = profile.headline || '';
     const url = window.location.origin + '/#/u/' + profile.slug;
     
-    // Tentar encontrar telefone e email nos botões
     const phoneBtn = profile.buttons.find(b => b.enabled && (b.type === 'whatsapp' || b.type === 'phone' || b.type === 'mobile'));
     const emailBtn = profile.buttons.find(b => b.enabled && b.type === 'email');
     
     const phone = phoneBtn ? phoneBtn.value.replace(/\D/g, '') : '';
     const email = emailBtn ? emailBtn.value : '';
 
-    // 2. Construir vCard content
     let vCard = `BEGIN:VCARD
 VERSION:3.0
 FN:${name}
@@ -142,7 +147,6 @@ NOTE:Perfil digital criado com LinkFlow.
 
     vCard += `END:VCARD`;
 
-    // 3. Trigger download
     const blob = new Blob([vCard], { type: 'text/vcard;charset=utf-8' });
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
@@ -158,12 +162,18 @@ NOTE:Perfil digital criado com LinkFlow.
       fontFamily: buttonFont,
       transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
       border: `1px solid ${theme.border}`,
-      padding: '0.95rem 1.15rem',
+      padding: isGrid ? '1.5rem 1rem' : '0.95rem 1.15rem',
       width: '100%',
       backgroundColor: theme.buttonStyle === 'solid' ? theme.primary : theme.cardBg,
       color: theme.buttonStyle === 'solid' ? primaryTextOnPrimary : theme.text,
       fontSize: '0.92rem',
       fontWeight: 800,
+      display: 'flex',
+      flexDirection: isGrid ? 'column' : 'row',
+      alignItems: 'center',
+      justifyContent: isGrid ? 'center' : 'space-between',
+      gap: isGrid ? '0.75rem' : '0.5rem',
+      textAlign: 'center',
     };
     return base;
   };
@@ -171,7 +181,7 @@ NOTE:Perfil digital criado com LinkFlow.
   const renderLinks = () => {
     const activeButtons = (buttons || []).filter(b => b.enabled);
     return (
-      <div className="w-full space-y-3">
+      <div className={clsx(isGrid ? "grid grid-cols-2 gap-3" : "flex flex-col gap-3", "w-full")}>
         {activeButtons.map((btn, idx) => (
           <a
             key={btn.id}
@@ -180,10 +190,11 @@ NOTE:Perfil digital criado com LinkFlow.
             rel="noopener noreferrer"
             onClick={() => handleLinkClick(btn.id)}
             style={getButtonStyle(btn, idx)}
-            className="group flex items-center justify-between hover:translate-x-1"
+            className="group hover:translate-y-[-2px]"
           >
-            <div className="font-black truncate">{btn.label}</div>
-            <LucideIcons.ChevronRight size={12} className="opacity-40" />
+            {/* Ícone opcional se quiser implementar no grid */}
+            <div className="font-black truncate w-full">{btn.label}</div>
+            {!isGrid && <LucideIcons.ChevronRight size={12} className="opacity-40" />}
           </a>
         ))}
       </div>
@@ -209,117 +220,160 @@ NOTE:Perfil digital criado com LinkFlow.
 
   return (
     <div style={bgStyle} className="w-full flex flex-col items-center overflow-x-hidden no-scrollbar">
-      <div className="relative z-10 w-full px-4 flex flex-col items-center pt-8">
-        <main className="w-full max-w-[520px] p-6 space-y-6" style={shellCardStyle}>
-          <header className="flex flex-col items-center text-center">
-            <img src={profile.avatarUrl} className="w-24 h-24 rounded-full border-2 mb-4 object-cover" style={{ borderColor: theme.border }} alt="" />
-            <h1 className="text-2xl font-black" style={{ fontFamily: headingFont }}>{profile.displayName}</h1>
-            <p className="text-sm opacity-70 mt-1 max-w-[80%]">{profile.headline}</p>
-          </header>
+      <div className="relative z-10 w-full px-4 flex flex-col items-center pt-8 pb-20">
+        <main className="w-full max-w-[520px] p-0 space-y-6" style={shellCardStyle}>
+          
+          {/* Header Area */}
+          <div className="relative">
+            {/* Capa */}
+            {profile.coverUrl && (
+              <div className={clsx("w-full overflow-hidden", isCoverFocused ? "h-48" : "h-32 opacity-40")}>
+                <img src={profile.coverUrl} className="w-full h-full object-cover" alt="Cover" />
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60"></div>
+              </div>
+            )}
 
-          {/* Ações de Contato / Wallet */}
-          <div className="flex items-center gap-3 w-full">
-            <button 
-              onClick={handleSaveContact}
-              className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
-              style={{ borderColor: theme.border, color: theme.text }}
-            >
-              <LucideIcons.UserPlus size={14} />
-              Salvar Contato
-            </button>
-            <button 
-              onClick={() => setShowWalletModal(true)}
-              className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
-              style={{ borderColor: theme.border, color: theme.text }}
-            >
-              <LucideIcons.WalletCards size={14} />
-              Wallet
-            </button>
+            {/* Avatar & Infos */}
+            <div className={clsx("px-6 pb-6 relative", profile.coverUrl ? "-mt-12" : "pt-8")}>
+              <div className={clsx(
+                "flex gap-4",
+                isLeft ? "flex-row items-end text-left" : "flex-col items-center text-center"
+              )}>
+                <img 
+                  src={profile.avatarUrl} 
+                  className={clsx(
+                    "rounded-full border-4 object-cover shadow-2xl bg-zinc-900",
+                    isBigAvatar ? "w-40 h-40" : "w-24 h-24"
+                  )}
+                  style={{ borderColor: theme.cardBg }} 
+                  alt={profile.displayName} 
+                />
+                <div className="flex-1 min-w-0 pb-1">
+                  <h1 className="text-2xl font-black tracking-tight leading-tight" style={{ fontFamily: headingFont }}>{profile.displayName}</h1>
+                  <p className="text-sm opacity-80 mt-1 font-medium">{profile.headline}</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {renderLinks()}
+          <div className="px-6 pb-6 space-y-6">
+            
+            {/* Ações de Contato / Wallet */}
+            <div className="flex items-center gap-3 w-full">
+              <button 
+                onClick={handleSaveContact}
+                className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
+                style={{ borderColor: theme.border, color: theme.text }}
+              >
+                <LucideIcons.UserPlus size={14} />
+                Salvar
+              </button>
+              <button 
+                onClick={() => setShowWalletModal(true)}
+                className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
+                style={{ borderColor: theme.border, color: theme.text }}
+              >
+                <LucideIcons.WalletCards size={14} />
+                Wallet
+              </button>
+            </div>
 
-          {/* AGENDAMENTO */}
-          {hasSchedulingAccess && profile.enableScheduling && (
-            <div className="mt-6 w-full p-6" style={proCardStyle}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Agenda e Horários</div>
-                <LucideIcons.Calendar size={16} className="opacity-40" />
+            {/* Bio Short se existir */}
+            {profile.bioShort && (
+              <p className={clsx("text-sm leading-relaxed opacity-70", isLeft ? "text-left" : "text-center")}>
+                {profile.bioShort}
+              </p>
+            )}
+
+            {renderLinks()}
+
+            {/* AGENDAMENTO */}
+            {hasSchedulingAccess && profile.enableScheduling && (
+              <div className="w-full p-6" style={proCardStyle}>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Agenda</div>
+                  <LucideIcons.Calendar size={16} className="opacity-40" />
+                </div>
+
+                {profile.schedulingMode === 'native' ? (
+                  <div className="space-y-4">
+                    {activeSlots.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-2">
+                        {activeSlots.map((slot) => (
+                          <button
+                            key={slot.id}
+                            onClick={() => setSelectedSlotId(slot.id)}
+                            className={clsx(
+                              "flex items-center justify-between p-3 rounded-xl border text-[11px] font-bold transition-all",
+                              selectedSlotId === slot.id ? "bg-white text-black border-white" : "bg-black/20 border-white/5 text-white/70"
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <LucideIcons.Clock size={12} />
+                              {DAYS_OF_WEEK[slot.dayOfWeek]}
+                            </div>
+                            <div>{slot.startTime} - {slot.endTime}</div>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-white/5 border border-dashed border-white/10 rounded-xl text-center text-[10px] opacity-40">
+                        Nenhum horário disponível.
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleBooking}
+                      disabled={!selectedSlotId}
+                      className="w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-30"
+                      style={{ background: theme.primary, color: primaryTextOnPrimary }}
+                    >
+                      Confirmar no WhatsApp
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-xs font-medium text-center opacity-60 mb-2">Agende um horário exclusivo comigo.</div>
+                    <button
+                      onClick={handleBooking}
+                      className="w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+                      style={{ background: theme.primary, color: primaryTextOnPrimary }}
+                    >
+                      Abrir Agenda Externa
+                    </button>
+                  </div>
+                )}
               </div>
+            )}
 
-              {profile.schedulingMode === 'native' ? (
-                <div className="space-y-4">
-                  {activeSlots.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-2">
-                      {activeSlots.map((slot) => (
-                        <button
-                          key={slot.id}
-                          onClick={() => setSelectedSlotId(slot.id)}
-                          className={clsx(
-                            "flex items-center justify-between p-3 rounded-xl border text-[11px] font-bold transition-all",
-                            selectedSlotId === slot.id ? "bg-white text-black border-white" : "bg-black/20 border-white/5 text-white/70"
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            <LucideIcons.Clock size={12} />
-                            {DAYS_OF_WEEK[slot.dayOfWeek]}
-                          </div>
-                          <div>{slot.startTime} - {slot.endTime}</div>
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-4 bg-white/5 border border-dashed border-white/10 rounded-xl text-center text-[10px] opacity-40">
-                      Nenhum horário disponível para agendamento.
-                    </div>
-                  )}
-
+            {/* PIX */}
+            {hasPixAccess && profile.pixKey && (
+              <div className="w-full p-6" style={proCardStyle}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Pix</div>
+                    <div className="font-bold text-sm truncate">{profile.pixKey}</div>
+                  </div>
                   <button
-                    onClick={handleBooking}
-                    disabled={!selectedSlotId}
-                    className="w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-30"
+                    onClick={() => navigator.clipboard.writeText(profile.pixKey || '')}
+                    className="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest"
                     style={{ background: theme.primary, color: primaryTextOnPrimary }}
                   >
-                    Confirmar no WhatsApp
+                    Copiar
                   </button>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="text-xs font-medium text-center opacity-60 mb-2">Selecione uma data para agendar.</div>
-                  <button
-                    onClick={handleBooking}
-                    className="w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
-                    style={{ background: theme.primary, color: primaryTextOnPrimary }}
-                  >
-                    Abrir Agenda Externa
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* PIX */}
-          {hasPixAccess && profile.pixKey && (
-            <div className="mt-6 w-full p-6" style={proCardStyle}>
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Pix</div>
-                  <div className="font-bold text-sm truncate">{profile.pixKey}</div>
-                </div>
-                <button
-                  onClick={() => navigator.clipboard.writeText(profile.pixKey || '')}
-                  className="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest"
-                  style={{ background: theme.primary, color: primaryTextOnPrimary }}
-                >
-                  Copiar
-                </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          <footer className="mt-8 pt-4 border-t border-white/5 flex flex-col items-center">
-            <img src="/logo.png" className="h-8 opacity-40" alt="PageFlow" />
-          </footer>
+          {!profile.hideBranding && (
+            <footer className="py-6 border-t border-white/5 flex flex-col items-center gap-2">
+              <a href="/" target="_blank" className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity">
+                <img src="/logo.png" className="h-5" alt="LinkFlow" />
+                <span className="text-[10px] font-black uppercase tracking-widest">LinkFlow</span>
+              </a>
+            </footer>
+          )}
         </main>
       </div>
 
@@ -342,7 +396,7 @@ NOTE:Perfil digital criado com LinkFlow.
               <div className="space-y-2">
                 <h3 className="text-xl font-black text-white">Cartão Digital</h3>
                 <p className="text-zinc-400 text-xs leading-relaxed px-2">
-                  A integração nativa com Apple Wallet e Google Pay está em desenvolvimento. Por enquanto, utilize as opções abaixo para salvar o contato.
+                  Salve este perfil para acesso rápido.
                 </p>
               </div>
 
@@ -357,11 +411,7 @@ NOTE:Perfil digital criado com LinkFlow.
                 <div className="p-4 bg-white/5 rounded-xl border border-white/5 text-center">
                   <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Dica Pro</p>
                   <p className="text-xs text-zinc-300">
-                    No iPhone/Android, use a opção 
-                    <span className="inline-flex items-center gap-1 mx-1 bg-white/10 px-1.5 py-0.5 rounded text-white">
-                      <LucideIcons.Share size={10} /> Adicionar à Tela de Início
-                    </span>
-                    para criar um app do perfil.
+                    Use "Adicionar à Tela de Início" no navegador do seu celular para instalar como App.
                   </p>
                 </div>
               </div>
