@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
-import { Profile, AnalyticsSource, PlanType, SchedulingSlot } from '../../types';
+import React, { useMemo, useState } from 'react';
+import { Profile, AnalyticsSource, PlanType } from '../../types';
 import { formatLink } from '../../lib/linkHelpers';
 import { trackEvent } from '../../lib/analytics';
 import { canAccessFeature } from '../../lib/permissions';
@@ -17,7 +17,8 @@ interface Props {
 
 const DAYS_OF_WEEK = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-const safeString = (v: any, fallback: string) => (typeof v === 'string' && v.trim() ? v : fallback);
+const safeString = (v: any, fallback: string) =>
+  typeof v === 'string' && v.trim() ? v : fallback;
 
 const normalizeFontStack = (font: string) => {
   const name = safeString(font, 'Inter');
@@ -57,13 +58,15 @@ const getIcon = (type: string) => {
     case 'instagram': return LucideIcons.Instagram;
     case 'linkedin': return LucideIcons.Linkedin;
     case 'website': return LucideIcons.Globe;
-    case 'phone': case 'mobile': return LucideIcons.Phone;
+    case 'phone':
+    case 'mobile': return LucideIcons.Phone;
     case 'email': return LucideIcons.Mail;
     case 'maps': return LucideIcons.MapPin;
     case 'youtube': return LucideIcons.Youtube;
     case 'github': return LucideIcons.Github;
     case 'facebook': return LucideIcons.Facebook;
-    case 'twitter': case 'x': return LucideIcons.Twitter;
+    case 'twitter':
+    case 'x': return LucideIcons.Twitter;
     case 'tiktok': return LucideIcons.Music2;
     case 'telegram': return LucideIcons.Send;
     case 'threads': return LucideIcons.AtSign;
@@ -74,7 +77,28 @@ const getIcon = (type: string) => {
 };
 
 const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan, source = 'direct' }) => {
-  const { theme, fonts, buttons } = profile;
+  const theme = (profile as any)?.theme || {
+    primary: '#3b82f6',
+    text: '#ffffff',
+    border: 'rgba(255,255,255,0.10)',
+    cardBg: 'rgba(0,0,0,0.30)',
+    shadow: '0 12px 40px rgba(0,0,0,0.35)',
+    radius: '18px',
+    buttonStyle: 'glass',
+    backgroundType: 'color',
+    backgroundValue: '#0A0A0A',
+    backgroundDirection: 'to bottom',
+    backgroundValueSecondary: '#0A0A0A',
+  };
+
+  const fonts = (profile as any)?.fonts || {
+    headingFont: 'Poppins',
+    bodyFont: 'Inter',
+    buttonFont: 'Inter',
+  };
+
+  const buttons = Array.isArray((profile as any)?.buttons) ? (profile as any).buttons : [];
+
   const hasSchedulingAccess = canAccessFeature(clientPlan, 'scheduling');
   const hasPixAccess = canAccessFeature(clientPlan, 'pix');
 
@@ -82,12 +106,12 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   const [showWalletModal, setShowWalletModal] = useState(false);
 
   // Layout Logic
-  const layout = profile.layoutTemplate || 'Minimal Card';
-  const isGrid = ['Button Grid', 'Icon Grid', 'Creator', 'Magazine'].includes(layout);
-  const isLeft = ['Avatar Left', 'Corporate', 'Split Header', 'Magazine'].includes(layout);
-  const isCoverFocused = ['Cover Clean', 'Hero Banner', 'Magazine'].includes(layout);
+  const layout = (profile.layoutTemplate || 'Minimal Card').trim();
+  const isGrid = ['Button Grid', 'Icon Grid', 'Creator', 'Magazine', 'Two Columns'].includes(layout);
+  const isLeft = ['Avatar Left', 'Corporate', 'Split Header', 'Magazine', 'Compact Header'].includes(layout);
+  const isCoverFocused = ['Cover Clean', 'Hero Banner', 'Magazine', 'Framed', 'Editorial'].includes(layout);
   const isBigAvatar = ['Big Avatar'].includes(layout);
-  
+
   // Font Stacks
   const headingFont = normalizeFontStack(fonts?.headingFont || 'Poppins');
   const bodyFont = normalizeFontStack(fonts?.bodyFont || 'Inter');
@@ -95,22 +119,41 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
   const primaryTextOnPrimary = pickReadableOn(theme.primary);
 
-  const bgCss = (() => {
+  const bgComputed = useMemo(() => {
     const bgValue = safeString(theme.backgroundValue, '#0A0A0A');
+
     if (theme.backgroundType === 'gradient') {
       const dir = safeString(theme.backgroundDirection, 'to bottom');
       const b = safeString(theme.backgroundValueSecondary, bgValue);
-      return `linear-gradient(${dir}, ${bgValue}, ${b})`;
+      return {
+        backgroundImage: `linear-gradient(${dir}, ${bgValue}, ${b})`,
+        backgroundColor: 'transparent',
+        backgroundAttachment: 'scroll',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: 'cover',
+      } as React.CSSProperties;
     }
+
     if (theme.backgroundType === 'image') {
       const attachment = isPreview ? 'scroll' : 'fixed';
-      return `url(${bgValue}) center/cover no-repeat ${attachment}`;
+      return {
+        backgroundImage: `url(${bgValue})`,
+        backgroundColor: '#0A0A0A',
+        backgroundAttachment: attachment,
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: 'cover',
+      } as React.CSSProperties;
     }
-    return bgValue;
-  })();
+
+    return {
+      backgroundColor: bgValue,
+    } as React.CSSProperties;
+  }, [theme.backgroundType, theme.backgroundValue, theme.backgroundDirection, theme.backgroundValueSecondary, isPreview]);
 
   const bgStyle: React.CSSProperties = {
-    background: bgCss,
+    ...bgComputed,
     minHeight: isPreview ? '100%' : '100vh',
     height: isPreview ? '100%' : 'auto',
     color: theme.text,
@@ -138,19 +181,19 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
   const handleLinkClick = (btnId: string) => {
     if (isPreview) return;
-    trackEvent({ profileId: profile.id, clientId: profile.clientId, type: 'click', linkId: btnId });
+    trackEvent({ profileId: profile.id, clientId: profile.clientId, type: 'click', linkId: btnId, source });
   };
 
   const handleSaveContact = () => {
     const name = profile.displayName || 'Contato LinkFlow';
     const headline = profile.headline || '';
     const url = window.location.origin + '/#/u/' + profile.slug;
-    
-    const phoneBtn = profile.buttons.find(b => b.enabled && (b.type === 'whatsapp' || b.type === 'phone' || b.type === 'mobile'));
-    const emailBtn = profile.buttons.find(b => b.enabled && b.type === 'email');
-    
-    const phone = phoneBtn ? phoneBtn.value.replace(/\D/g, '') : '';
-    const email = emailBtn ? emailBtn.value : '';
+
+    const phoneBtn = buttons.find((b: any) => b?.enabled && (b.type === 'whatsapp' || b.type === 'phone' || b.type === 'mobile'));
+    const emailBtn = buttons.find((b: any) => b?.enabled && b.type === 'email');
+
+    const phone = phoneBtn ? String(phoneBtn.value || '').replace(/\D/g, '') : '';
+    const email = emailBtn ? String(emailBtn.value || '') : '';
 
     let vCard = `BEGIN:VCARD
 VERSION:3.0
@@ -170,15 +213,20 @@ NOTE:Perfil digital criado com LinkFlow.
     vCard += `END:VCARD`;
 
     const blob = new Blob([vCard], { type: 'text/vcard;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = window.URL.createObjectURL(blob);
-    link.setAttribute('download', `${profile.slug}.vcf`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const downloadUrl = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.setAttribute('download', `${profile.slug || 'contato'}.vcf`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // ✅ evita leak
+    setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
   };
 
-  const getButtonStyle = (_btn: any, index: number): React.CSSProperties => {
+  const getButtonStyle = (_btn: any): React.CSSProperties => {
     let backgroundColor: string;
     let color: string;
     let border: string;
@@ -202,15 +250,15 @@ NOTE:Perfil digital criado com LinkFlow.
         break;
     }
 
-    const base: React.CSSProperties = {
+    return {
       borderRadius: theme.radius,
       fontFamily: buttonFont,
       transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-      border: border,
+      border,
       padding: isGrid ? '1.5rem 1rem' : '0.95rem 1.15rem',
       width: '100%',
-      backgroundColor: backgroundColor,
-      color: color,
+      backgroundColor,
+      color,
       fontSize: '0.92rem',
       fontWeight: 800,
       display: 'flex',
@@ -220,23 +268,22 @@ NOTE:Perfil digital criado com LinkFlow.
       gap: isGrid ? '0.75rem' : '0.5rem',
       textAlign: 'center',
     };
-    return base;
   };
 
   const renderLinks = () => {
-    const activeButtons = (buttons || []).filter(b => b.enabled);
+    const activeButtons = buttons.filter((b: any) => b?.enabled);
     return (
       <div className={clsx(isGrid ? "grid grid-cols-2 gap-3" : "flex flex-col gap-3", "w-full")}>
-        {activeButtons.map((btn, idx) => {
+        {activeButtons.map((btn: any, idx: number) => {
           const Icon = getIcon(btn.type);
           return (
             <a
-              key={btn.id}
+              key={btn.id || `${btn.type}-${idx}`}
               href={isPreview ? '#' : formatLink(btn.type, btn.value)}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => handleLinkClick(btn.id)}
-              style={getButtonStyle(btn, idx)}
+              style={getButtonStyle(btn)}
               className="group hover:translate-y-[-2px]"
             >
               {isGrid ? (
@@ -269,7 +316,9 @@ NOTE:Perfil digital criado com LinkFlow.
     if (profile.schedulingMode === 'native' && selectedSlotId) {
       const slot = profile.nativeSlots?.find(s => s.id === selectedSlotId);
       if (slot && profile.bookingWhatsapp) {
-        const text = encodeURIComponent(`Olá, gostaria de agendar um horário (${DAYS_OF_WEEK[slot.dayOfWeek]} das ${slot.startTime} às ${slot.endTime}) visto no seu perfil LinkFlow.`);
+        const text = encodeURIComponent(
+          `Olá, gostaria de agendar um horário (${DAYS_OF_WEEK[slot.dayOfWeek]} das ${slot.startTime} às ${slot.endTime}) visto no seu perfil LinkFlow.`
+        );
         window.open(`https://wa.me/${profile.bookingWhatsapp}?text=${text}`, '_blank');
       }
     }
@@ -277,11 +326,12 @@ NOTE:Perfil digital criado com LinkFlow.
 
   const activeSlots = (profile.nativeSlots || []).filter(s => s.isActive);
 
+  const avatarSrc = safeString(profile.avatarUrl, 'https://picsum.photos/seed/avatar/200/200');
+
   return (
     <div style={bgStyle} className="w-full flex flex-col items-center overflow-x-hidden no-scrollbar">
       <div className="relative z-10 w-full px-4 flex flex-col items-center pt-8 pb-20">
         <main className="w-full max-w-[520px] p-0 space-y-6" style={shellCardStyle}>
-          
           {/* Header Area */}
           <div className="relative">
             {/* Capa */}
@@ -294,21 +344,20 @@ NOTE:Perfil digital criado com LinkFlow.
 
             {/* Avatar & Infos */}
             <div className={clsx("px-6 pb-6 relative", profile.coverUrl ? "-mt-12" : "pt-8")}>
-              <div className={clsx(
-                "flex gap-4",
-                isLeft ? "flex-row items-end text-left" : "flex-col items-center text-center"
-              )}>
-                <img 
-                  src={profile.avatarUrl} 
+              <div className={clsx("flex gap-4", isLeft ? "flex-row items-end text-left" : "flex-col items-center text-center")}>
+                <img
+                  src={avatarSrc}
                   className={clsx(
                     "rounded-full border-4 object-cover shadow-2xl bg-zinc-900",
                     isBigAvatar ? "w-40 h-40" : "w-24 h-24"
                   )}
-                  style={{ borderColor: theme.cardBg }} 
-                  alt={profile.displayName} 
+                  style={{ borderColor: theme.cardBg }}
+                  alt={profile.displayName || 'Perfil'}
                 />
                 <div className="flex-1 min-w-0 pb-1">
-                  <h1 className="text-2xl font-black tracking-tight leading-tight" style={{ fontFamily: headingFont }}>{profile.displayName}</h1>
+                  <h1 className="text-2xl font-black tracking-tight leading-tight" style={{ fontFamily: headingFont }}>
+                    {profile.displayName}
+                  </h1>
                   <p className="text-sm opacity-80 mt-1 font-medium">{profile.headline}</p>
                 </div>
               </div>
@@ -316,10 +365,9 @@ NOTE:Perfil digital criado com LinkFlow.
           </div>
 
           <div className="px-6 pb-6 space-y-6">
-            
             {/* Ações de Contato / Wallet */}
             <div className="flex items-center gap-3 w-full">
-              <button 
+              <button
                 onClick={handleSaveContact}
                 className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
                 style={{ borderColor: theme.border, color: theme.text }}
@@ -327,10 +375,12 @@ NOTE:Perfil digital criado com LinkFlow.
                 <LucideIcons.UserPlus size={14} />
                 Salvar
               </button>
-              <button 
+
+              <button
                 onClick={() => setShowWalletModal(true)}
                 className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
                 style={{ borderColor: theme.border, color: theme.text }}
+                title="Atalho para salvar/instalar como acesso rápido (MVP)"
               >
                 <LucideIcons.WalletCards size={14} />
                 Wallet
@@ -364,7 +414,9 @@ NOTE:Perfil digital criado com LinkFlow.
                             onClick={() => setSelectedSlotId(slot.id)}
                             className={clsx(
                               "flex items-center justify-between p-3 rounded-xl border text-[11px] font-bold transition-all",
-                              selectedSlotId === slot.id ? "bg-white text-black border-white" : "bg-black/20 border-white/5 text-white/70"
+                              selectedSlotId === slot.id
+                                ? "bg-white text-black border-white"
+                                : "bg-black/20 border-white/5 text-white/70"
                             )}
                           >
                             <div className="flex items-center gap-2">
@@ -392,7 +444,9 @@ NOTE:Perfil digital criado com LinkFlow.
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="text-xs font-medium text-center opacity-60 mb-2">Agende um horário exclusivo comigo.</div>
+                    <div className="text-xs font-medium text-center opacity-60 mb-2">
+                      Agende um horário exclusivo comigo.
+                    </div>
                     <button
                       onClick={handleBooking}
                       className="w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
@@ -440,18 +494,20 @@ NOTE:Perfil digital criado com LinkFlow.
       {showWalletModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-zinc-900 border border-white/10 w-full max-w-sm rounded-[2rem] p-8 relative animate-in slide-in-from-bottom-10 duration-300">
-            <button 
+            <button
               onClick={() => setShowWalletModal(false)}
               className="absolute top-4 right-4 p-2 bg-white/5 rounded-full text-zinc-400 hover:text-white"
+              type="button"
+              aria-label="Fechar"
             >
               <LucideIcons.X size={16} />
             </button>
-            
+
             <div className="flex flex-col items-center text-center space-y-6">
               <div className="w-16 h-16 bg-blue-600/10 rounded-[1.5rem] flex items-center justify-center text-blue-500 mb-2">
                 <LucideIcons.WalletCards size={32} />
               </div>
-              
+
               <div className="space-y-2">
                 <h3 className="text-xl font-black text-white">Cartão Digital</h3>
                 <p className="text-zinc-400 text-xs leading-relaxed px-2">
@@ -460,9 +516,10 @@ NOTE:Perfil digital criado com LinkFlow.
               </div>
 
               <div className="w-full space-y-3">
-                <button 
+                <button
                   onClick={() => { handleSaveContact(); setShowWalletModal(false); }}
                   className="w-full py-4 bg-white text-black rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
+                  type="button"
                 >
                   <LucideIcons.Download size={16} />
                   Baixar Arquivo vCard
