@@ -28,6 +28,48 @@ export const themePresets: Record<string, Theme> = {
     shadow: "0 20px 60px rgba(0, 0, 0, 0.35)",
     buttonStyle: "glass"
   },
+  "Sunset Glow": {
+    primary: "#F59E0B",
+    backgroundType: "gradient",
+    backgroundValue: "#7C2D12",
+    backgroundValueSecondary: "#B45309",
+    backgroundDirection: "135deg",
+    cardBg: "rgba(255, 255, 255, 0.10)",
+    text: "#FFF7ED",
+    muted: "rgba(255, 237, 213, 0.8)",
+    border: "rgba(251, 191, 36, 0.3)",
+    radius: "24px",
+    shadow: "0 20px 60px rgba(180, 83, 9, 0.25)",
+    buttonStyle: "glass"
+  },
+  "Cyber Lime": {
+    primary: "#A3E635",
+    backgroundType: "gradient",
+    backgroundValue: "#020617",
+    backgroundValueSecondary: "#14532d",
+    backgroundDirection: "to top",
+    cardBg: "rgba(20, 83, 45, 0.3)",
+    text: "#ECFCCB",
+    muted: "rgba(217, 249, 157, 0.7)",
+    border: "rgba(163, 230, 53, 0.4)",
+    radius: "0px",
+    shadow: "0 0 30px rgba(163, 230, 53, 0.15)",
+    buttonStyle: "outline"
+  },
+  "Berry Blast": {
+    primary: "#EC4899",
+    backgroundType: "gradient",
+    backgroundValue: "#831843",
+    backgroundValueSecondary: "#500724",
+    backgroundDirection: "to bottom right",
+    cardBg: "rgba(255, 255, 255, 0.08)",
+    text: "#FCE7F3",
+    muted: "rgba(251, 207, 232, 0.75)",
+    border: "rgba(236, 72, 153, 0.3)",
+    radius: "30px",
+    shadow: "0 15px 45px rgba(131, 24, 67, 0.4)",
+    buttonStyle: "solid"
+  },
   "Neon Roxo": {
     primary: "#7C3AED",
     backgroundType: "solid",
@@ -39,6 +81,20 @@ export const themePresets: Record<string, Theme> = {
     radius: "14px",
     shadow: "0 0 40px rgba(124, 58, 237, 0.35)",
     buttonStyle: "outline"
+  },
+  "Electric Blue": {
+    primary: "#06B6D4",
+    backgroundType: "gradient",
+    backgroundValue: "#083344",
+    backgroundValueSecondary: "#164E63",
+    backgroundDirection: "to right",
+    cardBg: "rgba(6, 182, 212, 0.15)",
+    text: "#CFFAFE",
+    muted: "rgba(165, 243, 252, 0.7)",
+    border: "rgba(34, 211, 238, 0.3)",
+    radius: "16px",
+    shadow: "0 10px 40px rgba(8, 145, 178, 0.3)",
+    buttonStyle: "glass"
   },
   "Verde Moderno": {
     primary: "#10B981",
@@ -53,6 +109,20 @@ export const themePresets: Record<string, Theme> = {
     radius: "20px",
     shadow: "0 18px 55px rgba(0,0,0,0.30)",
     buttonStyle: "solid"
+  },
+  "Crimson Fire": {
+    primary: "#F43F5E",
+    backgroundType: "gradient",
+    backgroundValue: "#4c0519",
+    backgroundValueSecondary: "#9f1239",
+    backgroundDirection: "to bottom",
+    cardBg: "rgba(225, 29, 72, 0.15)",
+    text: "#FFE4E6",
+    muted: "rgba(253, 164, 175, 0.8)",
+    border: "rgba(244, 63, 94, 0.3)",
+    radius: "22px",
+    shadow: "0 20px 50px rgba(159, 18, 57, 0.4)",
+    buttonStyle: "glass"
   },
   "Warm Gold": {
     primary: "#F59E0B",
