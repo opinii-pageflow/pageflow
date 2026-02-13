@@ -32,78 +32,73 @@ const hexToRgb = (hex: string) => {
   if (![3, 6].includes(h.length)) return null;
   const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
   const n = parseInt(full, 16);
-  if (Number.isNaN(n)) return null;
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 };
 
-const relativeLuminance = (hex: string) => {
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+
+const luminance = (hex: string) => {
   const rgb = hexToRgb(hex);
-  if (!rgb) return null;
-  const srgb = [rgb.r, rgb.g, rgb.b].map(v => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
+  if (!rgb) return 0.5;
+  // sRGB luminance approximation
+  const toLin = (v: number) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  const r = toLin(rgb.r);
+  const g = toLin(rgb.g);
+  const b = toLin(rgb.b);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 };
 
-const pickReadableOn = (hexBg: string, light = '#F8FAFC', dark = '#0B1220') => {
-  const lum = relativeLuminance(hexBg);
-  if (lum === null) return light;
-  return lum > 0.62 ? dark : light;
-};
+const pickReadableOn = (hex: string) => (luminance(hex) > 0.55 ? '#0b0b0b' : '#ffffff');
 
 const getIcon = (type: string) => {
-  switch (type) {
-    case 'whatsapp': return LucideIcons.MessageCircle;
-    case 'instagram': return LucideIcons.Instagram;
-    case 'linkedin': return LucideIcons.Linkedin;
-    case 'website': return LucideIcons.Globe;
-    case 'phone':
-    case 'mobile': return LucideIcons.Phone;
-    case 'email': return LucideIcons.Mail;
-    case 'maps': return LucideIcons.MapPin;
-    case 'youtube': return LucideIcons.Youtube;
-    case 'github': return LucideIcons.Github;
-    case 'facebook': return LucideIcons.Facebook;
-    case 'twitter':
-    case 'x': return LucideIcons.Twitter;
-    case 'tiktok': return LucideIcons.Music2;
-    case 'telegram': return LucideIcons.Send;
-    case 'threads': return LucideIcons.AtSign;
-    case 'twitch': return LucideIcons.Tv;
-    case 'discord': return LucideIcons.MessageSquare;
-    default: return LucideIcons.Link;
-  }
+  const key = (type || '').trim();
+  // tenta ícone pelo nome de tipo (ex: instagram -> Instagram)
+  const pascal = key
+    .split(/[_-\s]+/)
+    .filter(Boolean)
+    .map(s => s.charAt(0).toUpperCase() + s.slice(1))
+    .join('');
+
+  // tenta: <Type> (ex: Instagram)
+  const direct = (LucideIcons as any)[pascal];
+  if (direct) return direct;
+
+  // tenta: <Type>Icon
+  const alt = (LucideIcons as any)[`${pascal}Icon`];
+  if (alt) return alt;
+
+  // fallback
+  return (LucideIcons as any).Link2;
 };
 
-const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan, source = 'direct' }) => {
-  const theme = (profile as any)?.theme || {
-    primary: '#3b82f6',
-    text: '#ffffff',
-    border: 'rgba(255,255,255,0.10)',
-    cardBg: 'rgba(0,0,0,0.30)',
-    shadow: '0 12px 40px rgba(0,0,0,0.35)',
-    radius: '18px',
-    buttonStyle: 'glass',
-    backgroundType: 'color',
-    backgroundValue: '#0A0A0A',
-    backgroundDirection: 'to bottom',
-    backgroundValueSecondary: '#0A0A0A',
-  };
+const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview = false, clientPlan = 'starter', source = 'direct' }) => {
+  const theme = profile.theme || { primary: '#2563eb', background: '#0b0b0b' };
+  const fonts = profile.fonts || { headingFont: 'Poppins', bodyFont: 'Inter', buttonFont: 'Inter' };
+  const background = profile.background || { type: 'solid', value: '#000000' };
+  const cover = profile.cover || { enabled: false, imageUrl: '' };
+  const buttons = Array.isArray(profile.buttons) ? profile.buttons : [];
+  const contact = profile.contact || {};
+  const pix = (profile as any).pix || {};
 
-  const fonts = (profile as any)?.fonts || {
-    headingFont: 'Poppins',
-    bodyFont: 'Inter',
-    buttonFont: 'Inter',
-  };
-
-  const buttons = Array.isArray((profile as any)?.buttons) ? (profile as any).buttons : [];
-
-  const hasSchedulingAccess = canAccessFeature(clientPlan, 'scheduling');
-  const hasPixAccess = canAccessFeature(clientPlan, 'pix');
+  const hasPix = canAccessFeature(clientPlan, 'pix');
 
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [previewToast, setPreviewToast] = useState<string | null>(null);
+
+  const showPreviewToast = (message: string) => {
+    if (!isPreview) return;
+    setPreviewToast(message);
+  };
+
+  React.useEffect(() => {
+    if (!previewToast) return;
+    const t = window.setTimeout(() => setPreviewToast(null), 1600);
+    return () => window.clearTimeout(t);
+  }, [previewToast]);
 
   const layout = (profile.layoutTemplate || 'Minimal Card').trim();
 
@@ -117,92 +112,64 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
   const primaryTextOnPrimary = pickReadableOn(theme.primary);
 
-  // ✅ Capa por template: altura e overlay (SEM apagar com opacity)
-  const coverConfig = useMemo(() => {
-    // valores padrão
-    let heightClass = 'h-36';
-    let overlay = 'from-black/10 via-black/25 to-black/70';
+  // ✅ Capa
+  const coverEnabled = !!cover?.enabled && !!cover?.imageUrl;
 
-    if (['Hero Banner', 'Cover Clean'].includes(layout)) {
-      heightClass = 'h-52';
-      overlay = 'from-black/5 via-black/20 to-black/75';
-    }
+  const bgStyle = useMemo(() => {
+    const base: React.CSSProperties = {
+      backgroundColor: theme.background || '#0b0b0b',
+      fontFamily: bodyFont,
+    };
 
-    if (layout === 'Magazine') {
-      heightClass = 'h-48';
-      overlay = 'from-black/10 via-black/30 to-black/80';
-    }
-
-    // layouts não focados: capa menor, overlay um pouco mais forte (mas imagem continua viva)
-    if (!['Hero Banner', 'Cover Clean', 'Magazine'].includes(layout)) {
-      heightClass = 'h-32';
-      overlay = 'from-black/15 via-black/30 to-black/75';
-    }
-
-    return { heightClass, overlay };
-  }, [layout]);
-
-  const bgComputed = useMemo(() => {
-    const bgValue = safeString(theme.backgroundValue, '#0A0A0A');
-
-    if (theme.backgroundType === 'gradient') {
-      const dir = safeString(theme.backgroundDirection, 'to bottom');
-      const b = safeString(theme.backgroundValueSecondary, bgValue);
+    if (background?.type === 'image' && background?.value) {
       return {
-        backgroundImage: `linear-gradient(${dir}, ${bgValue}, ${b})`,
-        backgroundColor: 'transparent',
-        backgroundAttachment: 'scroll',
+        ...base,
+        backgroundImage: `url(${background.value})`,
+        backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        backgroundSize: 'cover',
-      } as React.CSSProperties;
+      };
     }
 
-    if (theme.backgroundType === 'image') {
-      const attachment = isPreview ? 'scroll' : 'fixed';
+    if (background?.type === 'gradient' && background?.value) {
+      // background.value já vem como css gradient (ex: linear-gradient(...))
       return {
-        backgroundImage: `url(${bgValue})`,
-        backgroundColor: '#0A0A0A',
-        backgroundAttachment: attachment,
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        backgroundSize: 'cover',
-      } as React.CSSProperties;
+        ...base,
+        backgroundImage: background.value,
+      };
     }
 
-    return { backgroundColor: bgValue } as React.CSSProperties;
-  }, [theme.backgroundType, theme.backgroundValue, theme.backgroundDirection, theme.backgroundValueSecondary, isPreview]);
+    if (background?.type === 'solid' && background?.value) {
+      return {
+        ...base,
+        backgroundColor: background.value,
+      };
+    }
 
-  const bgStyle: React.CSSProperties = {
-    ...bgComputed,
-    minHeight: isPreview ? '100%' : '100vh',
-    height: isPreview ? '100%' : 'auto',
-    color: theme.text,
-    fontFamily: bodyFont,
-    transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-  };
+    return base;
+  }, [background?.type, background?.value, theme.background, bodyFont]);
 
-  const proCardStyle: React.CSSProperties = {
-    borderRadius: `calc(${theme.radius} + 6px)`,
-    border: `1px solid ${theme.border}`,
-    background: theme.cardBg,
-    boxShadow: theme.shadow,
-    backdropFilter: 'blur(24px)',
-  };
-
-  const shellCardStyle: React.CSSProperties = {
-    borderRadius: `calc(${theme.radius} + 14px)`,
-    border: `1px solid ${theme.border}`,
-    background: theme.cardBg,
-    boxShadow: theme.shadow,
-    backdropFilter: 'blur(26px)',
-    position: 'relative',
-    overflow: 'hidden',
-  };
+  const activeButtons = useMemo(
+    () => buttons.filter((b: any) => b?.enabled && (b?.label || b?.text || b?.title)),
+    [buttons]
+  );
 
   const handleLinkClick = (btnId: string) => {
     if (isPreview) return;
     trackEvent({ profileId: profile.id, clientId: profile.clientId, type: 'click', linkId: btnId, source });
+  };
+
+  const handlePreviewAnchorClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    href: string,
+    label?: string
+  ) => {
+    if (!isPreview) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const msg = label ? `Preview: ${label}` : `Preview: ${href}`;
+    showPreviewToast(msg);
   };
 
   const handleSaveContact = () => {
@@ -210,88 +177,196 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
     const headline = profile.headline || '';
     const url = window.location.origin + '/#/u/' + profile.slug;
 
-    const phoneBtn = buttons.find((b: any) => b?.enabled && (b.type === 'whatsapp' || b.type === 'phone' || b.type === 'mobile'));
+    const phoneBtn = buttons.find((b: any) => b?.enabled && (b.type === 'whatsapp' || b.type === 'phone' || b.type === 'call'));
+    const phoneValue = phoneBtn?.value || '';
+
     const emailBtn = buttons.find((b: any) => b?.enabled && b.type === 'email');
+    const emailValue = emailBtn?.value || '';
 
-    const phone = phoneBtn ? String(phoneBtn.value || '').replace(/\D/g, '') : '';
-    const email = emailBtn ? String(emailBtn.value || '') : '';
+    const lines = [
+      'BEGIN:VCARD',
+      'VERSION:3.0',
+      `FN:${name}`,
+      headline ? `TITLE:${headline}` : '',
+      phoneValue ? `TEL;TYPE=CELL:${phoneValue}` : '',
+      emailValue ? `EMAIL:${emailValue}` : '',
+      `URL:${url}`,
+      'END:VCARD',
+    ].filter(Boolean);
 
-    let vCard = `BEGIN:VCARD
-VERSION:3.0
-FN:${name}
-N:${name};;;;
-TITLE:${headline}
-URL:${url}
-NOTE:Perfil digital criado com LinkFlow.
-`;
-
-    if (phone) vCard += `TEL;TYPE=CELL:${phone}\n`;
-    if (email) vCard += `EMAIL:${email}\n`;
-    if (profile.avatarUrl && profile.avatarUrl.startsWith('http')) {
-      vCard += `PHOTO;VALUE=URI:${profile.avatarUrl}\n`;
-    }
-
-    vCard += `END:VCARD`;
-
-    const blob = new Blob([vCard], { type: 'text/vcard;charset=utf-8' });
-    const downloadUrl = window.URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.setAttribute('download', `${profile.slug || 'contato'}.vcf`);
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
+    const blob = new Blob([lines.join('\n')], { type: 'text/vcard;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${name}.vcf`;
+    link.click();
+    URL.revokeObjectURL(link.href);
   };
 
-  const getButtonStyle = (): React.CSSProperties => {
-    let backgroundColor: string;
-    let color: string;
-    let border: string;
+  const walletSlots = useMemo(() => {
+    const slots = (profile as any)?.walletSlots || [];
+    return Array.isArray(slots) ? slots : [];
+  }, [profile]);
 
-    switch (theme.buttonStyle) {
-      case 'solid':
-        backgroundColor = theme.primary;
-        color = primaryTextOnPrimary;
-        border = `1px solid ${theme.primary}`;
-        break;
-      case 'outline':
-        backgroundColor = 'transparent';
-        color = theme.text;
-        border = `1.5px solid ${theme.primary}`;
-        break;
-      case 'glass':
-      default:
-        backgroundColor = theme.cardBg;
-        color = theme.text;
-        border = `1px solid ${theme.border}`;
-        break;
-    }
+  const enabledDays = useMemo(() => {
+    const days = (profile as any)?.activeDays;
+    if (!Array.isArray(days)) return null;
+    return days.filter((d: any) => typeof d === 'number' && d >= 0 && d <= 6);
+  }, [profile]);
+
+  const getButtonStyle = () => {
+    const radius = clamp(profile?.buttonRadius ?? 16, 10, 28);
+    const opacity = clamp(profile?.buttonOpacity ?? 0.15, 0.05, 0.35);
+
+    const border = `1px solid rgba(255,255,255,${Math.max(0.06, opacity - 0.05)})`;
+    const bg = `rgba(255,255,255,${opacity})`;
 
     return {
-      borderRadius: theme.radius,
-      fontFamily: buttonFont,
-      transition: 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+      borderRadius: radius,
       border,
-      padding: isGrid ? '1.5rem 1rem' : '0.95rem 1.15rem',
-      width: '100%',
-      backgroundColor,
-      color,
-      fontSize: '0.92rem',
-      fontWeight: 800,
-      display: 'flex',
-      flexDirection: isGrid ? 'column' : 'row',
-      alignItems: 'center',
-      justifyContent: isGrid ? 'center' : 'space-between',
-      gap: isGrid ? '0.75rem' : '0.5rem',
-      textAlign: 'center',
-    };
+      background: bg,
+      fontFamily: buttonFont,
+      color: '#ffffff',
+      backdropFilter: 'blur(18px)',
+      WebkitBackdropFilter: 'blur(18px)',
+    } as React.CSSProperties;
   };
 
-  const renderLinks = () => {
-    const activeButtons = buttons.filter((b: any) => b?.enabled);
+  const Header = () => {
+    if (!coverEnabled) return null;
+
+    return (
+      <div className="w-full max-w-[440px] mx-auto">
+        <div className="w-full rounded-3xl overflow-hidden border border-white/10 bg-white/5">
+          <div className="h-40 w-full relative">
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <img src={(cover as any).imageUrl} alt="cover" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/65" />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const Identity = () => {
+    const avatar = (profile as any)?.avatarUrl || (profile as any)?.photoUrl || '';
+
+    return (
+      <div
+        className={clsx(
+          'w-full max-w-[440px] mx-auto',
+          isLeft ? 'flex items-start gap-3' : 'flex flex-col items-center'
+        )}
+      >
+        <div
+          className={clsx(
+            'border border-white/12 bg-white/8 overflow-hidden',
+            isBigAvatar ? 'w-24 h-24 rounded-full' : isLeft ? 'w-16 h-16 rounded-3xl' : 'w-20 h-20 rounded-full'
+          )}
+        >
+          {avatar ? (
+            <img src={avatar} alt="avatar" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full grid place-items-center text-white/20">
+              <LucideIcons.User2 size={28} />
+            </div>
+          )}
+        </div>
+
+        <div className={clsx(isLeft ? 'flex-1 pt-1' : 'mt-3 text-center')}>
+          <div
+            className="text-white font-black tracking-tight"
+            style={{ fontFamily: headingFont, fontSize: isBigAvatar ? 24 : 22, lineHeight: 1.1 }}
+          >
+            {profile.displayName || 'Seu Nome'}
+          </div>
+          {profile.headline ? (
+            <div className="text-white/65 font-semibold text-sm mt-1">{profile.headline}</div>
+          ) : null}
+          {profile.bio ? (
+            <div className="text-white/55 text-sm font-medium mt-2 leading-relaxed">{profile.bio}</div>
+          ) : null}
+
+          {/* tags / chips */}
+          {(profile as any)?.tags?.length ? (
+            <div className={clsx('mt-3 flex flex-wrap gap-2', isLeft ? '' : 'justify-center')}>
+              {(profile as any).tags.slice(0, 6).map((tag: string) => (
+                <div
+                  key={tag}
+                  className="px-3 py-1 rounded-full bg-white/8 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/70"
+                >
+                  {tag}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
+
+  const ActionsRow = () => {
+    const showContact = (profile as any)?.showContactButton !== false;
+
+    return (
+      <div className="w-full max-w-[440px] mx-auto mt-5">
+        <div className="flex gap-2">
+          {showContact ? (
+            <button
+              type="button"
+              onClick={handleSaveContact}
+              className="flex-1 h-12 rounded-2xl bg-white/10 border border-white/12 hover:bg-white/14 transition-all active:scale-95 font-black text-[10px] uppercase tracking-[0.22em] text-white/80"
+              style={{ fontFamily: buttonFont }}
+            >
+              Salvar contato
+            </button>
+          ) : null}
+
+          {hasPix && pix?.enabled ? (
+            <button
+              type="button"
+              onClick={() => setShowWalletModal(true)}
+              className="w-14 h-12 rounded-2xl bg-white/10 border border-white/12 hover:bg-white/14 transition-all active:scale-95 grid place-items-center"
+              title="Carteira / Pix"
+            >
+              <LucideIcons.Wallet size={18} className="text-white/80" />
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  };
+
+  const Schedule = () => {
+    if (!enabledDays || enabledDays.length === 0) return null;
+
+    return (
+      <div className="w-full max-w-[440px] mx-auto mt-6">
+        <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/40 mb-2">
+          Disponível
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {DAYS_OF_WEEK.map((d, idx) => {
+            const on = enabledDays.includes(idx);
+            return (
+              <div
+                key={d}
+                className={clsx(
+                  'px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest',
+                  on ? 'bg-white/10 border-white/14 text-white/70' : 'bg-white/5 border-white/8 text-white/25'
+                )}
+              >
+                {d}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const Buttons = () => {
+    if (!activeButtons.length) return null;
+
     return (
       <div className={clsx(isGrid ? "grid grid-cols-2 gap-3" : "flex flex-col gap-3", "w-full")}>
         {activeButtons.map((btn: any, idx: number) => {
@@ -299,27 +374,33 @@ NOTE:Perfil digital criado com LinkFlow.
           return (
             <a
               key={btn.id || `${btn.type}-${idx}`}
-              href={isPreview ? '#' : formatLink(btn.type, btn.value)}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => handleLinkClick(btn.id)}
+              href={formatLink(btn.type, btn.value)}
+              target={isPreview ? undefined : "_blank"}
+              rel={isPreview ? undefined : "noopener noreferrer"}
+              onClick={(e) => {
+                if (isPreview) {
+                  handlePreviewAnchorClick(e, formatLink(btn.type, btn.value), btn.label || btn.title || btn.text);
+                  return;
+                }
+                handleLinkClick(btn.id);
+              }}
               style={getButtonStyle()}
-              className="group hover:translate-y-[-2px]"
+              className="group hover:translate-y-[-2px] transition-transform active:scale-[0.99] w-full"
             >
-              {isGrid ? (
-                <>
-                  <Icon size={24} />
-                  <div className="font-black truncate w-full">{btn.label}</div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3 min-w-0">
-                    <Icon size={20} />
-                    <span className="font-black truncate">{btn.label}</span>
+              <div className="w-full h-14 px-4 flex items-center gap-3">
+                <span className="w-9 h-9 rounded-2xl bg-black/25 border border-white/10 grid place-items-center text-white/75">
+                  <Icon size={18} />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-white font-black text-sm truncate">
+                    {btn.label || btn.title || btn.text}
                   </div>
-                  <LucideIcons.ChevronRight size={16} className="opacity-40" />
-                </>
-              )}
+                  {btn.subtitle ? (
+                    <div className="text-white/55 text-xs font-semibold truncate">{btn.subtitle}</div>
+                  ) : null}
+                </div>
+                <LucideIcons.ChevronRight size={18} className="text-white/35 group-hover:text-white/60 transition-colors" />
+              </div>
             </a>
           );
         })}
@@ -327,226 +408,103 @@ NOTE:Perfil digital criado com LinkFlow.
     );
   };
 
-  const handleBooking = () => {
-    if (profile.schedulingMode === 'external') {
-      if (profile.externalBookingUrl) window.open(profile.externalBookingUrl, '_blank');
-      return;
-    }
+  const WalletModal = () => {
+    if (!showWalletModal) return null;
 
-    if (profile.schedulingMode === 'native' && selectedSlotId) {
-      const slot = profile.nativeSlots?.find(s => s.id === selectedSlotId);
-      if (slot && profile.bookingWhatsapp) {
-        const text = encodeURIComponent(
-          `Olá, gostaria de agendar um horário (${DAYS_OF_WEEK[slot.dayOfWeek]} das ${slot.startTime} às ${slot.endTime}) visto no seu perfil LinkFlow.`
-        );
-        window.open(`https://wa.me/${profile.bookingWhatsapp}?text=${text}`, '_blank');
-      }
-    }
+    return (
+      <div className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-2xl grid place-items-center p-5">
+        <div className="w-full max-w-md rounded-3xl bg-zinc-950 border border-white/10 shadow-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-white font-black">Carteira</div>
+            <button
+              type="button"
+              onClick={() => setShowWalletModal(false)}
+              className="w-10 h-10 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all grid place-items-center"
+            >
+              <LucideIcons.X size={18} className="text-white/70" />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {walletSlots.map((s: any) => (
+              <button
+                key={s?.id || s?.label}
+                type="button"
+                onClick={() => setSelectedSlotId(s?.id || null)}
+                className={clsx(
+                  'w-full p-4 rounded-2xl border transition-all text-left',
+                  selectedSlotId === s?.id
+                    ? 'bg-white/10 border-white/14'
+                    : 'bg-white/5 border-white/8 hover:bg-white/8 hover:border-white/12'
+                )}
+              >
+                <div className="text-white font-black">{s?.label || 'Slot'}</div>
+                {s?.value ? (
+                  <div className="text-white/55 text-sm font-semibold mt-1">{s.value}</div>
+                ) : null}
+              </button>
+            ))}
+          </div>
+
+          {selectedSlotId ? (
+            <div className="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+              <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/45">
+                Selecionado
+              </div>
+              <div className="text-white font-black mt-1">{selectedSlotId}</div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    );
   };
-
-  const activeSlots = (profile.nativeSlots || []).filter(s => s.isActive);
-  const avatarSrc = safeString(profile.avatarUrl, 'https://picsum.photos/seed/avatar/200/200');
 
   return (
     <div style={bgStyle} className="w-full flex flex-col items-center overflow-x-hidden no-scrollbar">
       <div className="relative z-10 w-full px-4 flex flex-col items-center pt-8 pb-20">
-        <main className="w-full max-w-[520px] p-0 space-y-6" style={shellCardStyle}>
-          <div className="relative">
-            {/* ✅ Capa SEM opacity */}
-            {profile.coverUrl && (
-              <div className={clsx("w-full overflow-hidden relative", coverConfig.heightClass)}>
-                <img src={profile.coverUrl} className="w-full h-full object-cover" alt="Cover" />
-                <div className={clsx("absolute inset-0 bg-gradient-to-b", coverConfig.overlay)} />
-              </div>
-            )}
-
-            <div className={clsx("px-6 pb-6 relative", profile.coverUrl ? "-mt-12" : "pt-8")}>
-              <div className={clsx("flex gap-4", isLeft ? "flex-row items-end text-left" : "flex-col items-center text-center")}>
-                <img
-                  src={avatarSrc}
-                  className={clsx(
-                    "rounded-full border-4 object-cover shadow-2xl bg-zinc-900",
-                    isBigAvatar ? "w-40 h-40" : "w-24 h-24"
-                  )}
-                  style={{ borderColor: theme.cardBg }}
-                  alt={profile.displayName || 'Perfil'}
-                />
-                <div className="flex-1 min-w-0 pb-1">
-                  <h1 className="text-2xl font-black tracking-tight leading-tight" style={{ fontFamily: headingFont }}>
-                    {profile.displayName}
-                  </h1>
-                  <p className="text-sm opacity-80 mt-1 font-medium">{profile.headline}</p>
-                </div>
-              </div>
+        {isPreview && previewToast ? (
+          <div className="sticky bottom-3 z-50 w-full flex justify-center pointer-events-none">
+            <div className="px-3 py-2 rounded-full bg-black/70 border border-white/10 text-[10px] font-extrabold tracking-wide text-white/80 backdrop-blur">
+              {previewToast}
             </div>
           </div>
+        ) : null}
 
-          <div className="px-6 pb-6 space-y-6">
-            <div className="flex items-center gap-3 w-full">
-              <button
-                onClick={handleSaveContact}
-                className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
-                style={{ borderColor: theme.border, color: theme.text }}
-              >
-                <LucideIcons.UserPlus size={14} />
-                Salvar
-              </button>
+        <Header />
+        <Identity />
+        <ActionsRow />
+        <Schedule />
 
-              <button
-                onClick={() => setShowWalletModal(true)}
-                className="flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 border hover:bg-white/5"
-                style={{ borderColor: theme.border, color: theme.text }}
-              >
-                <LucideIcons.WalletCards size={14} />
-                Wallet
-              </button>
-            </div>
+        <div className="w-full max-w-[440px] mx-auto mt-6">
+          <Buttons />
+        </div>
 
-            {profile.bioShort && (
-              <p className={clsx("text-sm leading-relaxed opacity-70", isLeft ? "text-left" : "text-center")}>
-                {profile.bioShort}
-              </p>
-            )}
+        <WalletModal />
 
-            {renderLinks()}
-
-            {hasSchedulingAccess && profile.enableScheduling && (
-              <div className="w-full p-6" style={proCardStyle}>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Agenda</div>
-                  <LucideIcons.Calendar size={16} className="opacity-40" />
-                </div>
-
-                {profile.schedulingMode === 'native' ? (
-                  <div className="space-y-4">
-                    {activeSlots.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-2">
-                        {activeSlots.map((slot) => (
-                          <button
-                            key={slot.id}
-                            onClick={() => setSelectedSlotId(slot.id)}
-                            className={clsx(
-                              "flex items-center justify-between p-3 rounded-xl border text-[11px] font-bold transition-all",
-                              selectedSlotId === slot.id
-                                ? "bg-white text-black border-white"
-                                : "bg-black/20 border-white/5 text-white/70"
-                            )}
-                          >
-                            <div className="flex items-center gap-2">
-                              <LucideIcons.Clock size={12} />
-                              {DAYS_OF_WEEK[slot.dayOfWeek]}
-                            </div>
-                            <div>{slot.startTime} - {slot.endTime}</div>
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="p-4 bg-white/5 border border-dashed border-white/10 rounded-xl text-center text-[10px] opacity-40">
-                        Nenhum horário disponível.
-                      </div>
-                    )}
-
-                    <button
-                      onClick={handleBooking}
-                      disabled={!selectedSlotId}
-                      className="w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 disabled:opacity-30"
-                      style={{ background: theme.primary, color: primaryTextOnPrimary }}
-                    >
-                      Confirmar no WhatsApp
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="text-xs font-medium text-center opacity-60 mb-2">
-                      Agende um horário exclusivo comigo.
-                    </div>
-                    <button
-                      onClick={handleBooking}
-                      className="w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
-                      style={{ background: theme.primary, color: primaryTextOnPrimary }}
-                    >
-                      Abrir Agenda Externa
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {hasPixAccess && profile.pixKey && (
-              <div className="w-full p-6" style={proCardStyle}>
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Pix</div>
-                    <div className="font-bold text-sm truncate">{profile.pixKey}</div>
-                  </div>
-                  <button
-                    onClick={() => navigator.clipboard.writeText(profile.pixKey || '')}
-                    className="px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest"
-                    style={{ background: theme.primary, color: primaryTextOnPrimary }}
-                  >
-                    Copiar
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {!profile.hideBranding && (
-            <footer className="py-6 border-t border-white/5 flex flex-col items-center gap-2">
-              <a href="/" target="_blank" className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity">
-                <img src="/logo.png" className="h-5" alt="LinkFlow" />
-                <span className="text-[10px] font-black uppercase tracking-widest">LinkFlow</span>
-              </a>
-            </footer>
-          )}
-        </main>
-      </div>
-
-      {/* Wallet Modal (MVP) — mantido igual ao seu */}
-      {showWalletModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-zinc-900 border border-white/10 w-full max-w-sm rounded-[2rem] p-8 relative animate-in slide-in-from-bottom-10 duration-300">
-            <button
-              onClick={() => setShowWalletModal(false)}
-              className="absolute top-4 right-4 p-2 bg-white/5 rounded-full text-zinc-400 hover:text-white"
-              type="button"
-              aria-label="Fechar"
-            >
-              <LucideIcons.X size={16} />
-            </button>
-
-            <div className="flex flex-col items-center text-center space-y-6">
-              <div className="w-16 h-16 bg-blue-600/10 rounded-[1.5rem] flex items-center justify-center text-blue-500 mb-2">
-                <LucideIcons.WalletCards size={32} />
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-xl font-black text-white">Cartão Digital</h3>
-                <p className="text-zinc-400 text-xs leading-relaxed px-2">
-                  Salve este perfil para acesso rápido.
-                </p>
-              </div>
-
-              <div className="w-full space-y-3">
-                <button
-                  onClick={() => { handleSaveContact(); setShowWalletModal(false); }}
-                  className="w-full py-4 bg-white text-black rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95 transition-all"
-                  type="button"
-                >
-                  <LucideIcons.Download size={16} />
-                  Baixar Arquivo vCard
-                </button>
-                <div className="p-4 bg-white/5 rounded-xl border border-white/5 text-center">
-                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Dica Pro</p>
-                  <p className="text-xs text-zinc-300">
-                    Use "Adicionar à Tela de Início" no navegador do seu celular para instalar como App.
-                  </p>
-                </div>
-              </div>
-            </div>
+        <div className="mt-10 w-full max-w-[440px] mx-auto">
+          <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/25 text-center">
+            {profile.slug ? `/${profile.slug}` : '/seu-perfil'}
           </div>
         </div>
-      )}
+
+        <div className="mt-10 w-full max-w-[440px] mx-auto border-t border-white/5 pt-6">
+          <div className="text-[10px] font-black uppercase tracking-[0.22em] text-white/25 text-center">
+            Powered by
+          </div>
+          <div className="mt-2 w-full flex justify-center">
+            <a
+              href="/"
+              target={isPreview ? undefined : "_blank"}
+              rel={isPreview ? undefined : "noopener noreferrer"}
+              onClick={(e) => handlePreviewAnchorClick(e, "/", "LinkFlow")}
+              className="flex items-center gap-2 opacity-40 hover:opacity-100 transition-opacity"
+            >
+              <img src="/logo.png" className="h-5" alt="LinkFlow" />
+              <span className="text-white/70 font-black text-sm">LinkFlow</span>
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
