@@ -14,10 +14,11 @@ const PhonePreview: React.FC<Props> = ({ profile, clientPlan }) => {
       <div
         className="relative mx-auto bg-[#050505] rounded-[3rem] border-[1px] border-white/10 shadow-[0_50px_100px_-20px_rgba(0,0,0,1)] ring-1 ring-white/5 flex items-center justify-center p-[6px] transition-transform duration-1000 group-hover:scale-[1.01]"
         style={{
-          // Mantém proporção de celular mesmo se classes de aspect falharem
-          aspectRatio: '9 / 18.5',
-          height: 'clamp(520px, 70vh, 680px)',
-          maxHeight: '680px',
+          // Preview mais fiel ao "padrão real" (iPhone-like) e menos "esticada"
+          // Importante: baseia tamanho na largura (não na altura), evitando distorção em telas grandes
+          aspectRatio: '9 / 19.5',
+          width: 'clamp(300px, 28vw, 380px)',
+          maxWidth: '380px',
         }}
       >
         {/* Tela Bezel-less */}
