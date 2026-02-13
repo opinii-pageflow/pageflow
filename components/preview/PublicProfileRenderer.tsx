@@ -214,7 +214,13 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
   const handleLinkClick = (linkId?: string) => {
     if (isPreview) return;
-    trackEvent(profile.clientId, profile.id, 'click', linkId, source);
+    trackEvent({
+      clientId: profile.clientId, 
+      profileId: profile.id, 
+      type: 'click', 
+      linkId, 
+      source
+    });
   };
 
   const getButtonStyle = () => {
@@ -240,7 +246,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
         border = `1px solid ${theme.border}`;
         break;
       case 'outline':
-        border = `1px solid ${theme.border}`;
+        border = `2px solid ${theme.primary}`; // Ajuste aqui: 2px e cor primária
         break;
     }
 
