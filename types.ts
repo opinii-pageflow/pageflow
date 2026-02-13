@@ -74,6 +74,7 @@ export interface LeadCapture {
   history?: LeadHistoryItem[]; // Histórico de mudanças
   createdAt: string;
   source: AnalyticsSource;
+  captureType?: 'form' | 'nps'; // Adicionado para distinguir origem
 }
 
 export interface NpsEntry {

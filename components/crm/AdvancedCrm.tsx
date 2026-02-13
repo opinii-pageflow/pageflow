@@ -5,7 +5,9 @@ import { canAccessFeature } from '../../lib/permissions';
 import { 
   Search, ChevronDown, X, User, MessageSquare, 
   AlertCircle, DollarSign, Send, Save, Trash2, 
-  Download, Activity, UserCheck, Lock, Zap
+  Download, Activity, UserCheck, Lock, Zap, Filter,
+  Star,
+  FileText
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
@@ -30,6 +32,7 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
   const [localLeads, setLocalLeads] = useState<LeadCapture[]>(initialLeads);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
+  const [originFilter, setOriginFilter] = useState<'all' | 'form' | 'nps'>('all');
   const [selectedLead, setSelectedLead] = useState<LeadCapture | null>(null);
   const [noteInput, setNoteInput] = useState('');
 
@@ -54,14 +57,28 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
       const matchesSearch = nameStr.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           contactStr.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      
+      const matchesOrigin = originFilter === 'all' 
+        ? true 
+        : originFilter === 'nps' 
+          ? lead.captureType === 'nps' 
+          : lead.captureType !== 'nps'; // Default é form
+
+      return matchesSearch && matchesStatus && matchesOrigin;
     });
-  }, [localLeads, searchTerm, statusFilter]);
+  }, [localLeads, searchTerm, statusFilter, originFilter]);
 
   const exportToCsv = () => {
     if (!hasExportAccess) return;
-    const headers = ['Nome', 'Contato', 'Status', 'Data', 'Mensagem'];
-    const rows = localLeads.map(l => [l.name, l.contact || '', l.status, new Date(l.createdAt).toLocaleString(), l.message || '']);
+    const headers = ['Nome', 'Contato', 'Status', 'Origem', 'Data', 'Mensagem'];
+    const rows = localLeads.map(l => [
+      l.name, 
+      l.contact || '', 
+      l.status, 
+      l.captureType === 'nps' ? 'NPS' : 'Formulário',
+      new Date(l.createdAt).toLocaleString(), 
+      l.message || ''
+    ]);
     const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].map(e => e.join(",")).join("\n");
     const link = document.createElement("a");
     link.setAttribute("href", encodeURI(csvContent));
@@ -126,7 +143,22 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
             className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-sm font-bold focus:border-white/20 outline-none transition-all"
           />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          {/* Filtro de Origem */}
+          <div className="relative">
+            <select 
+              value={originFilter} 
+              onChange={(e) => setOriginFilter(e.target.value as any)}
+              className="appearance-none bg-zinc-900 text-white pl-10 pr-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border border-white/5 outline-none cursor-pointer hover:bg-zinc-800 transition-all"
+            >
+              <option value="all">Todas Origens</option>
+              <option value="form">Formulário</option>
+              <option value="nps">Avaliação NPS</option>
+            </select>
+            <Filter size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+          </div>
+
           <button 
             onClick={exportToCsv} 
             disabled={!hasExportAccess}
@@ -136,7 +168,7 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
             )}
           >
             {hasExportAccess ? <Download size={16} /> : <Lock size={16} />} 
-            Exportar CSV
+            CSV
           </button>
         </div>
       </div>
@@ -146,7 +178,7 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-white/5 bg-white/[0.02]">
-                <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500">Nome</th>
+                <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500">Nome / Origem</th>
                 <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500">Contato</th>
                 <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500">Pipeline</th>
                 <th className="p-8 text-[10px] font-black uppercase tracking-widest text-zinc-500 text-right">Ação</th>
@@ -155,11 +187,24 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
             <tbody className="divide-y divide-white/5">
               {filteredLeads.map(lead => {
                 const contactStr = lead.contact || '';
+                const isNps = lead.captureType === 'nps';
                 return (
                   <tr key={lead.id} className="hover:bg-white/[0.02] transition-colors group">
                     <td className="p-8">
-                      <div className="font-black text-lg text-white">{lead.name}</div>
-                      <div className="text-[10px] text-zinc-500 mt-1 uppercase tracking-widest font-mono">{new Date(lead.createdAt).toLocaleDateString()}</div>
+                      <div className="flex items-center gap-3">
+                        <div className={clsx(
+                          "w-8 h-8 rounded-lg flex items-center justify-center border",
+                          isNps ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : "bg-blue-500/10 border-blue-500/20 text-blue-500"
+                        )}>
+                          {isNps ? <Star size={14} /> : <FileText size={14} />}
+                        </div>
+                        <div>
+                          <div className="font-black text-lg text-white">{lead.name}</div>
+                          <div className="text-[10px] text-zinc-500 mt-1 uppercase tracking-widest font-mono flex items-center gap-2">
+                            {new Date(lead.createdAt).toLocaleDateString()} • {isNps ? 'Via NPS' : 'Via Formulário'}
+                          </div>
+                        </div>
+                      </div>
                     </td>
                     <td className="p-8">
                       <div className="flex items-center gap-3 text-sm font-bold text-zinc-400">
@@ -235,6 +280,11 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
                 <div>
                   <h3 className="text-2xl font-black">{selectedLead.name}</h3>
                   <p className="text-zinc-500 font-medium">{selectedLead.contact || 'Sem contato'}</p>
+                  {selectedLead.captureType === 'nps' && (
+                    <span className="inline-flex mt-2 items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[9px] font-black uppercase tracking-widest text-amber-500">
+                      <Star size={10} /> Origem: NPS
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -253,6 +303,14 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
                 </div>
               </div>
 
+              {/* Mensagem original do lead (se houver, e.g. comentário NPS) */}
+              {selectedLead.message && (
+                <div className="bg-zinc-900/40 p-6 rounded-[2rem] border border-white/5 space-y-2">
+                   <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Mensagem Inicial</div>
+                   <p className="text-sm text-zinc-300 italic">"{selectedLead.message}"</p>
+                </div>
+              )}
+
               <div className="bg-zinc-900/40 p-8 rounded-[2.5rem] border border-white/5 space-y-6">
                 <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Notas de Negociação</div>
                 {selectedLead.notes && <div className="bg-amber-500/5 border border-amber-500/10 p-5 rounded-2xl text-xs text-amber-200/80 whitespace-pre-wrap font-mono leading-relaxed">{selectedLead.notes}</div>}
@@ -267,7 +325,7 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan }) => {
                 <div className="space-y-6 pl-2 border-l border-white/10">
                   <div className="relative pl-8">
                     <div className="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
-                    <div className="text-xs font-black">Lead Capturado</div>
+                    <div className="text-xs font-black">Lead Capturado ({selectedLead.captureType === 'nps' ? 'NPS' : 'Form'})</div>
                     <div className="text-[10px] text-zinc-600">{new Date(selectedLead.createdAt).toLocaleString()}</div>
                   </div>
                   {selectedLead.history?.map((h, i) => (

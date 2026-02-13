@@ -146,6 +146,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
   const [npsScore, setNpsScore] = useState<number | null>(null);
   const [npsComment, setNpsComment] = useState('');
+  const [npsRequestContact, setNpsRequestContact] = useState(false);
+  const [npsName, setNpsName] = useState('');
+  const [npsContact, setNpsContact] = useState('');
   const [npsSent, setNpsSent] = useState(false);
 
   const layout = (profile.layoutTemplate || 'Minimal Card').trim();
@@ -743,6 +746,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                           status: 'novo',
                           createdAt: new Date().toISOString(),
                           source,
+                          captureType: 'form'
                         };
                         updateStorage((data) => {
                           data.leads = Array.isArray(data.leads) ? data.leads : [];
@@ -827,10 +831,44 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                       className="w-full rounded-xl px-4 py-3 bg-black/30 outline-none text-sm font-semibold min-h-[96px] placeholder:text-current placeholder:opacity-60"
                       style={{ border: `${borderWidth} solid ${theme.border}`, color: theme.text, fontFamily: bodyFont }}
                     />
+                    
+                    <div className="space-y-3">
+                      <label className="flex items-center gap-2 text-xs font-bold cursor-pointer" style={{ color: theme.text }}>
+                        <input 
+                          type="checkbox" 
+                          checked={npsRequestContact}
+                          onChange={(e) => setNpsRequestContact(e.target.checked)}
+                          className="rounded border-white/20 bg-white/10 w-4 h-4"
+                        />
+                        Quero receber retorno
+                      </label>
+
+                      {npsRequestContact && (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                          <input
+                            value={npsName}
+                            onChange={(e) => setNpsName(e.target.value)}
+                            placeholder="Seu nome"
+                            className="w-full rounded-xl px-4 py-2 bg-black/30 outline-none text-xs font-semibold placeholder:text-current placeholder:opacity-60"
+                            style={{ border: `${borderWidth} solid ${theme.border}`, color: theme.text, fontFamily: bodyFont }}
+                          />
+                          <input
+                            value={npsContact}
+                            onChange={(e) => setNpsContact(e.target.value)}
+                            placeholder="Seu contato"
+                            className="w-full rounded-xl px-4 py-2 bg-black/30 outline-none text-xs font-semibold placeholder:text-current placeholder:opacity-60"
+                            style={{ border: `${borderWidth} solid ${theme.border}`, color: theme.text, fontFamily: bodyFont }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
                     <button
                       onClick={() => {
                         if (isPreview) return;
                         if (npsScore === null) return;
+                        
+                        // 1. Salvar NPS
                         const entry = {
                           id: `nps_${Date.now()}`,
                           clientId: profile.clientId,
@@ -840,10 +878,30 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                           createdAt: new Date().toISOString(),
                           source,
                         };
+
+                        // 2. Se pediu retorno, salvar Lead
+                        const leadFromNps = npsRequestContact ? {
+                          id: `lead_nps_${Date.now()}`,
+                          clientId: profile.clientId,
+                          profileId: profile.id,
+                          name: npsName.trim() || 'Anônimo (NPS)',
+                          contact: npsContact.trim() || 'Sem contato',
+                          message: `Avaliação NPS: ${npsScore}/10. ${npsComment ? `Comentário: "${npsComment}"` : ''}`,
+                          status: 'novo',
+                          createdAt: new Date().toISOString(),
+                          source,
+                          captureType: 'nps'
+                        } : null;
+
                         updateStorage((data) => {
                           data.events = Array.isArray(data.events) ? data.events : [];
                           (data as any).nps = Array.isArray((data as any).nps) ? (data as any).nps : [];
                           (data as any).nps.unshift(entry);
+                          
+                          if (leadFromNps) {
+                            data.leads = Array.isArray(data.leads) ? data.leads : [];
+                            data.leads.unshift(leadFromNps as any);
+                          }
                           return data;
                         });
                         setNpsSent(true);
