@@ -30,6 +30,7 @@ const DAYS_OF_WEEK = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta
 
 const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const portfolioFileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
   const hasProAccess = canAccessFeature(clientPlan, 'catalog');
   const hasBusinessAccess = canAccessFeature(clientPlan, 'scheduling');
@@ -64,6 +65,17 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         updateCatalog(catalog.map(c => c.id === itemId ? { ...c, imageUrl: reader.result as string } : c));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePortfolioImageUpload = (e: React.ChangeEvent<HTMLInputElement>, itemId: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updatePortfolio(portfolio.map(p => p.id === itemId ? { ...p, imageUrl: reader.result as string } : p));
       };
       reader.readAsDataURL(file);
     }
@@ -246,7 +258,7 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Confirmar por WhatsApp (Opcional)</label>
                 <div className="relative">
-                  < smartphone className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
+                  <Smartphone className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
                   <input
                     value={profile.bookingWhatsapp || ''}
                     onChange={(e) => onUpdate({ bookingWhatsapp: e.target.value })}
@@ -575,22 +587,54 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
                     </button>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Imagem (URL)</label>
-                    <input
-                      value={item.imageUrl}
-                      onChange={(e) => updatePortfolio(portfolio.map(p => p.id === item.id ? { ...p, imageUrl: e.target.value } : p))}
-                      className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
-                    />
+                
+                <div className="flex flex-col md:flex-row gap-6">
+                  {/* Portfolio Image Upload */}
+                  <div className="flex-shrink-0">
+                    <div 
+                      onClick={() => portfolioFileInputRefs.current[item.id]?.click()}
+                      className="relative w-32 h-32 rounded-3xl bg-black/40 border border-white/10 flex flex-col items-center justify-center cursor-pointer group overflow-hidden hover:border-white/30 transition-all"
+                    >
+                      {item.imageUrl ? (
+                        <>
+                          <img src={item.imageUrl} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <Upload size={20} className="text-white" />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-zinc-600 flex flex-col items-center gap-1 group-hover:text-zinc-400">
+                          <Image size={24} />
+                          <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
+                        </div>
+                      )}
+                      <input 
+                        type="file" 
+                        ref={el => portfolioFileInputRefs.current[item.id] = el}
+                        className="hidden" 
+                        accept="image/*" 
+                        onChange={(e) => handlePortfolioImageUpload(e, item.id)}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Título (opcional)</label>
-                    <input
-                      value={item.title || ''}
-                      onChange={(e) => updatePortfolio(portfolio.map(p => p.id === item.id ? { ...p, title: e.target.value } : p))}
-                      className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
-                    />
+
+                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="md:col-span-2 space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Imagem (URL)</label>
+                      <input
+                        value={item.imageUrl}
+                        onChange={(e) => updatePortfolio(portfolio.map(p => p.id === item.id ? { ...p, imageUrl: e.target.value } : p))}
+                        className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
+                      />
+                    </div>
+                    <div className="md:col-span-2 space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Título (opcional)</label>
+                      <input
+                        value={item.title || ''}
+                        onChange={(e) => updatePortfolio(portfolio.map(p => p.id === item.id ? { ...p, title: e.target.value } : p))}
+                        className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none focus:border-white/30"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

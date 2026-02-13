@@ -525,10 +525,32 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                 <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70" style={{ color: theme.muted }}>
                   Vídeos
                 </h3>
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-4">
                   {activeVideos.map((v) => {
                     const id = extractYouTubeId(v.url);
-                    const thumb = id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : '';
+                    if (id) {
+                      return (
+                        <div key={v.id} className="rounded-2xl overflow-hidden shadow-lg border bg-black" style={{ borderColor: theme.border }}>
+                           <iframe 
+                             width="100%" 
+                             height="200" 
+                             src={`https://www.youtube.com/embed/${id}`} 
+                             title={v.title || "Video"}
+                             frameBorder="0"
+                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                             allowFullScreen
+                             className="w-full"
+                           />
+                           {v.title && (
+                             <div className="p-3 text-xs font-bold truncate" style={{ color: theme.text, background: theme.cardBg }}>
+                               {v.title}
+                             </div>
+                           )}
+                        </div>
+                      );
+                    }
+                    
+                    // Fallback se não for YouTube reconhecido
                     return (
                       <a
                         key={v.id}
@@ -538,23 +560,19 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                         className="rounded-2xl border overflow-hidden transition-all hover:translate-y-[-1px]"
                         style={{ borderColor: theme.border, background: 'rgba(255,255,255,0.04)' }}
                       >
-                        {thumb ? (
-                          <img src={thumb} alt={v.title || 'Video'} className="w-full h-36 object-cover" />
-                        ) : (
-                          <div className="w-full h-36 flex items-center justify-center" style={{ color: theme.muted }}>
-                            <LucideIcons.Video size={22} />
-                          </div>
-                        )}
+                        <div className="w-full h-36 flex items-center justify-center" style={{ color: theme.muted }}>
+                          <LucideIcons.Video size={22} />
+                        </div>
                         <div className="p-4 flex items-center justify-between gap-3">
                           <div className="min-w-0">
                             <div className="text-sm font-black truncate" style={{ color: theme.text }}>
                               {v.title || 'Vídeo'}
                             </div>
                             <div className="text-[10px] font-black uppercase tracking-widest mt-1" style={{ color: theme.muted }}>
-                              YouTube
+                              Link Externo
                             </div>
                           </div>
-                          <LucideIcons.PlayCircle size={22} style={{ color: theme.primary }} />
+                          <LucideIcons.ExternalLink size={16} style={{ color: theme.primary }} />
                         </div>
                       </a>
                     );
