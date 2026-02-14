@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, Lock, Loader2, Mail, ChevronRight, Building, ShieldCheck } from 'lucide-react';
+import { Lock, Loader2, Mail, ChevronRight, Building, ShieldCheck } from 'lucide-react';
 import { loginAs, updateStorage } from '../../lib/storage';
 import { Client } from '../../types';
 import { PLANS } from '../../lib/plans';
@@ -9,54 +9,191 @@ const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
+  // ⚠️ No seu app atual esse campo "name" está sendo usado como "Nome da Empresa / Profissional"
+  // Para o trigger do Supabase, vamos mandar:
+  // - company_name = name (este input)
+  // - name = name (fallback simples)
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleRegister = (e: React.FormEvent) => {
+  const getSupabaseEnv = () => {
+    const url = (import.meta as any).env?.VITE_SUPABASE_URL as string | undefined;
+    const anon = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string | undefined;
+    return { url, anon };
+  };
+
+  const safeSlug = (input: string) =>
+    input
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
-    setTimeout(() => {
-      try {
-        const clientId = 'client-' + Math.random().toString(36).substring(7);
-        const slug = name.toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
-        const starterPlan = PLANS.starter;
-        
-        const newClient: Client = {
-          id: clientId,
-          name: name,
-          slug: slug,
-          email: email,
-          password: password,
-          plan: starterPlan.id,
-          maxProfiles: starterPlan.maxProfiles,
-          createdAt: new Date().toISOString(),
-          isActive: true
-        };
 
-        updateStorage(prev => ({
-          ...prev,
-          clients: [...prev.clients, newClient]
-        }));
+    try {
+      const { url, anon } = getSupabaseEnv();
+      if (!url || !anon) {
+        throw new Error(
+          'Supabase não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no seu ambiente (.env / Dyad).'
+        );
+      }
 
-        loginAs({ 
-          id: `user-${clientId}`, 
-          role: 'client', 
-          clientId: clientId, 
-          name: name, 
-          email: email 
+      const companyName = name.trim();
+      if (!companyName) {
+        throw new Error('Informe o nome da empresa/profissional.');
+      }
+
+      // 1) Signup no Supabase Auth via HTTP (sem supabase-js)
+      // Envia meta que o trigger usa: raw_user_meta_data.name e raw_user_meta_data.company_name
+      const signupRes = await fetch(`${url}/auth/v1/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: anon,
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          data: {
+            name: companyName,
+            company_name: companyName,
+          },
+        }),
+      });
+
+      const signupJson = await signupRes.json().catch(() => null);
+
+      if (!signupRes.ok) {
+        const msg =
+          signupJson?.msg ||
+          signupJson?.error_description ||
+          signupJson?.error ||
+          'Erro ao criar conta. Verifique os dados e tente novamente.';
+        throw new Error(msg);
+      }
+
+      // Quando confirmação de email está DESATIVADA, normalmente vem session aqui.
+      // Mesmo assim, por segurança, se não vier session, fazemos login logo em seguida.
+      let accessToken: string | undefined = signupJson?.session?.access_token;
+      let userId: string | undefined = signupJson?.user?.id;
+
+      if (!accessToken) {
+        // 2) Fallback: login pra obter session/token
+        const loginRes = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: anon,
+          },
+          body: JSON.stringify({ email, password }),
         });
 
-        navigate('/app/profiles');
-      } catch (err) {
-        setError('Erro ao criar conta. Tente novamente.');
-      } finally {
-        setLoading(false);
+        const loginJson = await loginRes.json().catch(() => null);
+
+        if (!loginRes.ok) {
+          const msg =
+            loginJson?.msg ||
+            loginJson?.error_description ||
+            loginJson?.error ||
+            'Conta criada, mas falhou ao autenticar. Tente fazer login.';
+          throw new Error(msg);
+        }
+
+        accessToken = loginJson?.access_token;
+        userId = loginJson?.user?.id;
       }
-    }, 1500);
+
+      if (!accessToken || !userId) {
+        throw new Error('Não foi possível autenticar após o cadastro. Tente fazer login.');
+      }
+
+      // 3) Buscar a company_id via PostgREST (company_members)
+      // O trigger handle_new_user já criou company + membership automaticamente.
+      const membersRes = await fetch(
+        `${url}/rest/v1/company_members?select=company_id&user_id=eq.${userId}&limit=1`,
+        {
+          method: 'GET',
+          headers: {
+            apikey: anon,
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const membersJson = await membersRes.json().catch(() => null);
+
+      if (!membersRes.ok || !Array.isArray(membersJson) || !membersJson[0]?.company_id) {
+        // Se isso falhar, é porque RLS/policy de read está errada ou trigger não rodou.
+        throw new Error(
+          'Conta criada, mas não consegui localizar sua companhia. Verifique RLS de company_members e o trigger handle_new_user.'
+        );
+      }
+
+      const companyId = membersJson[0].company_id as string;
+
+      // 4) Buscar dados da company (plan/maxProfiles) para manter compatibilidade com o app atual
+      const companyRes = await fetch(
+        `${url}/rest/v1/companies?select=id,name,slug,plan,max_profiles,is_active&id=eq.${companyId}&limit=1`,
+        {
+          method: 'GET',
+          headers: {
+            apikey: anon,
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const companyJson = await companyRes.json().catch(() => null);
+      const company = Array.isArray(companyJson) ? companyJson[0] : null;
+
+      const starterPlan = PLANS.starter;
+
+      // 5) Compat: salvar um "Client" mínimo no storage, sem password
+      // (para não quebrar páginas que ainda dependem de data.clients)
+      const newClient: Client = {
+        id: company?.id || companyId,
+        name: company?.name || companyName,
+        slug: company?.slug || safeSlug(companyName),
+        email,
+        password: '', // não armazenar senha local
+        plan: company?.plan || starterPlan.id,
+        maxProfiles: typeof company?.max_profiles === 'number' ? company.max_profiles : starterPlan.maxProfiles,
+        createdAt: new Date().toISOString(),
+        isActive: company?.is_active !== false,
+      };
+
+      updateStorage(prev => {
+        const existing = (prev.clients || []).find(c => c.id === newClient.id);
+        return {
+          ...prev,
+          clients: existing ? prev.clients : [...prev.clients, newClient],
+        };
+      });
+
+      // 6) Compat: login do app local com clientId = companyId
+      loginAs({
+        id: `user-${companyId}`,
+        role: 'client',
+        clientId: companyId,
+        name: companyName,
+        email,
+      });
+
+      // ✅ Aqui você pode escolher rota inicial
+      navigate('/app/profiles');
+    } catch (err: any) {
+      setError(err?.message || 'Erro ao criar conta. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -84,13 +221,18 @@ const RegisterPage: React.FC = () => {
             )}
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Nome da Empresa / Profissional</label>
+              <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">
+                Nome da Empresa / Profissional
+              </label>
               <div className="relative group">
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors">
                   <Building size={18} />
                 </div>
-                <input 
-                  type="text" required value={name} onChange={(e) => setName(e.target.value)}
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: Israel Tech"
                   className="w-full bg-black/40 border border-white/5 rounded-2xl pl-14 pr-5 py-4 text-sm font-bold focus:border-blue-500/50 transition-all outline-none"
                 />
@@ -103,8 +245,11 @@ const RegisterPage: React.FC = () => {
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors">
                   <Mail size={18} />
                 </div>
-                <input 
-                  type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu@email.com"
                   className="w-full bg-black/40 border border-white/5 rounded-2xl pl-14 pr-5 py-4 text-sm font-bold focus:border-blue-500/50 transition-all outline-none"
                 />
@@ -117,8 +262,11 @@ const RegisterPage: React.FC = () => {
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-indigo-500 transition-colors">
                   <Lock size={18} />
                 </div>
-                <input 
-                  type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full bg-black/40 border border-white/5 rounded-2xl pl-14 pr-5 py-4 text-sm font-bold focus:border-indigo-500/50 transition-all outline-none"
                 />
@@ -143,15 +291,22 @@ const RegisterPage: React.FC = () => {
 
           <div className="mt-8 pt-6 border-t border-white/5 text-center">
             <p className="text-zinc-500 text-xs font-medium">
-              Já tem uma conta? <Link to="/login" className="text-white font-black hover:underline">Fazer Login</Link>
+              Já tem uma conta?{' '}
+              <Link to="/login" className="text-white font-black hover:underline">
+                Fazer Login
+              </Link>
             </p>
           </div>
         </div>
 
         <div className="mt-8 flex items-center justify-center gap-6 opacity-40">
-           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest"><ShieldCheck size={14} /> Dados Protegidos</div>
-           <div className="w-1 h-1 rounded-full bg-zinc-800"></div>
-           <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">Plano Starter Ativo</div>
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
+            <ShieldCheck size={14} /> Dados Protegidos
+          </div>
+          <div className="w-1 h-1 rounded-full bg-zinc-800"></div>
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
+            Plano Starter Ativo
+          </div>
         </div>
       </div>
     </div>
