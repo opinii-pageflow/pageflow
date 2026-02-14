@@ -167,11 +167,16 @@ const LandingPage: React.FC = () => {
         <div className="mt-24 relative w-full max-w-5xl mx-auto group perspective-1000">
           <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/20 to-purple-600/20 blur-[100px] opacity-30 group-hover:opacity-50 transition-all duration-1000 pointer-events-none" />
           <div className="bg-zinc-900/40 border border-white/10 rounded-[3rem] p-4 backdrop-blur-3xl shadow-2xl relative z-10 transform-gpu group-hover:rotate-x-2 transition-all duration-1000">
-             <div className="bg-black/80 rounded-[2.5rem] overflow-hidden aspect-video flex items-center justify-center relative">
+             <div className="bg-black/80 rounded-[2.5rem] overflow-hidden aspect-[4/5] md:aspect-video flex items-center justify-center relative">
                 <img 
                   src="/hero-phones.jpeg" 
                   alt="PageFlow em múltiplos dispositivos" 
-                  className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-700"
+                  className="hidden md:block w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-700"
+                />
+                <img 
+                  src="/Israel_Souza_PageFlow.png" 
+                  alt="PageFlow Mobile" 
+                  className="block md:hidden w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-700"
                 />
              </div>
           </div>
