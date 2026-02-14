@@ -91,15 +91,16 @@ export const trackEvent = (params: {
   }));
 };
 
-export const getProfileSummary = (profileId: string | 'all', days: number = 7): AnalyticsSummary => {
+export const getProfileSummary = (profileId: string | 'all', days: number = 7, clientId?: string): AnalyticsSummary => {
   const data = getStorage();
   const now = Date.now();
   const ms = days * 24 * 60 * 60 * 1000;
   
   const filteredEvents = data.events.filter(e => {
     const isProfile = profileId === 'all' || e.profileId === profileId;
+    const isClient = !clientId || e.clientId === clientId;
     const isRecent = now - e.ts <= ms;
-    return isProfile && isRecent;
+    return isProfile && isClient && isRecent;
   });
 
   const views = filteredEvents.filter(e => e.type === 'view');
@@ -119,6 +120,9 @@ export const getProfileSummary = (profileId: string | 'all', days: number = 7): 
       else dateMap[d].clicks++;
     }
   });
+
+  // Sort dates to ensure chart order
+  const sortedDates = Object.keys(dateMap).sort();
 
   // Top Links & Distribution
   const linkMap: Record<string, number> = {};
@@ -173,8 +177,8 @@ export const getProfileSummary = (profileId: string | 'all', days: number = 7): 
     totalViews: views.length,
     totalClicks: clicks.length,
     ctr: views.length > 0 ? (clicks.length / views.length) * 100 : 0,
-    viewsByDate: Object.entries(dateMap).map(([date, val]) => ({ date, value: val.views })),
-    clicksByDate: Object.entries(dateMap).map(([date, val]) => ({ date, value: val.clicks })),
+    viewsByDate: sortedDates.map(d => ({ date: d, value: dateMap[d].views })),
+    clicksByDate: sortedDates.map(d => ({ date: d, value: dateMap[d].clicks })),
     sources: sortMap(sourceMap),
     topLinks,
     peakHours: Object.entries(hourMap).map(([hour, value]) => ({ hour: parseInt(hour), value })),

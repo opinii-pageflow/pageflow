@@ -147,7 +147,9 @@ const InsightsPage: React.FC = () => {
   const [days, setDays] = useState(7);
   
   const clientProfiles = useMemo(() => data.profiles.filter(p => p.clientId === user?.clientId), [data.profiles, user?.clientId]);
-  const summary = useMemo(() => getProfileSummary('all', days), [days]);
+  
+  // Inclui data.events.length para forçar refresh quando houver novos eventos
+  const summary = useMemo(() => getProfileSummary('all', days, user?.clientId), [days, user?.clientId, data.events.length]);
 
   const peakHour = useMemo(() => {
     const list = Array.isArray(summary.peakHours) ? summary.peakHours : [];
@@ -156,7 +158,6 @@ const InsightsPage: React.FC = () => {
     return typeof top?.hour === 'number' ? top.hour : null;
   }, [summary.peakHours]);
 
-  // Usando permissões centralizadas
   const hasAnalyticsAccess = canAccessFeature(client?.plan, 'analytics');
 
   if (!hasAnalyticsAccess) {
