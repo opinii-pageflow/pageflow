@@ -192,10 +192,62 @@ body:not(.is-public-profile)::after {
   position: relative;
 }
 
-.profile-root h1,
-.profile-root h2,
-.profile-root h3,
-.profile-root h4 {
-  font-family: var(--font-heading) !important;
-  letter-spacing: -0.02em;
+/* Staggered Animations & Kinetic Utilities */
+@keyframes kinetic-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) skewX(-2deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) skewX(0deg);
+  }
+}
+
+.animate-kinetic {
+  animation: kinetic-reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Stagger delay helpers (up to 10 items for simplicity in small catalogs) */
+.delay-1 {
+  animation-delay: 0.1s;
+}
+
+.delay-2 {
+  animation-delay: 0.15s;
+}
+
+.delay-3 {
+  animation-delay: 0.2s;
+}
+
+.delay-4 {
+  animation-delay: 0.25s;
+}
+
+.delay-5 {
+  animation-delay: 0.3s;
+}
+
+.delay-6 {
+  animation-delay: 0.35s;
+}
+
+.delay-7 {
+  animation-delay: 0.4s;
+}
+
+.delay-8 {
+  animation-delay: 0.45s;
+}
+
+/* Kinetic Hover physical depth */
+.hover-kinetic {
+  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.hover-kinetic:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
 }

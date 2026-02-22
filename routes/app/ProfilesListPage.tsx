@@ -357,7 +357,7 @@ const ProfilesListPage: React.FC = () => {
                     className="flex items-center gap-2 group/link cursor-pointer w-fit"
                   >
                     <Globe size={10} className="text-zinc-700 group-hover/link:text-neon-blue transition-colors" />
-                    <p className="text-[8.5px] font-black uppercase text-zinc-500 tracking-[0.15em] truncate group-hover/link:text-zinc-300 transition-colors italic">linkflow.me/{profile.slug}</p>
+                    <p className="text-[8.5px] font-black uppercase text-zinc-500 tracking-[0.15em] truncate group-hover/link:text-zinc-300 transition-colors italic">pageflow.me/{profile.slug}</p>
                     <ExternalLink size={8} className="opacity-0 group-hover/link:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all text-neon-blue" />
                   </a>
                 </div>
@@ -458,7 +458,7 @@ const ProfilesListPage: React.FC = () => {
                       onChange={e => setNewProfileSlug(e.target.value.toLowerCase().replace(/[^a-z0-0-]/g, ''))}
                       className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-sm text-white focus:border-neon-blue outline-none transition-all pl-28"
                     />
-                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-600 text-[10px] font-black uppercase">linkflow.me/</div>
+                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-600 text-[10px] font-black uppercase">pageflow.me/</div>
                   </div>
                 </div>
               </div>

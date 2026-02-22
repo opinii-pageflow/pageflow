@@ -35,11 +35,6 @@ import { useNavigate } from 'react-router-dom';
 import { PLAN_RANK } from '../../lib/permissions';
 import { PlanType } from '../../types';
 
-// ... (imports remain same)
-
-// ... (rest of file)
-
-
 interface Props {
     profile: Profile;
     clientPlan?: PlanType;
@@ -690,66 +685,26 @@ const DesignTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
                     <p className="text-xs text-zinc-500 mb-4">Personalize o visual de todos os módulos ou de cada um individualmente.</p>
 
                     {(() => {
-                        const [editingModule, setEditingModule] = React.useState<ModuleType | 'general'>('general');
+                        const currentTheme = profile.generalModuleTheme || { style: 'glass' };
 
-                        // Map of labels for the selector
-                        const moduleLabels: Record<string, string> = {
-                            general: 'Geral (Todos)',
-                            scheduling: 'Agendamento',
-                            catalog: 'Catálogo',
-                            portfolio: 'Portfólio',
-                            videos: 'Vídeos',
-                            leadCapture: 'Leads',
-                            nps: 'NPS',
-                            pix: 'Pix'
-                        };
-
-                        const currentTheme = editingModule === 'general'
-                            ? (profile.generalModuleTheme || { style: 'glass' })
-                            : (profile.moduleThemes?.[editingModule] || {});
-
-                        const updateThemeValue = (updates: Partial<ModuleTheme>) => {
-                            if (editingModule === 'general') {
-                                onUpdate({
-                                    generalModuleTheme: {
-                                        ...(profile.generalModuleTheme || { style: 'glass' }),
-                                        ...updates
-                                    }
-                                });
-                            } else {
-                                const currentModuleThemes = profile.moduleThemes || {};
-                                onUpdate({
-                                    moduleThemes: {
-                                        ...currentModuleThemes,
-                                        [editingModule]: {
-                                            ...(currentModuleThemes[editingModule] || { style: 'glass' }),
-                                            ...updates
-                                        }
-                                    }
-                                });
-                            }
+                        const updateGeneralTheme = (updates: Partial<ModuleTheme>) => {
+                            onUpdate({
+                                generalModuleTheme: {
+                                    ...currentTheme,
+                                    ...updates
+                                },
+                                moduleThemes: {} // Reset individual overrides
+                            });
                         };
 
                         return (
                             <div className="space-y-8">
-                                {/* Seletor de Módulo */}
-                                <div className="space-y-3">
-                                    <label className="text-[9px] font-black uppercase text-zinc-600 tracking-widest ml-1">Módulo para Editar</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {(Object.keys(moduleLabels) as (ModuleType | 'general')[]).map(m => (
-                                            <button
-                                                key={m}
-                                                onClick={() => setEditingModule(m)}
-                                                className={clsx(
-                                                    "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
-                                                    editingModule === m
-                                                        ? "bg-blue-600/10 border-blue-500 text-blue-400"
-                                                        : "bg-black/20 border-white/5 text-zinc-500 hover:text-white"
-                                                )}
-                                            >
-                                                {moduleLabels[m]}
-                                            </button>
-                                        ))}
+                                <div className="flex items-center justify-between gap-4">
+                                    <p className="text-xs text-zinc-500 max-w-[300px]">
+                                        Personalize o visual de todos os módulos de uma vez. As alterações são aplicadas instantaneamente a todas as seções.
+                                    </p>
+                                    <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
+                                        <span className="text-[8px] font-black uppercase text-blue-500">Controle Global Ativo</span>
                                     </div>
                                 </div>
 
@@ -757,14 +712,14 @@ const DesignTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
                                     <div className="space-y-3">
                                         <label className="text-[9px] font-black uppercase text-zinc-600 tracking-widest ml-1">Estilo do Bloco</label>
                                         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                                            {['minimal', 'neon', 'glass', 'solid', 'outline'].map((style) => (
+                                            {['minimal', 'neon', 'glass', 'solid', 'outline', 'soft', 'brutalist', '3d'].map((style) => (
                                                 <button
                                                     key={style}
-                                                    onClick={() => updateThemeValue({ style: style as any })}
+                                                    onClick={() => updateGeneralTheme({ style: style as any })}
                                                     className={clsx(
-                                                        "py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border",
-                                                        (currentTheme.style || (editingModule === 'general' ? 'glass' : '')) === style
-                                                            ? "bg-white text-black border-white"
+                                                        "py-3 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border",
+                                                        (currentTheme.style || 'glass') === style
+                                                            ? "bg-white text-black border-white shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                                                             : "bg-black/20 text-zinc-500 border-white/5 hover:bg-white/5"
                                                     )}
                                                 >
@@ -775,85 +730,97 @@ const DesignTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
                                     </div>
 
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <span className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Cor Principal</span>
-                                            <ColorPickerButton
-                                                label="Principal"
-                                                value={currentTheme.primaryColor || theme.primary}
-                                                onChange={(hex) => updateThemeValue({ primaryColor: hex })}
-                                            />
+                                        <div className="flex items-center gap-2 ml-1">
+                                            <span className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Tom de Destaque</span>
                                         </div>
-                                        <div className="space-y-2">
-                                            <span className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Botões</span>
-                                            <ColorPickerButton
-                                                label="Botão"
-                                                value={currentTheme.buttonColor || theme.primary}
-                                                onChange={(hex) => updateThemeValue({ buttonColor: hex })}
-                                            />
+                                        <ColorPickerButton
+                                            label="Principal"
+                                            value={currentTheme.primaryColor || theme.primary}
+                                            onChange={(hex) => updateGeneralTheme({ primaryColor: hex })}
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2 ml-1">
+                                            <span className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Cores de Ação</span>
                                         </div>
+                                        <ColorPickerButton
+                                            label="Botão"
+                                            value={currentTheme.buttonColor || theme.primary}
+                                            onChange={(hex) => updateGeneralTheme({ buttonColor: hex })}
+                                        />
                                     </div>
 
-                                    {currentTheme.style === 'neon' && (
-                                        <div className="space-y-3 p-4 bg-black/20 rounded-xl border border-white/5">
-                                            <div className="flex justify-between text-[8px] font-black uppercase text-zinc-500">
-                                                <span>Intensidade Neon</span>
-                                                <span>{currentTheme.glowIntensity || 50}%</span>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 ml-1">
+                                                <span className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Cores de Texto</span>
                                             </div>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="100"
-                                                value={currentTheme.glowIntensity || 50}
-                                                onChange={(e) => updateThemeValue({ glowIntensity: parseInt(e.target.value) })}
-                                                className="w-full h-1 bg-zinc-800 accent-neon-blue rounded-full cursor-pointer"
+                                            <ColorPickerButton
+                                                label="Texto"
+                                                value={currentTheme.textColor || theme.text}
+                                                onChange={(hex) => updateGeneralTheme({ textColor: hex })}
                                             />
                                         </div>
-                                    )}
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Arredondamento</label>
-                                            <select
-                                                value={currentTheme.radius || ''}
-                                                onChange={(e) => updateThemeValue({ radius: e.target.value || undefined })}
-                                                className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-[10px] text-white outline-none"
-                                            >
-                                                <option value="">Padrão</option>
-                                                <option value="0px">Quadrado</option>
-                                                <option value="8px">Pequeno</option>
-                                                <option value="16px">Médio</option>
-                                                <option value="24px">Grande</option>
-                                                <option value="999px">Redondo</option>
-                                            </select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Sombra</label>
-                                            <select
-                                                value={currentTheme.shadow || ''}
-                                                onChange={(e) => updateThemeValue({ shadow: e.target.value || undefined })}
-                                                className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-[10px] text-white outline-none"
-                                            >
-                                                <option value="">Padrão</option>
-                                                <option value="none">Nenhuma</option>
-                                                <option value="0 4px 6px -1px rgba(0, 0, 0, 0.1)">Suave</option>
-                                                <option value="0 10px 15px -3px rgba(0, 0, 0, 0.1)">Média</option>
-                                                <option value="0 20px 25px -5px rgba(0, 0, 0, 0.1)">Forte</option>
-                                            </select>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 ml-1">
+                                                <span className="text-[8px] font-black uppercase text-zinc-600 tracking-widest">Cores de Título</span>
+                                            </div>
+                                            <ColorPickerButton
+                                                label="Título"
+                                                value={currentTheme.titleColor || theme.text}
+                                                onChange={(hex) => updateGeneralTheme({ titleColor: hex })}
+                                            />
                                         </div>
                                     </div>
+                                </div>
 
-                                    {editingModule !== 'general' && (profile.moduleThemes?.[editingModule]) && (
-                                        <button
-                                            onClick={() => {
-                                                const mt = { ...profile.moduleThemes };
-                                                delete mt[editingModule];
-                                                onUpdate({ moduleThemes: mt });
-                                            }}
-                                            className="w-full py-2 text-[8px] font-black uppercase text-red-500 hover:text-red-400 transition-colors"
+                                {(currentTheme.style === 'neon' || currentTheme.style === '3d') && (
+                                    <div className="space-y-4 p-6 bg-black/20 rounded-3xl border border-white/5">
+                                        <div className="flex justify-between items-center text-[8px] font-black uppercase text-zinc-500">
+                                            <span>Intensidade ({currentTheme.style === 'neon' ? 'Brilho' : 'Profundidade'})</span>
+                                            <span className="text-blue-500">{currentTheme.glowIntensity || 50}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            value={currentTheme.glowIntensity || 50}
+                                            onChange={(e) => updateGeneralTheme({ glowIntensity: parseInt(e.target.value) })}
+                                            className="w-full h-1 bg-zinc-800 accent-blue-500 rounded-full cursor-pointer"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[8px] font-black uppercase text-zinc-600 tracking-widest ml-1">Arredondamento</label>
+                                        <select
+                                            value={currentTheme.radius || ''}
+                                            onChange={(e) => updateGeneralTheme({ radius: e.target.value || undefined })}
+                                            className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-[10px] text-zinc-300 outline-none focus:border-blue-500/50 transition-all cursor-pointer"
                                         >
-                                            Resetar para Padrão Geral
-                                        </button>
-                                    )}
+                                            <option value="">Padrão</option>
+                                            <option value="0px">Quadrado (0px)</option>
+                                            <option value="8px">Discreto (8px)</option>
+                                            <option value="16px">Moderno (16px)</option>
+                                            <option value="24px">Suave (24px)</option>
+                                            <option value="999px">Orgânico (Full)</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[8px] font-black uppercase text-zinc-600 tracking-widest ml-1">Sombra</label>
+                                        <select
+                                            value={currentTheme.shadow || ''}
+                                            onChange={(e) => updateGeneralTheme({ shadow: e.target.value || undefined })}
+                                            className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-[10px] text-zinc-300 outline-none focus:border-blue-500/50 transition-all cursor-pointer"
+                                        >
+                                            <option value="">Padrão</option>
+                                            <option value="none">Sem Sombra</option>
+                                            <option value="0 4px 6px -1px rgba(0, 0, 0, 0.1)">Discreta</option>
+                                            <option value="0 10px 15px -3px rgba(0, 0, 0, 0.15)">Média</option>
+                                            <option value="0 25px 50px -12px rgba(0, 0, 0, 0.25)">Profunda (3D)</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         );

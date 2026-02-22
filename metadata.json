@@ -1,5 +1,5 @@
 {
-  "name": "LinkFlow SaaS",
+  "name": "PageFlow SaaS",
   "description": "An ultra-modern multi-tenant SaaS for creating digital business cards and link-in-bio profiles with advanced analytics and customization.",
   "requestFramePermissions": [
     "camera"

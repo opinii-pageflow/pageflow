@@ -103,7 +103,7 @@ const CommunityTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
                 <div className="flex-1 min-w-0">
                     <h4 className="text-base sm:text-xl font-black text-white italic uppercase tracking-tight">Publicar na Comunidade</h4>
                     <p className="text-[10px] sm:text-xs text-zinc-500 font-medium leading-relaxed mt-1">
-                        Ative o protocolo para listar seu perfil em <span className="text-emerald-500/80">linkflow.me/c</span>
+                        Ative o protocolo para listar seu perfil em <span className="text-emerald-500/80">pageflow.me/c</span>
                     </p>
                 </div>
 

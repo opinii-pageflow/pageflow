@@ -215,7 +215,7 @@ const ProfileEditorPage: React.FC = () => {
           <div className="min-w-0">
             <h1 className="font-black text-sm md:text-base tracking-tight truncate">{profile.displayName}</h1>
             <a href={`#/u/${profile.slug}`} target="_blank" className="text-[10px] text-zinc-500 hover:text-blue-400 flex items-center gap-1 transition-colors font-mono">
-              linkflow.me/u/{profile.slug}
+              pageflow.me/u/{profile.slug}
               <ExternalLink size={10} />
             </a>
           </div>
@@ -328,7 +328,7 @@ const ProfileEditorPage: React.FC = () => {
             className="flex-1 overflow-y-auto custom-scrollbar bg-black relative"
           >
             <div className="p-6 lg:p-10 max-w-2xl mx-auto pb-40">
-              {activeTab === 'profile' && <ProfileTab profile={profile} onUpdate={handleUpdateProfile} />}
+              {activeTab === 'profile' && <ProfileTab profile={profile} clientPlan={client?.plan} onUpdate={handleUpdateProfile} />}
               {activeTab === 'design' && <DesignTab profile={profile} clientPlan={client?.plan} onUpdate={handleUpdateProfile} />}
               {activeTab === 'links' && <LinksTab profile={profile} onUpdate={handleUpdateProfile} />}
               {activeTab === 'templates' && <TemplatesTab profile={profile} clientPlan={client?.plan} onUpdate={handleUpdateProfile} />}

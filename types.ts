@@ -235,12 +235,14 @@ export interface Profile {
 }
 
 export type ModuleType = 'scheduling' | 'catalog' | 'leadCapture' | 'nps' | 'portfolio' | 'videos' | 'pix';
-export type ModuleStyleType = 'minimal' | 'neon' | 'glass' | 'solid' | 'outline';
+export type ModuleStyleType = 'minimal' | 'neon' | 'glass' | 'solid' | 'outline' | 'soft' | 'brutalist' | '3d';
 
 export interface ModuleTheme {
   style: ModuleStyleType;
   primaryColor?: string; // If undefined, use global theme.primary
   buttonColor?: string;
+  textColor?: string;
+  titleColor?: string;
   glowIntensity?: number; // 0-100 (for neon)
   radius?: string; // override global radius
   shadow?: string; // override global shadow

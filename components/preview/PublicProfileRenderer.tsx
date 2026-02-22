@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { Profile, AnalyticsSource, PlanType, CatalogItem, SchedulingSlot, ModuleType, UtmParams } from '../../types';
 import { formatLink } from '@/lib/linkHelpers';
 import { trackEvent } from '@/lib/analytics';
@@ -233,6 +233,20 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
   const [bookingContact, setBookingContact] = useState('');
   const [showFullSchedule, setShowFullSchedule] = useState(false);
+
+  const catalogScrollRef = useRef<HTMLDivElement>(null);
+  const portfolioScrollRef = useRef<HTMLDivElement>(null);
+  const videosScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollModule = (ref: React.RefObject<HTMLDivElement>, direction: 'prev' | 'next') => {
+    if (!ref.current) return;
+    const container = ref.current;
+    const scrollAmount = container.clientWidth;
+    container.scrollBy({
+      left: direction === 'next' ? scrollAmount : -scrollAmount,
+      behavior: 'smooth'
+    });
+  };
 
   // Scheduling: 7 Days Logic (Top Level Hooks)
   const getNext7Days = () => {
@@ -556,6 +570,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
     const glow = specific?.glowIntensity ?? general?.glowIntensity ?? 50;
 
     const buttonTextColor = pickReadableOn(buttonColor);
+    const textColorOverride = specific?.textColor || general?.textColor;
+    const titleColorOverride = specific?.titleColor || general?.titleColor;
+
     const primaryTextColor = pickReadableOn(primary);
 
     let containerStyle: React.CSSProperties = {
@@ -568,8 +585,8 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
       position: 'relative',
     };
 
-    let textColor = theme.text || '#ffffff';
-    let titleColor = theme.text || '#ffffff';
+    let textColor = textColorOverride || theme.text || '#ffffff';
+    let titleColor = titleColorOverride || theme.text || '#ffffff';
     let mutedColor = theme.muted || 'rgba(255,255,255,0.6)';
     let inputBg = 'rgba(0,0,0,0.2)';
     let inputBorder = `${borderWidth} solid ${theme.border}`;
@@ -580,6 +597,28 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
         containerStyle.background = 'transparent';
         containerStyle.border = 'none';
         containerStyle.boxShadow = 'none';
+        break;
+      case 'soft':
+        containerStyle.background = 'rgba(255, 255, 255, 0.05)';
+        containerStyle.border = `1px solid ${primary}15`;
+        containerStyle.boxShadow = `0 10px 30px -10px rgba(0,0,0,0.3)`;
+        containerStyle.borderRadius = '32px';
+        break;
+      case 'brutalist':
+        containerStyle.background = primary;
+        containerStyle.border = `4px solid #000000`;
+        containerStyle.boxShadow = `8px 8px 0px 0px #000000`;
+        containerStyle.borderRadius = '0px';
+        textColor = '#000000';
+        titleColor = '#000000';
+        mutedColor = 'rgba(0,0,0,0.6)';
+        inputBg = 'rgba(0,0,0,0.05)';
+        inputBorder = '2px solid #000000';
+        break;
+      case '3d':
+        containerStyle.background = `linear-gradient(145deg, ${primary}15, ${primary}05)`;
+        containerStyle.border = `1px solid ${primary}30`;
+        containerStyle.boxShadow = `0 10px 20px -5px rgba(0,0,0,0.5), inset 0 1px 1px ${primary}40, inset 0 -1px 1px rgba(0,0,0,0.2)`;
         break;
       case 'solid':
         containerStyle.background = primary;
@@ -856,21 +895,65 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
   };
 
   const downloadVCard = () => {
-    const vCardData = [
+    const activeButtons = (profile as any)?.buttons?.filter((b: any) => b.enabled) || [];
+
+    // Extração de dados específicos
+    const phone = activeButtons.find((b: any) => ['phone', 'mobile'].includes(b.type))?.value || '';
+    const whatsapp = activeButtons.find((b: any) => b.type === 'whatsapp')?.value || '';
+    const email = activeButtons.find((b: any) => b.type === 'email')?.value || '';
+
+    // Redes Sociais
+    const instagram = activeButtons.find((b: any) => b.type === 'instagram')?.value || '';
+    const linkedin = activeButtons.find((b: any) => b.type === 'linkedin')?.value || '';
+
+    const lines = [
       'BEGIN:VCARD',
       'VERSION:3.0',
       `FN:${profile.displayName}`,
+      `N:${profile.displayName};;;;`,
       `TITLE:${profile.headline}`,
-      `NOTE:${profile.bioShort}`,
-      `URL:${window.location.href}`,
-      'END:VCARD'
-    ].join('\n');
+    ];
 
+    if (profile.profileType === 'business') {
+      lines.push(`ORG:${profile.displayName}`);
+    }
+
+    if (profile.bioShort) {
+      lines.push(`NOTE:${profile.bioShort.replace(/\n/g, '\\n')}`);
+    }
+
+    if (profile.avatarUrl) {
+      lines.push(`PHOTO;VALUE=URI:${profile.avatarUrl}`);
+    }
+
+    // Telefones
+    if (whatsapp) {
+      const waNum = whatsapp.replace(/\D/g, '');
+      lines.push(`TEL;TYPE=CELL,VOICE;VALUE=uri:tel:${waNum}`);
+    }
+    if (phone) {
+      const phoneNum = phone.replace(/\D/g, '');
+      lines.push(`TEL;TYPE=WORK,VOICE;VALUE=uri:tel:${phoneNum}`);
+    }
+
+    // Email
+    if (email) {
+      lines.push(`EMAIL;TYPE=INTERNET:${email}`);
+    }
+
+    // Sociais / URL
+    lines.push(`URL:${window.location.href}`);
+    if (instagram) lines.push(`X-SOCIALPROFILE;TYPE=instagram:https://instagram.com/${instagram.replace('@', '')}`);
+    if (linkedin) lines.push(`X-SOCIALPROFILE;TYPE=linkedin:${linkedin}`);
+
+    lines.push('END:VCARD');
+
+    const vCardData = lines.join('\n');
     const blob = new Blob([vCardData], { type: 'text/vcard;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `${profile.slug}.vcf`);
+    link.setAttribute('download', `${profile.slug || 'contato'}.vcf`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1559,36 +1642,76 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
               {/* Catalog */}
               {hasCatalogAccess && activeCatalog.length > 0 && (
                 <section className={clsx(
-                  "space-y-3 w-full p-6",
-                  isStack ? "rounded-[2rem] shadow-xl backdrop-blur-md" : "rounded-2xl"
-                )} style={{ ...catalogStyle.container, overflow: 'visible' }}>
-                  <div className="flex items-center min-h-[40px] py-3 mb-3">
-                    <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70 heading-font whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: catalogStyle.titleColor, lineHeight: '1.4', minHeight: '1.4em' }}>
-                      Catálogo
+                  "space-y-6 w-full p-6 sm:p-8 animate-in fade-in duration-1000",
+                  isStack ? "rounded-[2rem] shadow-xl backdrop-blur-md" : (catalogStyle.effectiveStyle === 'minimal' ? "" : "rounded-2xl")
+                )} style={catalogStyle.container}>
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-2">
+                    <h3 className="text-[12px] font-black uppercase tracking-[0.3em] heading-font" style={{ color: catalogStyle.titleColor }}>
+                      Selection / <span className="opacity-40 font-medium">Catalog</span>
                     </h3>
+                    <div className="flex items-center gap-3">
+                      {activeCatalog.length > 1 && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => scrollModule(catalogScrollRef, 'prev')}
+                            className="p-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+                          >
+                            <LucideIcons.ChevronLeft size={16} />
+                          </button>
+                          <button
+                            onClick={() => scrollModule(catalogScrollRef, 'next')}
+                            className="p-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+                          >
+                            <LucideIcons.ChevronRight size={16} />
+                          </button>
+                        </div>
+                      )}
+                      <div className="flex gap-1 ml-2">
+                        <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                        <div className="w-1.5 h-1.5 bg-white/20 rounded-full" />
+                      </div>
+                    </div>
                   </div>
-                  <div className={clsx(
-                    "grid gap-3",
-                    isCardGrid ? "grid-cols-2" : "grid-cols-1"
-                  )}>
-                    {activeCatalog.map((item) => {
-                      const profileLink = window.location.href;
-                      const whatsBtn = buttons.find((b: any) => b.type === 'whatsapp' && b.enabled);
-                      const whatsNumber = (whatsBtn as any)?.value || '';
+
+                  <div
+                    ref={catalogScrollRef}
+                    className="flex gap-0 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-6 -mx-6 px-6 sm:mx-0 sm:px-0"
+                  >
+                    {activeCatalog.map((item, idx) => {
+                      const ctaBtn = buttons.find((b: any) => b.type === 'whatsapp' && b.enabled);
+                      const whatsNumber = (ctaBtn as any)?.value || '';
                       let ctaHref = item.ctaLink || '#';
                       if (!ctaHref.includes('wa.me') && !ctaHref.includes('whatsapp.com') && whatsNumber) {
                         const text = encodeURIComponent(`Olá! Tenho interesse em "${item.title}" que vi no seu perfil PageFlow.`);
                         ctaHref = `https://wa.me/${whatsNumber.replace(/\D/g, '')}?text=${text}`;
                       }
+
                       return (
-                        <div key={item.id} className={clsx(
-                          "rounded-2xl p-4 transition-all hover:scale-[1.02]",
-                          isCardGrid ? "flex flex-col gap-3" : "p-5"
-                        )} style={catalogStyle.itemCardStyle}>
-                          <div className={clsx(
-                            "flex items-center text-left",
-                            isCardGrid ? "flex-col text-center" : "gap-5"
-                          )}>
+                        <div
+                          key={item.id}
+                          className={clsx(
+                            "group relative flex-none w-full snap-start flex flex-col hover-kinetic animate-kinetic pr-5 px-4",
+                            `delay-${(idx % 8) + 1}`
+                          )}
+                        >
+                          {/* Image Container with Floating Price */}
+                          <div className="relative aspect-[4/5] overflow-hidden bg-zinc-900 border border-white/5 transition-all group-hover:border-white/20 rounded-2xl">
+                            <img
+                              src={item.imageUrl || ''}
+                              alt={item.title}
+                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                            />
+
+                            {/* Price Tag Overlay - Kinetic Style */}
+                            {item.priceText && (
+                              <div className="absolute top-0 right-0 p-3 z-10">
+                                <div className="bg-black/90 backdrop-blur-md px-3 py-1.5 border border-white/10 text-[10px] font-black tracking-widest text-white shadow-2xl skew-x-[-12deg]">
+                                  <div className="skew-x-[12deg]">{item.priceText}</div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* View Action Overlay */}
                             <button
                               onClick={() => {
                                 if (item.imageUrl) setSelectedCatalogItem(item);
@@ -1605,22 +1728,33 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                                   });
                                 }
                               }}
-                              className={clsx(
-                                "rounded-xl overflow-hidden flex-shrink-0 border transition-transform",
-                                isCardGrid ? "w-full aspect-square" : "w-24 h-24"
-                              )}
-                              style={{ borderColor: catalogStyle.primary }}
+                              className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-300 z-20 cursor-zoom-in"
                             >
-                              <img src={item.imageUrl || ''} alt={item.title} className="w-full h-full object-cover" />
+                              <div className="w-12 h-12 bg-white/10 backdrop-blur-xl border border-white/30 flex items-center justify-center text-white scale-50 group-hover:scale-100 transition-transform rounded-full">
+                                <LucideIcons.Maximize2 size={20} />
+                              </div>
                             </button>
-                            <div className="flex-1 min-w-0">
-                              <div className="font-black text-md truncate heading-font" style={{ color: catalogStyle.textColor }}>{item.title}</div>
-                              <div className="text-sm font-black body-font" style={{ color: catalogStyle.primary }}>{item.priceText}</div>
-                              {item.description && (
-                                <p className="text-[10px] mt-1 line-clamp-2 opacity-70 body-font" style={{ color: catalogStyle.textColor }}>
-                                  {item.description}
-                                </p>
-                              )}
+                          </div>
+
+                          {/* Content Details */}
+                          <div className="mt-4 space-y-2">
+                            <div className="flex items-start justify-between gap-4">
+                              <h4
+                                className="font-black text-sm sm:text-lg tracking-tight leading-tight heading-font uppercase"
+                                style={{ color: catalogStyle.textColor }}
+                              >
+                                {item.title}
+                              </h4>
+                              <div className="h-px bg-white/10 flex-1 mt-3" />
+                            </div>
+
+                            {item.description && (
+                              <p className="text-[10px] sm:text-xs opacity-60 leading-relaxed body-font line-clamp-2" style={{ color: catalogStyle.textColor }}>
+                                {item.description}
+                              </p>
+                            )}
+
+                            <div className="pt-2">
                               <a
                                 href={isPreview ? '#' : ctaHref}
                                 target="_blank"
@@ -1639,10 +1773,14 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                                     });
                                   }
                                 }}
-                                className="text-[10px] font-black uppercase tracking-widest mt-2 inline-block px-3 py-1.5 button-font transition-all hover:scale-105 active:scale-95"
-                                style={catalogStyle.buttonStyle}
+                                className="inline-flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] border-b-2 transition-all hover:gap-4 button-font"
+                                style={{
+                                  borderColor: catalogStyle.primary,
+                                  color: catalogStyle.textColor
+                                }}
                               >
-                                {item.ctaLabel || 'Contatar'}
+                                {item.ctaLabel || 'Discover'}
+                                <LucideIcons.ArrowRight size={14} style={{ color: catalogStyle.primary }} />
                               </a>
                             </div>
                           </div>
@@ -1659,47 +1797,74 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                   "space-y-3 w-full p-6",
                   isStack ? "rounded-[2rem] shadow-xl backdrop-blur-md" : "rounded-2xl"
                 )} style={{ ...portfolioStyle.container, overflow: 'visible' }}>
-                  <div className="flex items-center min-h-[40px] py-3 mb-3">
+                  <div className="flex items-center justify-between min-h-[40px] py-3 mb-3">
                     <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70 heading-font whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: portfolioStyle.titleColor, lineHeight: '1.4', minHeight: '1.4em' }}>Portfólio</h3>
+                    {activePortfolio.length > 1 && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => scrollModule(portfolioScrollRef, 'prev')}
+                          className="p-1.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+                        >
+                          <LucideIcons.ChevronLeft size={14} />
+                        </button>
+                        <button
+                          onClick={() => scrollModule(portfolioScrollRef, 'next')}
+                          className="p-1.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+                        >
+                          <LucideIcons.ChevronRight size={14} />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className={clsx(
-                    "grid gap-3",
-                    isCardGrid ? "grid-cols-2" : "grid-cols-2"
-                  )}>
-                    {activePortfolio.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          setSelectedImage(item.imageUrl);
-                          if (!isPreview) {
-                            trackEvent({
-                              clientId: profile.clientId,
-                              profileId: profile.id,
-                              type: 'portfolio_click',
-                              assetId: item.id,
-                              assetType: 'portfolio',
-                              assetLabel: item.title,
-                              source,
-                              utm
-                            });
-                          }
-                        }}
-                        className="rounded-2xl overflow-hidden border group relative aspect-square transition-all hover:scale-105"
-                        style={{
-                          ...portfolioStyle.itemCardStyle,
-                          borderColor: portfolioStyle.primary
-                        }}
-                      >
-                        <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                        {item.title && (
-                          <div className="absolute bottom-0 left-0 right-0 p-2 bg-black/60 backdrop-blur-sm z-10">
-                            <div className="text-[9px] font-black text-white truncate uppercase tracking-widest">{item.title}</div>
+                  <div
+                    ref={portfolioScrollRef}
+                    className="flex gap-0 overflow-x-auto snap-x snap-mandatory no-scrollbar -mx-6 px-6 sm:mx-0 sm:px-0"
+                  >
+                    {activePortfolio.map((item, idx) => (
+                      <div key={item.id} className="flex-none w-full snap-start pr-5 px-2">
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setSelectedImage(item.imageUrl);
+                            if (!isPreview) {
+                              trackEvent({
+                                clientId: profile.clientId,
+                                profileId: profile.id,
+                                type: 'portfolio_click',
+                                assetId: item.id,
+                                assetType: 'portfolio',
+                                assetLabel: item.title,
+                                source,
+                                utm
+                              });
+                            }
+                          }}
+                          className={clsx(
+                            "w-full rounded-[2rem] overflow-hidden border group relative aspect-[4/5] transition-all hover:scale-[1.02] duration-500",
+                            `animate-in fade-in slide-in-from-bottom-5 delay-${(idx % 8) + 1}`
+                          )}
+                          style={{
+                            ...portfolioStyle.itemCardStyle,
+                            borderColor: portfolioStyle.primary,
+                            boxShadow: '0 20px 40px -20px rgba(0,0,0,0.5)'
+                          }}
+                        >
+                          <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+
+                          {/* Title Overlay - Minimal Glass */}
+                          {item.title && (
+                            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10 translate-y-2 group-hover:translate-y-0 transition-transform">
+                              <div className="text-[10px] font-black text-white uppercase tracking-[0.2em] leading-tight">{item.title}</div>
+                            </div>
+                          )}
+
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20">
+                            <div className="w-12 h-12 bg-white/10 backdrop-blur-xl border border-white/30 rounded-full flex items-center justify-center text-white scale-75 group-hover:scale-100 transition-transform">
+                              <LucideIcons.Maximize2 size={20} />
+                            </div>
                           </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-20">
-                          <LucideIcons.Search size={24} className="text-white" />
-                        </div>
-                      </button>
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </section>
@@ -1711,15 +1876,38 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                   "space-y-3 w-full p-6",
                   isStack ? "rounded-[2rem] shadow-xl backdrop-blur-md" : "rounded-2xl"
                 )} style={{ ...videosStyle.container, overflow: 'visible' }}>
-                  <div className="flex items-center min-h-[40px] py-3 mb-3">
+                  <div className="flex items-center justify-between min-h-[40px] py-3 mb-3">
                     <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70 heading-font whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: videosStyle.titleColor, lineHeight: '1.4', minHeight: '1.4em' }}>Vídeos</h3>
+                    {activeVideos.length > 1 && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => scrollModule(videosScrollRef, 'prev')}
+                          className="p-1.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+                        >
+                          <LucideIcons.ChevronLeft size={14} />
+                        </button>
+                        <button
+                          onClick={() => scrollModule(videosScrollRef, 'next')}
+                          className="p-1.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-white/50 hover:text-white"
+                        >
+                          <LucideIcons.ChevronRight size={14} />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className="grid grid-cols-1 gap-6">
-                    {activeVideos.map((v) => {
+                  <div
+                    ref={videosScrollRef}
+                    className="flex gap-0 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-6 -mx-6 px-6 sm:mx-0 sm:px-0"
+                  >
+                    {activeVideos.map((v, idx) => {
                       const id = extractYouTubeId(v.url);
                       return (
-                        <div key={v.id} className="space-y-3">
-                          <div className="rounded-2xl overflow-hidden bg-black aspect-video relative group border shadow-lg transition-all" style={{ borderColor: videosStyle.primary, boxShadow: videosStyle.shadowStyle }}>
+                        <div key={v.id} className={clsx(
+                          "flex-none w-full snap-start space-y-4 group animate-in fade-in slide-in-from-right-10 pr-5 px-2",
+                          `delay-${(idx % 8) + 1}`
+                        )}>
+                          <div className="rounded-3xl overflow-hidden bg-black aspect-video relative group border shadow-2xl transition-all duration-500 hover:scale-[1.01]"
+                            style={{ borderColor: videosStyle.primary, boxShadow: `0 20px 50px -20px ${videosStyle.primary}40` }}>
                             <button
                               onClick={() => {
                                 if (id) setSelectedVideoUrl(`https://www.youtube.com/embed/${id}?autoplay=1`);
@@ -1738,17 +1926,21 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                               }}
                               className="w-full h-full"
                             >
-                              <img src={`https://img.youtube.com/vi/${id}/mqdefault.jpg`} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" alt={v.title} />
+                              <img src={`https://img.youtube.com/vi/${id}/maxresdefault.jpg`} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-700" alt={v.title} />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                               <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform">
+                                <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-xl flex items-center justify-center border border-white/30 group-hover:scale-110 group-hover:bg-white/20 transition-all duration-500 shadow-2xl">
                                   <LucideIcons.Play size={32} className="text-white fill-white ml-1" />
                                 </div>
                               </div>
                             </button>
                           </div>
                           {v.title && (
-                            <div className="px-1 text-center sm:text-left">
-                              <h4 className="font-black text-sm tracking-tight heading-font" style={{ color: videosStyle.textColor }}>{v.title}</h4>
+                            <div className="px-2 text-center">
+                              <h4 className="font-black text-sm sm:text-lg tracking-tighter heading-font uppercase italic leading-none" style={{ color: videosStyle.textColor }}>
+                                {v.title}
+                              </h4>
+                              <div className="w-8 h-1 bg-current mt-2 opacity-20 mx-auto" style={{ color: videosStyle.primary }} />
                             </div>
                           )}
                         </div>
@@ -1768,12 +1960,62 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                     <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70 heading-font whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: leadCaptureStyle.titleColor, lineHeight: '1.3' }}>Fale Comigo</h3>
                     <LucideIcons.MessageSquareText size={18} style={{ color: leadCaptureStyle.primary }} />
                   </div>
-                  {leadSent ? <div className="text-sm font-bold body-font" style={{ color: leadCaptureStyle.textColor }}>✅ Mensagem registrada!</div> : (
-                    <div className="space-y-2">
-                      <input value={leadName} onChange={e => setLeadName(e.target.value)} placeholder="Seu nome" className="w-full rounded-xl p-3 outline-none text-sm font-semibold body-font focus:border-opacity-100" style={leadCaptureStyle.inputStyle} />
-                      <input value={leadContact} onChange={e => setLeadContact(e.target.value)} placeholder="WhatsApp ou E-mail" className="w-full rounded-xl p-3 outline-none text-sm font-semibold body-font focus:border-opacity-100" style={leadCaptureStyle.inputStyle} />
-                      <textarea value={leadMessage} onChange={e => setLeadMessage(e.target.value)} placeholder="Sua mensagem" className="w-full rounded-xl p-3 outline-none text-sm font-semibold body-font min-h-[80px] focus:border-opacity-100" style={leadCaptureStyle.inputStyle} />
-                      <button onClick={submitLead} className="w-full rounded-xl p-3 font-black text-xs uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95 button-font shadow-lg" style={leadCaptureStyle.buttonStyle}>Enviar</button>
+                  {leadSent ? (
+                    <div className="py-12 flex flex-col items-center justify-center space-y-4 animate-in zoom-in-95 duration-500">
+                      <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                        <LucideIcons.Check size={32} />
+                      </div>
+                      <div className="text-sm font-black uppercase tracking-widest body-font text-center" style={{ color: leadCaptureStyle.textColor }}>
+                        Mensagem Recebida!<br />
+                        <span className="opacity-50 text-[10px] font-medium lowecase">Entrarei em contato em breve.</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <input
+                          value={leadName}
+                          onChange={e => setLeadName(e.target.value)}
+                          placeholder="Seu nome"
+                          className="w-full rounded-2xl p-4 outline-none text-sm font-bold body-font border-b-2 transition-all"
+                          style={{
+                            ...leadCaptureStyle.inputStyle,
+                            borderBottomColor: `${leadCaptureStyle.primary}20`
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <input
+                          value={leadContact}
+                          onChange={e => setLeadContact(e.target.value)}
+                          placeholder="WhatsApp ou E-mail"
+                          className="w-full rounded-2xl p-4 outline-none text-sm font-bold body-font border-b-2 transition-all"
+                          style={{
+                            ...leadCaptureStyle.inputStyle,
+                            borderBottomColor: `${leadCaptureStyle.primary}20`
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <textarea
+                          value={leadMessage}
+                          onChange={e => setLeadMessage(e.target.value)}
+                          placeholder="Sua mensagem..."
+                          className="w-full rounded-2xl p-4 outline-none text-sm font-bold body-font min-h-[100px] border-b-2 transition-all resize-none"
+                          style={{
+                            ...leadCaptureStyle.inputStyle,
+                            borderBottomColor: `${leadCaptureStyle.primary}20`
+                          }}
+                        />
+                      </div>
+                      <button
+                        onClick={submitLead}
+                        className="w-full rounded-2xl p-5 font-black text-xs uppercase tracking-[0.2em] transition-all hover:scale-[1.02] active:scale-95 button-font shadow-2xl flex items-center justify-center gap-2 group"
+                        style={leadCaptureStyle.buttonStyle}
+                      >
+                        Enviar Mensagem
+                        <LucideIcons.Send size={16} className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                      </button>
                     </div>
                   )}
                 </section>
@@ -1789,22 +2031,34 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                     <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70 heading-font whitespace-nowrap overflow-hidden text-ellipsis" style={{ color: npsStyle.titleColor, lineHeight: '1.3' }}>Avaliação</h3>
                     <LucideIcons.Star size={18} style={{ color: npsStyle.primary }} />
                   </div>
-                  {npsSent ? <div className="text-sm font-bold body-font" style={{ color: npsStyle.textColor }}>⭐ Agradecemos seu feedback!</div> : (
-                    <div className="space-y-4">
-                      <p className="text-[10px] font-black uppercase text-center opacity-60" style={{ color: npsStyle.textColor }}>O quanto você nos recomendaria?</p>
-                      <div className="grid grid-cols-11 gap-1">
+                  {npsSent ? (
+                    <div className="py-12 flex flex-col items-center justify-center space-y-4 animate-in zoom-in-95 duration-500">
+                      <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
+                        <LucideIcons.Check size={32} />
+                      </div>
+                      <div className="text-sm font-black uppercase tracking-widest body-font text-center" style={{ color: npsStyle.textColor }}>
+                        Agradecemos seu feedback!<br />
+                        <span className="opacity-50 text-[10px] font-medium lowecase">Sua opinião é vital para nós.</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      <p className="text-[10px] font-black uppercase text-center tracking-[0.3em] opacity-40 italic" style={{ color: npsStyle.textColor }}>O quanto você nos recomendaria?</p>
+
+                      <div className="flex flex-wrap justify-center gap-2">
                         {Array.from({ length: 11 }).map((_, i) => (
                           <button
                             key={i}
                             onClick={() => setNpsScore(i)}
                             className={clsx(
-                              "rounded-lg py-2 text-[10px] font-black border transition-all button-font",
-                              npsScore === i ? "scale-110 shadow-lg" : "opacity-50 hover:opacity-100"
+                              "w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-xs sm:text-sm font-black border transition-all duration-300 button-font",
+                              npsScore === i ? "scale-110 shadow-2xl z-10" : "opacity-60 hover:opacity-100 hover:scale-[1.05]"
                             )}
                             style={{
                               borderColor: npsScore === i ? npsStyle.primary : theme.border,
-                              background: npsScore === i ? npsStyle.primary : 'transparent',
-                              color: npsScore === i ? npsStyle.buttonTextColor : npsStyle.textColor
+                              background: npsScore === i ? npsStyle.primary : 'rgba(255,255,255,0.03)',
+                              color: npsScore === i ? npsStyle.buttonTextColor : npsStyle.textColor,
+                              boxShadow: npsScore === i ? `0 10px 30px -5px ${npsStyle.primary}60` : 'none'
                             }}
                           >
                             {i}
@@ -1898,13 +2152,93 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
         )
       }
 
-      {
-        selectedCatalogItem && (
-          <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/95 p-4" onClick={() => setSelectedCatalogItem(null)}>
-            <img src={selectedCatalogItem.imageUrl || ''} className="max-w-full max-h-[80vh] rounded-2xl object-contain" />
+      {/* Catalog Item Modal: Kinetic Zoom */}
+      {selectedCatalogItem && (
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-300" onClick={() => setSelectedCatalogItem(null)}>
+          <div className="absolute inset-0 bg-black/98 backdrop-blur-xl" />
+
+          <div
+            className="relative w-full max-w-5xl bg-[#050505] border border-white/10 rounded-sm overflow-hidden flex flex-col md:flex-row shadow-[0_0_100px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-500"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedCatalogItem(null)}
+              className="absolute top-4 right-4 z-40 p-3 bg-black/50 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition-all border border-white/5 backdrop-blur-md"
+            >
+              <LucideIcons.X size={20} />
+            </button>
+
+            {/* Image Side */}
+            <div className="w-full md:w-3/5 aspect-square md:aspect-auto bg-zinc-900 flex items-center justify-center relative group">
+              <img
+                src={selectedCatalogItem.imageUrl || ''}
+                className="w-full h-full object-contain"
+                alt={selectedCatalogItem.title}
+              />
+              <div className="absolute bottom-4 left-4 bg-black/40 backdrop-blur-md px-3 py-1.5 border border-white/10 text-[8px] font-black uppercase tracking-widest text-white/40">
+                Visual Inspection / HQ Mode
+              </div>
+            </div>
+
+            {/* Info Side */}
+            <div className="w-full md:w-2/5 p-8 sm:p-12 flex flex-col justify-center space-y-8 bg-zinc-950/50">
+              <div className="space-y-4">
+                <div
+                  className="inline-flex px-3 py-1 bg-blue-500/10 border border-blue-500/20 text-blue-500 text-[9px] font-black uppercase tracking-[0.2em]"
+                >
+                  {selectedCatalogItem.kind === 'service' ? 'Service / Provision' : 'Product / Asset'}
+                </div>
+                <h2 className="text-3xl sm:text-5xl font-black heading-font uppercase tracking-tighter italic">
+                  {selectedCatalogItem.title}
+                </h2>
+                <div className="h-0.5 w-12 bg-blue-500" />
+              </div>
+
+              {selectedCatalogItem.priceText && (
+                <div className="space-y-1">
+                  <div className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Market Value</div>
+                  <div className="text-3xl font-black text-white tabular-nums">
+                    {selectedCatalogItem.priceText}
+                  </div>
+                </div>
+              )}
+
+              {selectedCatalogItem.description && (
+                <div className="space-y-2">
+                  <div className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Description</div>
+                  <p className="text-sm text-zinc-400 leading-relaxed body-font">
+                    {selectedCatalogItem.description}
+                  </p>
+                </div>
+              )}
+
+              <div className="pt-4">
+                {(() => {
+                  const ctaBtn = buttons.find((b: any) => b.type === 'whatsapp' && b.enabled);
+                  const whatsNumber = (ctaBtn as any)?.value || '';
+                  let ctaHref = selectedCatalogItem.ctaLink || '#';
+                  if (!ctaHref.includes('wa.me') && !ctaHref.includes('whatsapp.com') && whatsNumber) {
+                    const text = encodeURIComponent(`Olá! Tenho interesse em "${selectedCatalogItem.title}" que vi no seu perfil PageFlow.`);
+                    ctaHref = `https://wa.me/${whatsNumber.replace(/\D/g, '')}?text=${text}`;
+                  }
+                  return (
+                    <a
+                      href={isPreview ? '#' : ctaHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group w-full py-5 px-8 bg-white text-black text-[11px] font-black uppercase tracking-[0.3em] flex items-center justify-between hover:bg-zinc-200 transition-all active:scale-95"
+                    >
+                      {selectedCatalogItem.ctaLabel || 'Acquire Now'}
+                      <LucideIcons.ArrowRight size={18} className="translate-x-0 group-hover:translate-x-2 transition-transform" />
+                    </a>
+                  );
+                })()}
+              </div>
+            </div>
           </div>
-        )
-      }
+        </div>
+      )}
 
       {
         selectedVideoUrl && (
@@ -1919,7 +2253,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
       {
         selectedImage && (
           <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/95 p-4" onClick={() => setSelectedImage(null)}>
-            <img src={selectedImage} className="max-w-full max-h-[90vh] rounded-2xl object-contain" />
+            <img src={selectedImage || ''} className="max-w-full max-h-[90vh] rounded-2xl object-contain" />
           </div>
         )
       }

@@ -1,13 +1,15 @@
 import React, { useRef } from 'react';
-import { Profile } from '../../types';
-import { Camera, Image as ImageIcon, Sparkles, Upload, Link as LinkIcon, X, User, Building2 } from 'lucide-react';
+import { Camera, Image as ImageIcon, Sparkles, Upload, Link as LinkIcon, X, User, Building2, Lock, Zap } from 'lucide-react';
+import { Profile, PlanType } from '../../types';
+import clsx from 'clsx';
 
 interface Props {
   profile: Profile;
+  clientPlan?: PlanType;
   onUpdate: (updates: Partial<Profile>) => void;
 }
 
-const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
+const ProfileTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
@@ -203,28 +205,64 @@ const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
             </div>
           </div>
 
-          <div className="p-8 sm:p-10 rounded-[2.5rem] sm:rounded-[3rem] bg-white/[0.02] border border-white/5 space-y-4 group hover:border-blue-500/20 transition-all">
-            <div className="flex items-center gap-2 px-1">
-              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
-              <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Identificador de URL</label>
+          <div className={clsx(
+            "p-8 sm:p-10 rounded-[2.5rem] sm:rounded-[3rem] bg-white/[0.02] border border-white/5 space-y-4 group transition-all",
+            (clientPlan === 'business' || clientPlan === 'enterprise') ? "hover:border-blue-500/20" : ""
+          )}>
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Identificador de URL</label>
+              </div>
+              {!(clientPlan === 'business' || clientPlan === 'enterprise') && (
+                <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[8px] font-black text-amber-500 uppercase tracking-widest">
+                  <Lock size={10} />
+                  Somente Business/Enterprise
+                </div>
+              )}
             </div>
 
-            <div className="flex items-stretch shadow-2xl rounded-2xl overflow-hidden border border-white/10 group-focus-within:border-blue-500/50 transition-all">
+            <div className={clsx(
+              "flex items-stretch shadow-2xl rounded-2xl overflow-hidden border transition-all",
+              (clientPlan === 'business' || clientPlan === 'enterprise')
+                ? "border-white/10 group-focus-within:border-blue-500/50"
+                : "border-white/5 opacity-50 bg-zinc-950/50 cursor-not-allowed"
+            )}>
               <div className="bg-zinc-900/80 px-5 flex items-center text-zinc-500 text-[11px] font-black uppercase tracking-widest border-r border-white/5 italic">
-                linkflow.me/u/
+                pageflow.me/u/
               </div>
               <input
                 type="text"
                 value={profile.slug}
+                disabled={!(clientPlan === 'business' || clientPlan === 'enterprise')}
                 onChange={(e) => onUpdate({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
-                className="flex-1 bg-black/60 px-6 py-5 text-sm sm:text-base font-black outline-none text-blue-400 placeholder:text-zinc-800"
+                className={clsx(
+                  "flex-1 bg-black/60 px-6 py-5 text-sm sm:text-base font-black outline-none placeholder:text-zinc-800",
+                  (clientPlan === 'business' || clientPlan === 'enterprise') ? "text-blue-400" : "text-zinc-600"
+                )}
                 placeholder="seu-identificador"
               />
             </div>
 
-            <p className="text-[10px] text-zinc-600 font-medium italic px-2 leading-relaxed">
-              Este é o seu endereço único na rede. Use letras minúsculas, números e hifens.
-            </p>
+            {!(clientPlan === 'business' || clientPlan === 'enterprise') ? (
+              <div className="bg-blue-600/5 border border-blue-600/10 rounded-2xl p-4 mt-2 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center text-blue-500">
+                    <Zap size={14} fill="currentColor" />
+                  </div>
+                  <p className="text-[10px] text-zinc-400 font-medium leading-tight max-w-[200px]">
+                    Personalize sua URL para passar mais autoridade. Disponível nos planos superiores.
+                  </p>
+                </div>
+                <button className="text-[9px] font-black text-white bg-blue-600 px-3 py-2 rounded-lg uppercase tracking-wider hover:bg-blue-500 transition-colors">
+                  Upgrade
+                </button>
+              </div>
+            ) : (
+              <p className="text-[10px] text-zinc-600 font-medium italic px-2 leading-relaxed">
+                Este é o seu endereço único na rede. Use letras minúsculas, números e hifens.
+              </p>
+            )}
           </div>
         </div>
       </section>

@@ -83,7 +83,7 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan, onRefre
     const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].map(e => e.join(",")).join("\n");
     const link = document.createElement("a");
     link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", "linkflow_leads.csv");
+    link.setAttribute("download", "pageflow_leads.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

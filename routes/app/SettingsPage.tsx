@@ -257,7 +257,7 @@ const SettingsPage: React.FC = () => {
                 </div>` : ''}
                 
                 <div style="margin-top: 10px;">
-                  <a href="${profileUrl}" style="display: inline-block; font-size: 11px; color: #999999; text-decoration: none;">linkflow.me/u/${profile.slug}</a>
+                  <a href="${profileUrl}" style="display: inline-block; font-size: 11px; color: #999999; text-decoration: none;">pageflow.me/u/${profile.slug}</a>
                 </div>
               </td>
             </tr>

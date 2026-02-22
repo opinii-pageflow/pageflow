@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Profile, ProfileButton } from '../../types';
 import {
   Plus,
@@ -24,9 +24,11 @@ import {
   Send,
   AtSign,
   Tv,
-  MessageSquare
+  MessageSquare,
+  Grab
 } from 'lucide-react';
 import { getIconColor } from '../../lib/linkHelpers';
+import clsx from 'clsx';
 
 interface Props {
   profile: Profile;
@@ -34,6 +36,8 @@ interface Props {
 }
 
 const LinksTab: React.FC<Props> = ({ profile, onUpdate }) => {
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
   const addLink = () => {
     const newLink: ProfileButton = {
       id: crypto.randomUUID(),
@@ -51,7 +55,22 @@ const LinksTab: React.FC<Props> = ({ profile, onUpdate }) => {
 
   const updateLink = (id: string, updates: Partial<ProfileButton>) => {
     onUpdate({
-      buttons: profile.buttons.map(b => b.id === id ? { ...b, ...updates } : b)
+      buttons: profile.buttons.map(b => {
+        if (b.id === id) {
+          const newBtn = { ...b, ...updates };
+
+          // Nomenclatura automática se o usuário mudar o TIPO e o label for o padrão ou o nome do tipo anterior
+          if (updates.type && updates.type !== b.type) {
+            const currentTypeLabel = linkOptions.find(opt => opt.value === b.type)?.label || 'Novo Link';
+            if (b.label === 'Novo Link' || b.label === currentTypeLabel) {
+              newBtn.label = linkOptions.find(opt => opt.value === updates.type)?.label || updates.type;
+            }
+          }
+
+          return newBtn;
+        }
+        return b;
+      })
     });
   };
 
@@ -59,6 +78,35 @@ const LinksTab: React.FC<Props> = ({ profile, onUpdate }) => {
     onUpdate({
       buttons: profile.buttons.filter(b => b.id !== id)
     });
+  };
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+
+    const newButtons = [...profile.buttons];
+    const draggedItem = newButtons[draggedIndex];
+
+    // Reorder array
+    newButtons.splice(draggedIndex, 1);
+    newButtons.splice(index, 0, draggedItem);
+
+    // Update sortOrder
+    const finalizedButtons = newButtons.map((btn, i) => ({
+      ...btn,
+      sortOrder: i
+    }));
+
+    setDraggedIndex(index);
+    onUpdate({ buttons: finalizedButtons });
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
   };
 
   const iconMap: Record<string, any> = {
@@ -100,6 +148,8 @@ const LinksTab: React.FC<Props> = ({ profile, onUpdate }) => {
     { value: 'maps', label: 'Google Maps' },
   ];
 
+  const sortedButtons = [...profile.buttons].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <header className="flex items-center justify-between">
@@ -117,18 +167,23 @@ const LinksTab: React.FC<Props> = ({ profile, onUpdate }) => {
       </header>
 
       <div className="space-y-4">
-        {profile.buttons.map((btn, index) => {
+        {sortedButtons.map((btn, index) => {
           const Icon = iconMap[btn.type] || Globe;
           return (
             <div
               key={btn.id}
-              className={`
-                bg-zinc-900/40 border rounded-[1.5rem] p-4 flex flex-col gap-4 group transition-all duration-300
-                ${btn.enabled ? 'border-white/5' : 'opacity-60 border-dashed border-white/10'}
-              `}
+              draggable
+              onDragStart={() => handleDragStart(index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragEnd={handleDragEnd}
+              className={clsx(
+                "bg-zinc-900/40 border rounded-[1.5rem] p-4 flex flex-col gap-4 group transition-all duration-300",
+                btn.enabled ? 'border-white/5' : 'opacity-60 border-dashed border-white/10',
+                draggedIndex === index ? "border-blue-500/50 bg-blue-500/5 scale-[0.98] opacity-50" : "hover:border-white/10"
+              )}
             >
               <div className="flex items-start gap-3">
-                <div className="mt-2 cursor-grab text-zinc-700 hover:text-white transition-colors">
+                <div className="mt-2 cursor-grab active:cursor-grabbing text-zinc-700 hover:text-white transition-colors">
                   <GripVertical size={20} />
                 </div>
 
@@ -147,11 +202,11 @@ const LinksTab: React.FC<Props> = ({ profile, onUpdate }) => {
                   <div className="relative inline-block mt-1">
                     <select
                       value={btn.type}
-                      onChange={(e) => updateLink(btn.id, { type: e.target.value })}
+                      onChange={(e) => updateLink(btn.id, { type: e.target.value as any })}
                       className="appearance-none bg-white/5 border border-white/5 rounded-lg pl-2 pr-6 py-0.5 text-[9px] font-black uppercase tracking-widest text-zinc-500 outline-none cursor-pointer hover:bg-white/10 transition-all"
                     >
                       {linkOptions.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <option key={opt.value} value={opt.value} className="bg-zinc-900 text-white">{opt.label}</option>
                       ))}
                     </select>
                     <ChevronDown size={10} className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-600" />
@@ -161,7 +216,10 @@ const LinksTab: React.FC<Props> = ({ profile, onUpdate }) => {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => updateLink(btn.id, { enabled: !btn.enabled })}
-                    className={`p-2 rounded-lg transition-all ${btn.enabled ? 'bg-emerald-500/10 text-emerald-500' : 'bg-zinc-800 text-zinc-600'}`}
+                    className={clsx(
+                      "p-2 rounded-lg transition-all",
+                      btn.enabled ? 'bg-emerald-500/10 text-emerald-500' : 'bg-zinc-800 text-zinc-600'
+                    )}
                   >
                     {btn.enabled ? <Eye size={16} /> : <EyeOff size={16} />}
                   </button>
