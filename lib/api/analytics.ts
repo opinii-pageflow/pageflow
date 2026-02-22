@@ -317,7 +317,11 @@ export async function getAnalyticsEvents(
         query = query.eq('source', source);
     }
 
+<<<<<<< HEAD
     query = query.order('ts', { ascending: false });
+=======
+    query = query.order('ts', { ascending: false }).limit(1000);
+>>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
 
 
     if (startDate) {

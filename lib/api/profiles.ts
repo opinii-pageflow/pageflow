@@ -152,7 +152,11 @@ function mapButton(b: any): ProfileButton {
 export const profilesApi = {
     listAll: async (): Promise<Profile[]> => {
         const { data, error } = await (supabase.from('profiles') as any)
+<<<<<<< HEAD
             .select('*')
+=======
+            .select('id, client_id, display_name, slug, avatar_url, updated_at, layout_template, featured, show_on_landing')
+>>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -165,16 +169,40 @@ export const profilesApi = {
 
     listCommunity: async (): Promise<Profile[]> => {
         const { data: profiles, error } = await (supabase.from('profiles') as any)
+<<<<<<< HEAD
             .select('*')
             .eq('show_in_community', true)
             .eq('visibility_mode', 'public')
             .order('created_at', { ascending: false });
+=======
+            .select(`
+                id, client_id, slug, profile_type, display_name, headline, bio_short, avatar_url, cover_url, 
+                layout_template, visibility_mode, theme, fonts, module_themes, created_at, updated_at,
+                show_in_community, community_segment, community_city, community_state, 
+                community_punchline, sponsored_enabled, sponsored_until, sponsored_segment,
+                promotion_enabled, promotion_title, promotion_description, promotion_discount_percentage,
+                promotion_current_price, promotion_image_url, promotion_whatsapp, booking_whatsapp, featured,
+                pix_key, enable_lead_capture, enable_nps, hide_branding,
+                profile_buttons(*),
+                catalog_items(*),
+                portfolio_items(*),
+                youtube_videos(*)
+            `)
+            .eq('show_in_community', true)
+            .eq('visibility_mode', 'public')
+            .order('created_at', { ascending: false })
+            .order('sort_order', { foreignTable: 'profile_buttons', ascending: true })
+            .order('sort_order', { foreignTable: 'catalog_items', ascending: true })
+            .order('sort_order', { foreignTable: 'portfolio_items', ascending: true })
+            .order('sort_order', { foreignTable: 'youtube_videos', ascending: true });
+>>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
 
         if (error) {
             console.error('Error fetching community profiles:', error);
             return [];
         }
 
+<<<<<<< HEAD
         const result: Profile[] = [];
         for (const p of (profiles || [])) {
             const profile = mapProfile(p);
@@ -202,20 +230,54 @@ export const profilesApi = {
         }
 
         return result;
+=======
+        return (profiles || []).map(p => {
+            const profile = mapProfile(p);
+            profile.buttons = (p.profile_buttons || []).map(mapButton);
+            profile.catalogItems = (p.catalog_items || []).map(mapCatalogItem);
+            profile.portfolioItems = (p.portfolio_items || []).map(mapPortfolioItem);
+            profile.youtubeVideos = (p.youtube_videos || []).map(mapVideoItem);
+            return profile;
+        });
+>>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
     },
 
     listLandingProfiles: async (): Promise<Profile[]> => {
         const { data: profiles, error } = await (supabase.from('profiles') as any)
+<<<<<<< HEAD
             .select('*')
             .eq('show_on_landing', true)
             .eq('visibility_mode', 'public')
             .order('created_at', { ascending: false });
+=======
+            .select(`
+                id, client_id, slug, profile_type, display_name, headline, bio_short, avatar_url, cover_url, 
+                layout_template, visibility_mode, theme, fonts, module_themes, created_at, updated_at,
+                show_on_landing, community_segment, community_city, community_state,
+                community_punchline, sponsored_enabled, sponsored_until, sponsored_segment,
+                promotion_enabled, promotion_title, promotion_description, promotion_discount_percentage,
+                promotion_current_price, promotion_image_url, promotion_whatsapp, booking_whatsapp, featured,
+                pix_key, enable_lead_capture, enable_nps, hide_branding,
+                profile_buttons(*),
+                catalog_items(*),
+                portfolio_items(*),
+                youtube_videos(*)
+            `)
+            .eq('show_on_landing', true)
+            .eq('visibility_mode', 'public')
+            .order('created_at', { ascending: false })
+            .order('sort_order', { foreignTable: 'profile_buttons', ascending: true })
+            .order('sort_order', { foreignTable: 'catalog_items', ascending: true })
+            .order('sort_order', { foreignTable: 'portfolio_items', ascending: true })
+            .order('sort_order', { foreignTable: 'youtube_videos', ascending: true });
+>>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
 
         if (error) {
             console.error('Error fetching landing profiles:', error);
             return [];
         }
 
+<<<<<<< HEAD
         const result: Profile[] = [];
         for (const p of (profiles || [])) {
             const profile = mapProfile(p);
@@ -237,6 +299,16 @@ export const profilesApi = {
             result.push(profile);
         }
         return result;
+=======
+        return (profiles || []).map(p => {
+            const profile = mapProfile(p);
+            profile.buttons = (p.profile_buttons || []).map(mapButton);
+            profile.catalogItems = (p.catalog_items || []).map(mapCatalogItem);
+            profile.portfolioItems = (p.portfolio_items || []).map(mapPortfolioItem);
+            profile.youtubeVideos = (p.youtube_videos || []).map(mapVideoItem);
+            return profile;
+        });
+>>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
     },
 
     listFeaturedProfiles: async (): Promise<Profile[]> => {
@@ -256,15 +328,27 @@ export const profilesApi = {
 
     listByClient: async (clientId: string): Promise<Profile[]> => {
         const { data: profiles, error } = await (supabase.from('profiles') as any)
+<<<<<<< HEAD
             .select('*')
             .eq('client_id', clientId)
             .order('created_at', { ascending: true });
+=======
+            .select(`
+                id, client_id, display_name, slug, avatar_url, updated_at, layout_template, 
+                theme, fonts,
+                profile_buttons(*)
+            `)
+            .eq('client_id', clientId)
+            .order('created_at', { ascending: true })
+            .order('sort_order', { foreignTable: 'profile_buttons', ascending: true });
+>>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
 
         if (error) {
             console.error('Error fetching profiles:', error);
             return [];
         }
 
+<<<<<<< HEAD
         const result: Profile[] = [];
         for (const p of (profiles || [])) {
             const profile = mapProfile(p);
@@ -278,6 +362,13 @@ export const profilesApi = {
         }
 
         return result;
+=======
+        return (profiles || []).map(p => {
+            const profile = mapProfile(p);
+            profile.buttons = (p.profile_buttons || []).map(mapButton);
+            return profile;
+        });
+>>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
     },
 
     getBySlug: async (slug: string) => {
