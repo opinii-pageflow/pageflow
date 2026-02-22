@@ -1,13 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, Lock, Loader2, Mail, Eye, EyeOff, ChevronRight, UserPlus } from 'lucide-react';
-import { loginAs, getStorage, updateStorage, ADMIN_MASTER } from '../../lib/storage';
-import { Client } from '../../types';
-import { PLANS } from '../../lib/plans';
+import { Shield, Lock, Loader2, Mail, Eye, EyeOff, ChevronRight, UserPlus, Zap } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const storage = getStorage();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -16,203 +14,77 @@ const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const supabaseEnv = useMemo(() => {
-    const url = (import.meta as any).env?.VITE_SUPABASE_URL as string | undefined;
-    const anon = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string | undefined;
-    return { url, anon };
-  }, []);
+  // Consuming global AuthContext
+  const { user, loading: authLoading } = useAuth();
+
+  // Redirect when user is authenticated
+  React.useEffect(() => {
+    if (!authLoading && user) {
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/app');
+      }
+    }
+  }, [user, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
+
     setLoading(true);
     setError('');
 
+    // Timeout de segurança: 15 segundos
+    const loginTimeout = setTimeout(() => {
+      setLoading(false);
+      setError('O servidor demorou muito para responder. Verifique sua conexão.');
+    }, 15000);
+
     try {
       const emailLower = email.trim().toLowerCase();
+      console.log(`[LoginPage] Iniciando login para: ${emailLower}`);
 
-      // 1) Admin Master (mantém o comportamento atual)
-      if (emailLower === ADMIN_MASTER.email.toLowerCase() && password === ADMIN_MASTER.password) {
-        loginAs({
-          id: ADMIN_MASTER.id,
-          role: 'admin',
-          name: ADMIN_MASTER.name,
-          email: ADMIN_MASTER.email,
-        });
-        navigate('/admin');
-        return;
-      }
-
-      // 2) Se Supabase env não estiver configurado, faz fallback para o modo antigo (storage)
-      // (Isso evita tela branca no Dyad se alguém esqueceu as envs)
-      if (!supabaseEnv.url || !supabaseEnv.anon) {
-        const client = storage.clients.find(
-          (c) => c.email?.toLowerCase() === emailLower && c.password === password
-        );
-
-        if (client) {
-          if (!client.isActive) {
-            setError('Sua conta está desativada. Entre em contato com o suporte.');
-            return;
-          }
-          loginAs({
-            id: `user-${client.id}`,
-            role: 'client',
-            clientId: client.id,
-            name: client.name,
-            email: client.email || '',
-          });
-          navigate('/app');
-        } else {
-          setError('E-mail ou senha incorretos.');
-        }
-        return;
-      }
-
-      const { url, anon } = supabaseEnv;
-
-      // 3) Login no Supabase via HTTP (token password grant)
-      const loginRes = await fetch(`${url}/auth/v1/token?grant_type=password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: anon!,
-        },
-        body: JSON.stringify({
-          email: emailLower,
-          password,
-        }),
-      });
-
-      const loginJson = await loginRes.json().catch(() => null);
-
-      if (!loginRes.ok) {
-        const msg =
-          loginJson?.msg ||
-          loginJson?.error_description ||
-          loginJson?.error ||
-          'E-mail ou senha incorretos.';
-        throw new Error(msg);
-      }
-
-      const accessToken: string | undefined = loginJson?.access_token;
-      const userId: string | undefined = loginJson?.user?.id;
-
-      if (!accessToken || !userId) {
-        throw new Error('Falha ao autenticar. Tente novamente.');
-      }
-
-      // 4) Descobrir company_id via company_members
-      const membersRes = await fetch(
-        `${url}/rest/v1/company_members?select=company_id,is_active&user_id=eq.${userId}&limit=1`,
-        {
-          method: 'GET',
-          headers: {
-            apikey: anon!,
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const membersJson = await membersRes.json().catch(() => null);
-
-      if (!membersRes.ok || !Array.isArray(membersJson) || !membersJson[0]?.company_id) {
-        throw new Error(
-          'Não encontrei sua companhia. Verifique o membership (company_members) e as policies de leitura.'
-        );
-      }
-
-      const companyId = membersJson[0].company_id as string;
-      const memberActive = membersJson[0].is_active !== false;
-
-      if (!memberActive) {
-        setError('Seu acesso está desativado. Entre em contato com o suporte.');
-        return;
-      }
-
-      // 5) Verificar se a company está ativa e trazer plan/limites
-      const companyRes = await fetch(
-        `${url}/rest/v1/companies?select=id,name,slug,plan,max_profiles,is_active&id=eq.${companyId}&limit=1`,
-        {
-          method: 'GET',
-          headers: {
-            apikey: anon!,
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const companyJson = await companyRes.json().catch(() => null);
-      const company = Array.isArray(companyJson) ? companyJson[0] : null;
-
-      if (!companyRes.ok || !company?.id) {
-        throw new Error('Falha ao carregar sua companhia. Verifique as policies em companies.');
-      }
-
-      if (company.is_active === false) {
-        setError('Sua conta está desativada. Entre em contato com o suporte.');
-        return;
-      }
-
-      // 6) Compatibilidade com o app atual:
-      // Garantir que exista um Client no storage, sem senha.
-      const starterPlan = PLANS.starter;
-
-      const newClient: Client = {
-        id: company.id,
-        name: company.name || emailLower,
-        slug: company.slug || (company.name ? company.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-') : ''),
+      // 1) Autenticação no Supabase
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email: emailLower,
-        password: '', // nunca guardar senha local
-        plan: company.plan || starterPlan.id,
-        maxProfiles:
-          typeof company.max_profiles === 'number' ? company.max_profiles : starterPlan.maxProfiles,
-        createdAt: new Date().toISOString(),
-        isActive: company.is_active !== false,
-      };
-
-      updateStorage((prev) => {
-        const clients = prev.clients || [];
-        const exists = clients.some((c) => c.id === newClient.id);
-        return {
-          ...prev,
-          clients: exists ? clients : [...clients, newClient],
-        };
+        password,
       });
 
-      // 7) Login local (mantém ProtectedRoute e resto do app funcionando)
-      loginAs({
-        id: `user-${companyId}`,
-        role: 'client',
-        clientId: companyId,
-        name: company.name || emailLower,
-        email: emailLower,
-      });
+      if (authError) {
+        throw new Error(authError.message || 'E-mail ou senha incorretos.');
+      }
 
-      navigate('/app');
+      // Login bem-sucedido!
+      // IMPORTANTE: Não limpamos o loading aqui, o Redirect do useEffect cuidará disso.
+      console.log('[LoginPage] Login Auth OK! Aguardando resolução do contexto...');
+
+      // Forçamos o refresh do AuthContext para acelerar a detecção se necessário
+      // (Alguns ambientes demoram a disparar onAuthStateChange)
+
     } catch (err: any) {
+      clearTimeout(loginTimeout);
+      console.error("[LoginPage] Falha crítica no login:", err);
       setError(err?.message || 'Erro ao realizar login. Tente novamente.');
-    } finally {
       setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Elementos Visuais de Background */}
+      {/* Background FX */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-purple-600/10 rounded-full blur-[120px]"></div>
       </div>
 
       <div className="w-full max-w-md z-10 animate-in fade-in zoom-in-95 duration-700">
-        <div className="text-center mb-10 flex flex-col items-center">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6 group">
+        <div className="text-center mb-10">
+          <Link to="/" className="inline-flex items-center gap-2 mb-6">
             <img src="/logo.png" className="h-16 md:h-20 w-auto object-contain" alt="PageFlow" />
           </Link>
-          <h1 className="text-zinc-400 font-medium px-4">
-            Entre na sua conta para gerenciar seus perfis digitais.
+          <h1 className="text-zinc-400 font-medium">
+            Gerencie seus perfis digitais com inteligência.
           </h1>
         </div>
 
@@ -226,39 +98,45 @@ const LoginPage: React.FC = () => {
             )}
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">
-                E-mail de Acesso
+              <label htmlFor="email" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">
+                E-MAIL DE ACESSO
               </label>
               <div className="relative group">
-                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors pointer-events-none">
+                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors">
                   <Mail size={18} />
                 </div>
                 <input
+                  id="email"
+                  name="email"
                   type="email"
+                  autoComplete="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu@email.com"
-                  className="w-full bg-black/40 border border-white/5 rounded-2xl pl-14 pr-5 py-4 text-sm font-bold focus:border-blue-500/50 transition-all outline-none placeholder:text-zinc-800"
+                  className="w-full bg-black/40 border border-white/5 rounded-2xl pl-14 pr-5 py-4 text-sm font-bold focus:border-blue-500/50 transition-all outline-none"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">
-                Senha
+              <label htmlFor="password" className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">
+                SENHA
               </label>
               <div className="relative group">
-                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-purple-500 transition-colors pointer-events-none">
+                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-purple-500 transition-colors">
                   <Lock size={18} />
                 </div>
                 <input
+                  id="password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-black/40 border border-white/5 rounded-2xl pl-14 pr-14 py-4 text-sm font-bold focus:border-purple-500/50 transition-all outline-none placeholder:text-zinc-800"
+                  placeholder="••••••"
+                  className="w-full bg-black/40 border border-white/5 rounded-2xl pl-14 pr-[3.5rem] py-4 text-sm font-bold focus:border-purple-500/50 transition-all outline-none"
                 />
                 <button
                   type="button"
@@ -273,7 +151,7 @@ const LoginPage: React.FC = () => {
             <button
               disabled={loading}
               type="submit"
-              className="w-full bg-white text-black py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 disabled:opacity-50 shadow-xl shadow-white/5 mt-4"
+              className="w-full bg-white text-black py-5 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 size={20} className="animate-spin" />
@@ -287,29 +165,26 @@ const LoginPage: React.FC = () => {
           </form>
 
           <div className="mt-8 pt-8 border-t border-white/5 text-center">
-            <div className="mb-4 text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center justify-center gap-2 pointer-events-none">
+            <div className="mb-4 text-[10px] font-black uppercase tracking-widest text-zinc-600 flex items-center justify-center gap-2">
               <Shield size={12} />
-              Sistema Seguro & Criptografado
+              Ambiente Seguro
             </div>
-
             <p className="text-zinc-500 text-xs font-medium">
-              Ainda não tem uma conta? <br className="sm:hidden" />
-              <Link
-                to="/register"
-                className="text-white font-black hover:text-blue-400 transition-colors inline-flex items-center gap-1 ml-1"
-              >
-                Criar Perfil Grátis <UserPlus size={14} />
-              </Link>
+              Não tem conta? <Link to="/register" className="text-white font-black hover:text-blue-400 transition-colors">Criar Perfil Grátis</Link>
             </p>
           </div>
         </div>
 
-        {/* Aviso leve se env não estiver configurado (evita confusão) */}
-        {(!supabaseEnv.url || !supabaseEnv.anon) && (
-          <div className="mt-6 text-center text-[10px] font-black uppercase tracking-widest text-zinc-700">
-            Supabase não configurado (fallback local ativo)
+        <div className="mt-8 flex items-center justify-center gap-6 opacity-40">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Supabase Online</span>
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <Zap size={10} className="text-zinc-400" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">v1.1.2-stable</span>
+          </div>
+        </div>
       </div>
     </div>
   );

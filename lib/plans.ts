@@ -1,4 +1,5 @@
 import { PlanType } from '../types';
+import { PLANS_CONFIG } from './plansConfig';
 
 export interface Plan {
   id: PlanType;
@@ -12,30 +13,30 @@ export const PLANS: Record<PlanType, Plan> = {
   starter: {
     id: 'starter',
     name: 'Starter',
-    maxProfiles: 1,
-    monthlyPrice: 0,
-    features: ['1 Perfil Ativo', 'QR Code Básico', 'Templates Essenciais'],
+    maxProfiles: PLANS_CONFIG.starter.maxProfiles,
+    monthlyPrice: PLANS_CONFIG.starter.price,
+    features: PLANS_CONFIG.starter.displayFeatures,
   },
   pro: {
     id: 'pro',
     name: 'Pro',
-    maxProfiles: 3,
-    monthlyPrice: 19,
-    features: ['Até 3 Perfis Ativos', 'Analytics Avançado', 'Catálogo & Portfólio', 'Chave Pix', 'Templates Novos', 'Tudo do plano Starter'],
+    maxProfiles: PLANS_CONFIG.pro.maxProfiles,
+    monthlyPrice: PLANS_CONFIG.pro.price,
+    features: PLANS_CONFIG.pro.displayFeatures,
   },
   business: {
     id: 'business',
     name: 'Business',
-    maxProfiles: 10,
-    monthlyPrice: 49,
-    features: ['Até 10 Perfis Ativos', 'Gestão de Leads (CRM)', 'Dashboard de NPS', 'Tudo do plano Pro'],
+    maxProfiles: PLANS_CONFIG.business.maxProfiles,
+    monthlyPrice: PLANS_CONFIG.business.price,
+    features: PLANS_CONFIG.business.displayFeatures,
   },
   enterprise: {
     id: 'enterprise',
     name: 'Enterprise',
-    maxProfiles: 25,
-    monthlyPrice: 99,
-    features: ['Até 25 Perfis Ativos', 'Remoção Total da Marca', 'Tudo do plano Business'],
+    maxProfiles: PLANS_CONFIG.enterprise.maxProfiles,
+    monthlyPrice: PLANS_CONFIG.enterprise.price,
+    features: PLANS_CONFIG.enterprise.displayFeatures,
   },
 };
 

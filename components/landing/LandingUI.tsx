@@ -35,24 +35,24 @@ export const FeatureCard = memo(function FeatureCard({
   return (
     <div
       className={clsx(
-        'p-8 rounded-[2rem] border border-blue-500/10 bg-zinc-900/20 backdrop-blur-sm hover:border-blue-500/30 hover:bg-blue-500/5 transition-all duration-500 group relative overflow-hidden',
+        'p-8 rounded-[2rem] glass-neon-blue group relative overflow-hidden',
         className
       )}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-600/0 to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-      
+      <div className="absolute inset-0 bg-gradient-to-br from-neon-blue/0 to-neon-blue/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
       <div
         className={clsx(
-          'w-12 h-12 bg-blue-600/10 rounded-2xl flex items-center justify-center text-blue-400 mb-6 border border-blue-500/10 relative z-10',
-          'group-hover:scale-110 group-hover:text-blue-300 transition-all duration-500 shadow-[0_0_20px_rgba(37,99,235,0.1)]'
+          'w-12 h-12 bg-neon-blue/10 rounded-2xl flex items-center justify-center text-neon-blue mb-6 border border-neon-blue/20 relative z-10',
+          'group-hover:scale-110 group-hover:text-white transition-all duration-500 shadow-[0_0_20px_rgba(0,242,255,0.2)]'
         )}
         aria-hidden="true"
       >
         <Icon size={22} strokeWidth={1.5} />
       </div>
 
-      <h4 className="text-lg font-bold mb-2 text-white tracking-tight relative z-10">{title}</h4>
-      <p className="text-zinc-500 text-sm leading-relaxed font-medium relative z-10">{desc}</p>
+      <h4 className="text-lg font-black mb-2 text-white tracking-tight relative z-10">{title}</h4>
+      <p className="text-zinc-500 text-sm leading-relaxed font-medium relative z-10 group-hover:text-zinc-400 transition-colors">{desc}</p>
     </div>
   );
 });
@@ -71,19 +71,19 @@ export const PricingCard = memo(function PricingCard({
   return (
     <div
       className={clsx(
-        'p-10 rounded-[2.5rem] border transition-all duration-700 flex flex-col justify-between relative group overflow-hidden',
+        'p-10 rounded-[2.5rem] transition-all duration-700 flex flex-col justify-between relative group overflow-hidden',
         highlighted
-          ? 'bg-zinc-900/40 border-blue-500/30 shadow-[0_0_50px_rgba(37,99,235,0.15)] md:scale-105 z-10'
-          : 'bg-black/40 border-white/5 text-zinc-400 hover:border-blue-500/20',
+          ? 'glass-neon-blue border-neon-blue/40 shadow-[0_0_50px_rgba(0,242,255,0.15)] md:scale-105 z-10'
+          : 'bg-black/40 border border-white/5 text-zinc-400 hover:border-neon-blue/20',
         className
       )}
     >
       {highlighted && (
-        <div className="absolute -inset-24 bg-blue-600/5 blur-[80px] rounded-full pointer-events-none" />
+        <div className="absolute -inset-24 bg-neon-blue/5 blur-[80px] rounded-full pointer-events-none" />
       )}
 
       {highlighted && (
-        <div className="absolute top-0 right-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[9px] font-black px-4 py-2 rounded-bl-2xl uppercase tracking-widest shadow-lg">
+        <div className="absolute top-0 right-0 bg-gradient-to-r from-neon-blue to-indigo-600 text-black text-[9px] font-black px-4 py-2 rounded-bl-2xl uppercase tracking-widest shadow-lg">
           Recomendado
         </div>
       )}
@@ -91,7 +91,7 @@ export const PricingCard = memo(function PricingCard({
       <div className="relative z-10">
         <h4 className={clsx(
           "font-black text-[10px] uppercase tracking-[0.25em] mb-6",
-          highlighted ? "text-blue-400" : "text-zinc-500"
+          highlighted ? "text-neon-blue" : "text-zinc-500"
         )}>{plan}</h4>
 
         <div className="flex items-baseline gap-1 mb-10">
@@ -99,7 +99,7 @@ export const PricingCard = memo(function PricingCard({
             {price}
           </span>
           {!isFree && (
-            <span className="text-[11px] opacity-40 font-bold uppercase tracking-widest text-zinc-400">
+            <span className="text-[11px] opacity-40 font-black uppercase tracking-widest text-zinc-400">
               /mês
             </span>
           )}
@@ -109,11 +109,11 @@ export const PricingCard = memo(function PricingCard({
           {features.map((f, i) => (
             <li
               key={`${plan}-feat-${i}`}
-              className="flex items-center gap-3 text-xs font-semibold text-zinc-400 group-hover:text-zinc-300 transition-colors"
+              className="flex items-center gap-3 text-xs font-bold text-zinc-400 group-hover:text-zinc-300 transition-colors"
             >
               <div className={clsx(
                 "w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0",
-                highlighted ? "bg-blue-600/20 text-blue-400" : "bg-white/5 text-zinc-600"
+                highlighted ? "bg-neon-blue/20 text-neon-blue" : "bg-white/5 text-zinc-600"
               )}>
                 <Check size={12} strokeWidth={3} />
               </div>
@@ -129,8 +129,8 @@ export const PricingCard = memo(function PricingCard({
         className={clsx(
           'w-full py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all relative z-10 active:scale-95',
           highlighted
-            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-600/20 hover:shadow-blue-600/30'
-            : 'bg-zinc-900 text-zinc-300 border border-white/5 hover:border-white/10 hover:bg-zinc-800'
+            ? 'bg-gradient-to-r from-neon-blue to-indigo-600 text-black shadow-xl shadow-neon-blue/20 hover:shadow-neon-blue/40'
+            : 'bg-zinc-900 text-zinc-300 border border-white/5 hover:border-neon-blue/30 hover:bg-zinc-800'
         )}
       >
         {ctaLabel}
@@ -162,8 +162,8 @@ export const FAQItem = memo(function FAQItem({
       >
         <span
           className={clsx(
-            'text-sm md:text-base font-bold transition-all duration-300',
-            isOpen ? 'text-blue-400' : 'text-zinc-400 group-hover:text-zinc-200'
+            'text-sm md:text-base font-black transition-all duration-300',
+            isOpen ? 'text-neon-blue' : 'text-zinc-400 group-hover:text-zinc-200'
           )}
         >
           {question}
@@ -172,7 +172,7 @@ export const FAQItem = memo(function FAQItem({
         <div
           className={clsx(
             'w-8 h-8 rounded-full border border-white/5 flex items-center justify-center transition-all duration-500',
-            isOpen ? 'bg-blue-600 text-white border-blue-600 rotate-180' : 'text-zinc-500 group-hover:border-white/20'
+            isOpen ? 'bg-neon-blue text-black border-neon-blue rotate-180 shadow-[0_0_15px_rgba(0,242,255,0.4)]' : 'text-zinc-500 group-hover:border-neon-blue/50 group-hover:text-neon-blue'
           )}
           aria-hidden="true"
         >

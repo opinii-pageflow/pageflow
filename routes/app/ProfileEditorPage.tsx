@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  User, 
-  Palette, 
-  Link as LinkIcon, 
-  Layout, 
-  Type, 
-  Share2, 
-  Save, 
-  ChevronLeft, 
-  CheckCircle2, 
+import {
+  User,
+  Palette,
+  Link as LinkIcon,
+  Layout,
+  Type,
+  Share2,
+  Save,
+  ChevronLeft,
+  CheckCircle2,
   ExternalLink,
   Smartphone,
   PanelLeft,
@@ -17,9 +17,14 @@ import {
   Copy,
   ClipboardPaste,
   Zap,
-  ChevronDown
+  ChevronDown,
+  Users
 } from 'lucide-react';
-import { getStorage, updateStorage, copyStyleToClipboard, getStyleFromClipboard, StyleConfig } from '../../lib/storage';
+import { useAuth } from '@/hooks/useAuth';
+import { profilesApi } from '@/lib/api/profiles';
+import { clientsApi } from '@/lib/api/clients';
+import { supabase } from '@/lib/supabase';
+import { copyStyleToClipboard, getStyleFromClipboard, StyleConfig } from '@/lib/storage';
 import { Profile, PlanType } from '../../types';
 import PhonePreview from '../../components/preview/PhonePreview';
 
@@ -31,13 +36,14 @@ import TemplatesTab from '../../components/editor/TemplatesTab';
 import FontsTab from '../../components/editor/FontsTab';
 import ShareTab from '../../components/editor/ShareTab';
 import ProTab from '../../components/editor/ProTab';
+import CommunityTab from '../../components/editor/CommunityTab';
 import clsx from 'clsx';
 
 const ProfileEditorPage: React.FC = () => {
   const { profileId } = useParams();
   const navigate = useNavigate();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('profile');
@@ -46,20 +52,31 @@ const ProfileEditorPage: React.FC = () => {
   const [showMobilePreview, setShowMobilePreview] = useState(false);
   const [clipboard, setClipboard] = useState<StyleConfig | null>(getStyleFromClipboard());
   const [justCopied, setJustCopied] = useState(false);
-  const [clientPlan, setClientPlan] = useState<PlanType | undefined>();
+  const [client, setClient] = useState<any>(null);
   const [showScrollArrow, setShowScrollArrow] = useState(false);
 
   useEffect(() => {
-    const data = getStorage();
-    const found = data.profiles.find(p => p.id === profileId);
-    if (found) {
-      setProfile({ ...found });
-      const client = data.clients.find(c => c.id === found.clientId);
-      setClientPlan(client?.plan);
-    } else {
-      navigate('/app/profiles');
+    async function loadProfile() {
+      if (!profileId) return;
+      try {
+        setLoading(true);
+        const found = await profilesApi.getById(profileId);
+        if (found) {
+          setProfile(found);
+          const clientData = await clientsApi.getById(found.clientId);
+          setClient(clientData);
+        } else {
+          navigate('/app/profiles');
+        }
+      } catch (err) {
+        console.error("Error loading profile:", err);
+        navigate('/app/profiles');
+      } finally {
+        setLoading(false);
+      }
     }
-    setLoading(false);
+
+    loadProfile();
   }, [profileId, navigate]);
 
   useEffect(() => {
@@ -95,17 +112,36 @@ const ProfileEditorPage: React.FC = () => {
     setHasUnsavedChanges(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!profile) return;
     setIsSaving(true);
-    updateStorage(prev => ({
-      ...prev,
-      profiles: prev.profiles.map(p => p.id === profile.id ? { ...profile, updatedAt: new Date().toISOString() } : p)
-    }));
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      console.log("[handleSave] Starting save sequence...");
+
+      // 1. Atualizar metadados do perfil
+      await profilesApi.update(profile.id, profile);
+
+      // 2. Sincronizar módulos (Sequencial para evitar timeouts e deadlocks)
+      console.log("[handleSave] Syncing modules...");
+      await profilesApi.syncButtons(profile.id, profile.buttons || [], profile.clientId);
+      await profilesApi.syncCatalogItems(profile.id, profile.catalogItems || [], profile.clientId);
+      await profilesApi.syncPortfolioItems(profile.id, profile.portfolioItems || [], profile.clientId);
+      await profilesApi.syncYoutubeVideos(profile.id, profile.youtubeVideos || [], profile.clientId);
+      await profilesApi.syncSchedulingSlots(profile.id, profile.nativeSlots || [], profile.clientId);
+
+      // 3. Re-fichar perfil para sincronizar IDs locais com Banco
+      console.log("[handleSave] Refreshing local state...");
+      const updated = await profilesApi.getById(profile.id);
+      if (updated) setProfile(updated);
+
       setHasUnsavedChanges(false);
-    }, 800);
+      console.log("[handleSave] Save complete!");
+    } catch (err: any) {
+      console.error("[handleSave] Error:", err);
+      alert(`Erro ao salvar: ${err.message || 'Erro de conexão no servidor'}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCopyStyle = () => {
@@ -131,7 +167,7 @@ const ProfileEditorPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-white/20 border-t-neon-blue rounded-full animate-spin" />
       </div>
     );
   }
@@ -158,6 +194,7 @@ const ProfileEditorPage: React.FC = () => {
     { id: 'templates', label: 'Layout', icon: <Layout size={14} /> },
     { id: 'fonts', label: 'Fontes', icon: <Type size={14} /> },
     { id: 'share', label: 'Share', icon: <Share2 size={14} /> },
+    { id: 'community', label: 'Comunidade', icon: <Users size={14} /> },
     { id: 'pro', label: 'Pro', icon: <Zap size={14} /> },
   ];
 
@@ -166,15 +203,15 @@ const ProfileEditorPage: React.FC = () => {
       {/* Editor Header */}
       <header className="h-20 bg-black/90 backdrop-blur-2xl border-b border-white/10 px-4 md:px-8 flex items-center justify-between flex-shrink-0 z-[110] shadow-2xl">
         <div className="flex items-center gap-4 min-w-0">
-          <button 
-            onClick={() => navigate('/app/profiles')} 
+          <button
+            onClick={() => navigate('/app/profiles')}
             className="p-2.5 hover:bg-white/10 rounded-xl text-gray-400 transition-all hover:text-white active:scale-90"
           >
             <ChevronLeft size={24} />
           </button>
-          
+
           <div className="h-8 w-px bg-white/10 hidden sm:block"></div>
-          
+
           <div className="min-w-0">
             <h1 className="font-black text-sm md:text-base tracking-tight truncate">{profile.displayName}</h1>
             <a href={`#/u/${profile.slug}`} target="_blank" className="text-[10px] text-zinc-500 hover:text-blue-400 flex items-center gap-1 transition-colors font-mono">
@@ -186,7 +223,7 @@ const ProfileEditorPage: React.FC = () => {
 
         <div className="flex items-center gap-2 lg:gap-4">
           <div className="hidden md:flex items-center gap-2 border-r border-white/10 pr-4 mr-2">
-            <button 
+            <button
               onClick={handleCopyStyle}
               className={clsx(
                 "p-3 rounded-xl transition-all flex items-center gap-2 text-[9px] font-black uppercase tracking-widest",
@@ -198,7 +235,7 @@ const ProfileEditorPage: React.FC = () => {
             </button>
 
             {clipboard && clipboard.sourceProfileId !== profile.id && (
-              <button 
+              <button
                 onClick={handlePasteStyle}
                 className="p-3 bg-blue-600/10 hover:bg-blue-600 text-blue-500 hover:text-white rounded-xl transition-all flex items-center gap-2 text-[9px] font-black uppercase tracking-widest border border-blue-600/30"
               >
@@ -223,7 +260,7 @@ const ProfileEditorPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button 
+            <button
               onClick={() => setShowMobilePreview(!showMobilePreview)}
               className={clsx(
                 "lg:hidden p-3 rounded-2xl transition-all active:scale-90 shadow-xl",
@@ -233,9 +270,9 @@ const ProfileEditorPage: React.FC = () => {
               <Smartphone size={22} />
             </button>
 
-            <a 
-              href={`#/u/${profile.slug}`} 
-              target="_blank" 
+            <a
+              href={`#/u/${profile.slug}`}
+              target="_blank"
               rel="noopener noreferrer"
               className="hidden sm:flex items-center gap-2 px-5 py-3 rounded-2xl bg-zinc-900 border border-white/5 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-all active:scale-95 shadow-xl font-black text-[10px] uppercase tracking-widest"
             >
@@ -243,7 +280,7 @@ const ProfileEditorPage: React.FC = () => {
               <span>Ver Link</span>
             </a>
 
-            <button 
+            <button
               onClick={handleSave}
               disabled={!hasUnsavedChanges || isSaving}
               className="bg-white text-black px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-10 transition-all hover:bg-zinc-200 active:scale-95 shadow-xl shadow-white/5"
@@ -274,8 +311,8 @@ const ProfileEditorPage: React.FC = () => {
                   onClick={() => setActiveTab(tab.id)}
                   className={clsx(
                     "flex items-center gap-1.5 px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95",
-                    activeTab === tab.id 
-                      ? "bg-white text-black shadow-lg" 
+                    activeTab === tab.id
+                      ? "bg-white text-black shadow-lg"
                       : "text-zinc-500 hover:text-white hover:bg-white/5"
                   )}
                 >
@@ -285,23 +322,24 @@ const ProfileEditorPage: React.FC = () => {
               ))}
             </div>
           </div>
-          
-          <div 
+
+          <div
             ref={scrollContainerRef}
             className="flex-1 overflow-y-auto custom-scrollbar bg-black relative"
           >
             <div className="p-6 lg:p-10 max-w-2xl mx-auto pb-40">
               {activeTab === 'profile' && <ProfileTab profile={profile} onUpdate={handleUpdateProfile} />}
-              {activeTab === 'design' && <DesignTab profile={profile} onUpdate={handleUpdateProfile} />}
+              {activeTab === 'design' && <DesignTab profile={profile} clientPlan={client?.plan} onUpdate={handleUpdateProfile} />}
               {activeTab === 'links' && <LinksTab profile={profile} onUpdate={handleUpdateProfile} />}
-              {activeTab === 'templates' && <TemplatesTab profile={profile} onUpdate={handleUpdateProfile} />}
-              {activeTab === 'fonts' && <FontsTab profile={profile} onUpdate={handleUpdateProfile} />}
+              {activeTab === 'templates' && <TemplatesTab profile={profile} clientPlan={client?.plan} onUpdate={handleUpdateProfile} />}
+              {activeTab === 'fonts' && <FontsTab profile={profile} clientPlan={client?.plan} onUpdate={handleUpdateProfile} />}
               {activeTab === 'share' && <ShareTab profile={profile} />}
-              {activeTab === 'pro' && <ProTab profile={profile} clientPlan={clientPlan} onUpdate={handleUpdateProfile} />}
+              {activeTab === 'community' && <CommunityTab profile={profile} clientPlan={client?.plan} onUpdate={handleUpdateProfile} />}
+              {activeTab === 'pro' && <ProTab profile={profile} client={client} clientPlan={client?.plan} onUpdate={handleUpdateProfile} />}
             </div>
 
             {showScrollArrow && (
-              <button 
+              <button
                 onClick={handleScrollToBottom}
                 className="fixed bottom-10 left-[21%] -translate-x-1/2 z-[100] bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-full text-white/40 hover:text-white hover:bg-white/20 transition-all animate-bounce"
                 title="Rolar para o final"
@@ -318,8 +356,8 @@ const ProfileEditorPage: React.FC = () => {
         )}>
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[180px] pointer-events-none opacity-40"></div>
           <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[180px] pointer-events-none opacity-40"></div>
-          
-          <button 
+
+          <button
             onClick={() => setShowMobilePreview(false)}
             className="lg:hidden absolute top-8 left-8 z-[120] bg-white text-black p-4 rounded-2xl shadow-2xl border border-white/20 active:scale-90"
           >
@@ -335,7 +373,7 @@ const ProfileEditorPage: React.FC = () => {
             </div>
 
             <div className="w-full h-full flex items-center justify-center overflow-hidden">
-              <PhonePreview profile={profile} clientPlan={clientPlan} />
+              <PhonePreview profile={profile} client={client} clientPlan={client?.plan} />
             </div>
           </div>
         </div>

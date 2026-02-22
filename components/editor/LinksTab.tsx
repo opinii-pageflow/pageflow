@@ -1,18 +1,18 @@
 
 import React from 'react';
 import { Profile, ProfileButton } from '../../types';
-import { 
-  Plus, 
-  GripVertical, 
-  Trash2, 
-  Eye, 
-  EyeOff, 
-  MessageCircle, 
-  Instagram, 
-  Linkedin, 
-  Globe, 
-  Phone, 
-  Mail, 
+import {
+  Plus,
+  GripVertical,
+  Trash2,
+  Eye,
+  EyeOff,
+  MessageCircle,
+  Instagram,
+  Linkedin,
+  Globe,
+  Phone,
+  Mail,
   MapPin,
   ChevronDown,
   LayoutGrid,
@@ -36,7 +36,7 @@ interface Props {
 const LinksTab: React.FC<Props> = ({ profile, onUpdate }) => {
   const addLink = () => {
     const newLink: ProfileButton = {
-      id: Math.random().toString(36).substring(7),
+      id: crypto.randomUUID(),
       profileId: profile.id,
       type: 'website',
       label: 'Novo Link',
@@ -107,7 +107,7 @@ const LinksTab: React.FC<Props> = ({ profile, onUpdate }) => {
           <h3 className="text-xl font-bold tracking-tight">Meus Links</h3>
           <p className="text-xs text-gray-500">Adicione, edite e organize seus botões.</p>
         </div>
-        <button 
+        <button
           onClick={addLink}
           className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 active:scale-95"
         >
@@ -120,8 +120,8 @@ const LinksTab: React.FC<Props> = ({ profile, onUpdate }) => {
         {profile.buttons.map((btn, index) => {
           const Icon = iconMap[btn.type] || Globe;
           return (
-            <div 
-              key={btn.id} 
+            <div
+              key={btn.id}
               className={`
                 bg-zinc-900/40 border rounded-[1.5rem] p-4 flex flex-col gap-4 group transition-all duration-300
                 ${btn.enabled ? 'border-white/5' : 'opacity-60 border-dashed border-white/10'}
@@ -131,21 +131,21 @@ const LinksTab: React.FC<Props> = ({ profile, onUpdate }) => {
                 <div className="mt-2 cursor-grab text-zinc-700 hover:text-white transition-colors">
                   <GripVertical size={20} />
                 </div>
-                
+
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-black/40 border border-white/5">
                   <Icon size={20} color={getIconColor(btn.type)} />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={btn.label}
                     onChange={(e) => updateLink(btn.id, { label: e.target.value })}
                     className="bg-transparent border-none p-0 font-bold text-sm w-full focus:ring-0 outline-none placeholder:text-zinc-700"
                     placeholder="Rótulo do Link"
                   />
                   <div className="relative inline-block mt-1">
-                    <select 
+                    <select
                       value={btn.type}
                       onChange={(e) => updateLink(btn.id, { type: e.target.value })}
                       className="appearance-none bg-white/5 border border-white/5 rounded-lg pl-2 pr-6 py-0.5 text-[9px] font-black uppercase tracking-widest text-zinc-500 outline-none cursor-pointer hover:bg-white/10 transition-all"
@@ -159,13 +159,13 @@ const LinksTab: React.FC<Props> = ({ profile, onUpdate }) => {
                 </div>
 
                 <div className="flex items-center gap-1">
-                  <button 
+                  <button
                     onClick={() => updateLink(btn.id, { enabled: !btn.enabled })}
                     className={`p-2 rounded-lg transition-all ${btn.enabled ? 'bg-emerald-500/10 text-emerald-500' : 'bg-zinc-800 text-zinc-600'}`}
                   >
                     {btn.enabled ? <Eye size={16} /> : <EyeOff size={16} />}
                   </button>
-                  <button 
+                  <button
                     onClick={() => removeLink(btn.id)}
                     className="p-2 text-zinc-600 hover:text-red-500 transition-all"
                   >
@@ -174,16 +174,16 @@ const LinksTab: React.FC<Props> = ({ profile, onUpdate }) => {
                 </div>
               </div>
 
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={btn.value}
                 onChange={(e) => updateLink(btn.id, { value: e.target.value })}
                 className="w-full bg-black/40 border border-white/5 rounded-xl px-4 py-2.5 text-xs font-medium focus:border-blue-500/50 outline-none transition-all placeholder:text-zinc-800"
                 placeholder={
-                  btn.type === 'whatsapp' ? 'Ex: 5511999999999' : 
-                  btn.type === 'email' ? 'Ex: seu@email.com' :
-                  btn.type === 'instagram' ? 'Ex: @usuario' :
-                  'Insira o link ou usuário'
+                  btn.type === 'whatsapp' ? 'Ex: 5511999999999' :
+                    btn.type === 'email' ? 'Ex: seu@email.com' :
+                      btn.type === 'instagram' ? 'Ex: @usuario' :
+                        'Insira o link ou usuário'
                 }
               />
             </div>
@@ -196,7 +196,7 @@ const LinksTab: React.FC<Props> = ({ profile, onUpdate }) => {
           <LayoutGrid size={32} className="text-zinc-800 mb-3" />
           <h4 className="font-bold text-zinc-500 text-sm">Nenhum link adicionado</h4>
           <p className="text-[10px] text-zinc-700 mb-5 uppercase tracking-widest">Comece a construir seu perfil</p>
-          <button 
+          <button
             onClick={addLink}
             className="bg-zinc-800 hover:bg-zinc-700 text-white px-5 py-2 rounded-xl text-xs font-bold transition-all"
           >

@@ -37,8 +37,8 @@ const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
             onClick={() => onUpdate({ profileType: 'personal' })}
             className={`
               p-4 rounded-2xl border flex items-center gap-3 transition-all
-              ${profile.profileType === 'personal' 
-                ? 'bg-white text-black border-white shadow-lg' 
+              ${profile.profileType === 'personal'
+                ? 'bg-white text-black border-white shadow-lg'
                 : 'bg-zinc-900 border-white/10 text-zinc-500 hover:text-white hover:bg-zinc-800'}
             `}
           >
@@ -48,13 +48,13 @@ const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
               <div className="text-[10px] opacity-60">Para pessoas</div>
             </div>
           </button>
-          
+
           <button
             onClick={() => onUpdate({ profileType: 'business' })}
             className={`
               p-4 rounded-2xl border flex items-center gap-3 transition-all
-              ${profile.profileType === 'business' 
-                ? 'bg-white text-black border-white shadow-lg' 
+              ${profile.profileType === 'business'
+                ? 'bg-white text-black border-white shadow-lg'
                 : 'bg-zinc-900 border-white/10 text-zinc-500 hover:text-white hover:bg-zinc-800'}
             `}
           >
@@ -77,13 +77,13 @@ const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
               <>
                 <img src={profile.coverUrl} className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700" alt="Capa" />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-3 backdrop-blur-sm">
-                  <button 
+                  <button
                     onClick={() => coverInputRef.current?.click()}
                     className="p-3 bg-white text-black rounded-full hover:scale-110 transition-transform"
                   >
                     <Upload size={20} />
                   </button>
-                  <button 
+                  <button
                     onClick={() => onUpdate({ coverUrl: '' })}
                     className="p-3 bg-red-500 text-white rounded-full hover:scale-110 transition-transform"
                   >
@@ -92,7 +92,7 @@ const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
                 </div>
               </>
             ) : (
-              <button 
+              <button
                 onClick={() => coverInputRef.current?.click()}
                 className="w-full h-full flex flex-col items-center justify-center gap-2 text-zinc-600 hover:text-zinc-400 hover:bg-white/5 transition-all"
               >
@@ -102,19 +102,19 @@ const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
                 <span className="text-xs font-bold">Adicionar Foto de Capa</span>
               </button>
             )}
-            <input 
-              type="file" 
-              ref={coverInputRef} 
-              className="hidden" 
-              accept="image/*" 
-              onChange={(e) => handleFileChange(e, 'coverUrl')} 
+            <input
+              type="file"
+              ref={coverInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={(e) => handleFileChange(e, 'coverUrl')}
             />
           </div>
           <div className="relative flex items-center">
             <div className="absolute left-4 text-zinc-600"><LinkIcon size={14} /></div>
-            <input 
-              type="text" 
-              value={profile.coverUrl}
+            <input
+              type="text"
+              value={profile.coverUrl || ''}
               onChange={(e) => onUpdate({ coverUrl: e.target.value })}
               className="w-full bg-black/40 border border-white/10 rounded-2xl pl-10 pr-5 py-3 text-[11px] font-medium focus:border-blue-500/50 transition-all outline-none placeholder:text-zinc-800"
               placeholder="Ou cole a URL da imagem de capa..."
@@ -132,30 +132,30 @@ const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
                 <Camera size={32} className="text-zinc-800" />
               )}
             </div>
-            <button 
+            <button
               onClick={() => avatarInputRef.current?.click()}
               className="absolute bottom-1 right-1 p-3 bg-blue-600 text-white rounded-2xl shadow-xl hover:bg-blue-500 hover:scale-110 active:scale-95 transition-all ring-4 ring-zinc-950"
             >
               <Upload size={18} />
             </button>
-            <input 
-              type="file" 
-              ref={avatarInputRef} 
-              className="hidden" 
-              accept="image/*" 
-              onChange={(e) => handleFileChange(e, 'avatarUrl')} 
+            <input
+              type="file"
+              ref={avatarInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={(e) => handleFileChange(e, 'avatarUrl')}
             />
           </div>
-          
+
           <div className="flex-1 w-full space-y-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
                 <Sparkles size={10} className="text-amber-500" />
                 Nome de Exibição
               </label>
-              <input 
-                type="text" 
-                value={profile.displayName}
+              <input
+                type="text"
+                value={profile.displayName || ''}
                 onChange={(e) => onUpdate({ displayName: e.target.value })}
                 className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-base font-bold focus:border-blue-500/50 transition-all outline-none placeholder:text-zinc-800"
                 placeholder="Seu Nome ou Empresa"
@@ -166,9 +166,9 @@ const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
               <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">URL da Foto de Perfil</label>
               <div className="relative flex items-center">
                 <div className="absolute left-4 text-zinc-600"><LinkIcon size={14} /></div>
-                <input 
-                  type="text" 
-                  value={profile.avatarUrl}
+                <input
+                  type="text"
+                  value={profile.avatarUrl || ''}
                   onChange={(e) => onUpdate({ avatarUrl: e.target.value })}
                   className="w-full bg-black/40 border border-white/10 rounded-2xl pl-10 pr-5 py-3 text-[11px] font-medium focus:border-blue-500/50 transition-all outline-none placeholder:text-zinc-800"
                   placeholder="Ou cole a URL da foto de perfil..."
@@ -183,9 +183,9 @@ const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
           <div className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 space-y-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Headline (Profissão/Subtítulo)</label>
-              <input 
-                type="text" 
-                value={profile.headline}
+              <input
+                type="text"
+                value={profile.headline || ''}
                 onChange={(e) => onUpdate({ headline: e.target.value })}
                 className="w-full bg-black/40 border border-white/10 rounded-2xl px-5 py-4 text-sm font-medium text-gray-300 focus:border-blue-500/50 transition-all outline-none placeholder:text-zinc-800"
                 placeholder="Ex: Designer UI/UX & Desenvolvedor"
@@ -194,8 +194,8 @@ const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Bio Curta</label>
-              <textarea 
-                value={profile.bioShort}
+              <textarea
+                value={profile.bioShort || ''}
                 onChange={(e) => onUpdate({ bioShort: e.target.value })}
                 className="w-full bg-black/40 border border-white/10 rounded-3xl px-5 py-4 text-sm h-32 focus:border-blue-500/50 transition-all outline-none resize-none leading-relaxed text-gray-400"
                 placeholder="Conte brevemente sobre você..."
@@ -203,22 +203,28 @@ const ProfileTab: React.FC<Props> = ({ profile, onUpdate }) => {
             </div>
           </div>
 
-          <div className="p-8 rounded-[2.5rem] bg-zinc-900/50 border border-white/5 space-y-3">
-            <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Identificador de URL</label>
-            <div className="flex items-center group shadow-2xl">
-              <div className="bg-zinc-800 px-5 py-4 rounded-l-2xl text-zinc-500 text-xs font-bold border-r border-white/5">linkflow.me/u/</div>
-              <input 
-                type="text" 
+          <div className="p-8 sm:p-10 rounded-[2.5rem] sm:rounded-[3rem] bg-white/[0.02] border border-white/5 space-y-4 group hover:border-blue-500/20 transition-all">
+            <div className="flex items-center gap-2 px-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+              <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Identificador de URL</label>
+            </div>
+
+            <div className="flex items-stretch shadow-2xl rounded-2xl overflow-hidden border border-white/10 group-focus-within:border-blue-500/50 transition-all">
+              <div className="bg-zinc-900/80 px-5 flex items-center text-zinc-500 text-[11px] font-black uppercase tracking-widest border-r border-white/5 italic">
+                linkflow.me/u/
+              </div>
+              <input
+                type="text"
                 value={profile.slug}
                 onChange={(e) => onUpdate({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
-                className="flex-1 bg-black/60 border-y border-r border-white/10 rounded-r-2xl px-5 py-4 text-sm font-bold focus:border-blue-500/50 transition-all outline-none text-blue-400"
-                placeholder="usuario"
+                className="flex-1 bg-black/60 px-6 py-5 text-sm sm:text-base font-black outline-none text-blue-400 placeholder:text-zinc-800"
+                placeholder="seu-identificador"
               />
             </div>
-            <div className="flex items-center gap-2 px-1">
-              <div className="w-1 h-1 rounded-full bg-blue-500"></div>
-              <p className="text-[10px] text-zinc-600 font-medium">Este é o link público que você compartilhará com o mundo.</p>
-            </div>
+
+            <p className="text-[10px] text-zinc-600 font-medium italic px-2 leading-relaxed">
+              Este é o seu endereço único na rede. Use letras minúsculas, números e hifens.
+            </p>
           </div>
         </div>
       </section>

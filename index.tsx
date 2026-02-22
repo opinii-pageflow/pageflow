@@ -18,3 +18,12 @@ root.render(
     </ErrorBoundary>
   </React.StrictMode>
 );
+
+// PWA: registrar service worker (apenas no browser, sem spam no console)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // falha silenciosa — SW será tentado novamente no próximo load
+    });
+  });
+}

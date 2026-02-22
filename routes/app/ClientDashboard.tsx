@@ -1,437 +1,813 @@
-import React, { useState, useMemo } from 'react';
+"use client";
+
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getCurrentUser, getStorage } from '../../lib/storage';
-import { 
-  Layout, 
-  BarChart3, 
-  Settings, 
-  Plus, 
-  Users, 
-  MousePointer2, 
-  TrendingUp, 
-  ChevronRight, 
-  Zap, 
-  ExternalLink,
-  ArrowUpRight,
-  Shield,
+import { getCurrentUser, generateId } from '@/lib/storage';
+import { normalizeEvent } from '@/lib/eventNormalizer';
+import { PLANS_CONFIG } from '@/lib/plansConfig';
+import { useClientData } from '@/hooks/useClientData';
+import { leadsApi } from '@/lib/api/leads';
+import { npsApi } from '@/lib/api/nps';
+import { clientsApi } from '@/lib/api/clients';
+import { profilesApi } from '@/lib/api/profiles';
+import {
   Activity,
-  Lock,
-  Target,
-  Smile,
-  Meh,
-  Frown,
-  MessageSquare,
   AlertCircle,
-  Star
+  ArrowUpRight,
+  BarChart3,
+  Calendar,
+  Check,
+  ChevronRight,
+  Clock,
+  Globe,
+  Layout,
+  Lock,
+  MessageSquare,
+  MousePointer2,
+  Plus,
+  RotateCcw,
+  Shield,
+  Smile,
+  Target,
+  Trash2,
+  User,
+  Users,
+  Zap,
+  Smartphone,
+  Monitor,
+  Link as LinkIcon,
+  X
 } from 'lucide-react';
-import { getProfileSummary } from '../../lib/analytics';
-import { PLANS } from '../../lib/plans';
-import { canAccessFeature } from '../../lib/permissions';
-import TopBar from '../../components/common/TopBar';
-import AdvancedCrm from '../../components/crm/AdvancedCrm';
+import { getProfileSummary, getFilteredEvents } from '@/lib/analytics';
+import { PLANS } from '@/lib/plans';
+import { canAccessFeature } from '@/lib/permissions';
+import TopBar from '@/components/common/TopBar';
 import clsx from 'clsx';
+import { PlanType, SchedulingSlot } from '@/types';
 
-const ClientDashboard: React.FC = () => {
-  const navigate = useNavigate();
-  const user = getCurrentUser();
-  const data = getStorage();
-  const [days, setDays] = useState(7);
-  const [activeTab, setActiveTab] = useState<'overview' | 'crm'>('overview');
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  
-  const clientProfiles = data.profiles.filter(p => p.clientId === user?.clientId);
-  const client = data.clients.find(c => c.id === user?.clientId);
-  const summary = useMemo(() => getProfileSummary('all', days), [days]);
+// --- AGENDA TAB COMPONENT ---
+const AgendaTab: React.FC<{ client: any, profiles: any[], onUpdate: () => void }> = ({ client, profiles, onUpdate }) => {
+  const scope = client?.schedulingScope || 'global';
+  const [selectedProfileId, setSelectedProfileId] = useState<string>(profiles[0]?.id || '');
+  const [slots, setSlots] = useState<SchedulingSlot[]>([]);
+  const [viewSlot, setViewSlot] = useState<SchedulingSlot | null>(null);
 
-  const hasProAccess = canAccessFeature(client?.plan, 'catalog');
-  const hasCrmAccess = canAccessFeature(client?.plan, 'crm');
-  const hasNpsAccess = canAccessFeature(client?.plan, 'nps');
-  
-  const now = Date.now();
-  const ms = days * 24 * 60 * 60 * 1000;
+  // Persistence Loading
+  useEffect(() => {
+    if (!client) return;
 
-  const leadsRecent = useMemo(() =>
-    data.leads
-      .filter(l => l.clientId === user?.clientId)
-      .filter(l => now - new Date(l.createdAt).getTime() <= ms)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  , [data.leads, user?.clientId, days]);
+    if (scope === 'global') {
+      setSlots(client.globalSlots || []);
+    } else {
+      const profile = profiles.find(p => p.id === selectedProfileId);
+      setSlots(profile?.nativeSlots || []);
+    }
+  }, [scope, selectedProfileId, client, profiles]);
 
-  const allLeads = useMemo(() => 
-    data.leads
-      .filter(l => l.clientId === user?.clientId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  , [data.leads, user?.clientId]);
-
-  const npsRecent = useMemo(() =>
-    data.nps
-      .filter(n => n.clientId === user?.clientId)
-      .filter(n => now - new Date(n.createdAt).getTime() <= ms)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  , [data.nps, user?.clientId, days]);
-
-  const npsAvg = npsRecent.length ? (npsRecent.reduce((acc, n) => acc + n.score, 0) / npsRecent.length) : 0;
-  const npsPromoters = npsRecent.filter(n => n.score >= 9).length;
-  const npsNeutrals = npsRecent.filter(n => n.score >= 7 && n.score <= 8).length;
-  const npsDetractors = npsRecent.filter(n => n.score <= 6).length;
-  const npsScore = npsRecent.length ? ((npsPromoters / npsRecent.length) * 100) - ((npsDetractors / npsRecent.length) * 100) : 0;
-
-  const usagePercentage = Math.min((clientProfiles.length / (client?.maxProfiles || 1)) * 100, 100);
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const { clientX, clientY } = e;
-    const { innerWidth, innerHeight } = window;
-    const x = (clientX / innerWidth - 0.5) * 20;
-    const y = (clientY / innerHeight - 0.5) * 20;
-    setMousePos({ x, y });
+  // Handle Save (Persistence)
+  const persistSlots = async (slotsToSave: SchedulingSlot[]) => {
+    setSlots(slotsToSave);
+    try {
+      if (scope === 'global') {
+        await clientsApi.syncGlobalSlots(client.id, slotsToSave);
+      } else if (selectedProfileId) {
+        await profilesApi.syncSchedulingSlots(selectedProfileId, slotsToSave, client.id);
+      }
+      onUpdate();
+    } catch (err) {
+      console.error('[AgendaTab] Error syncing slots:', err);
+      alert('Erro ao sincronizar agenda com o servidor.');
+    }
   };
 
-  return (
-    <div 
-      className="min-h-screen bg-[#020202] text-white overflow-x-hidden"
-      onMouseMove={handleMouseMove}
-    >
-      <TopBar title="Centro de Comando" />
-      
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] animate-pulse"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
-      </div>
+  // Local State Update (Fast Typing)
+  const updateLocally = (newSlots: SchedulingSlot[]) => {
+    setSlots(newSlots);
+  };
 
-      <main className="max-w-7xl mx-auto p-6 lg:p-10 pt-32 relative z-10 pb-40">
-        
-        {hasCrmAccess && (
-          <div className="mb-12 flex bg-zinc-900/40 p-1.5 rounded-[2rem] border border-white/5 w-fit animate-in fade-in duration-1000">
-             <button 
-              onClick={() => setActiveTab('overview')}
-              className={clsx(
-                "px-8 py-4 rounded-[1.8rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3",
-                activeTab === 'overview' ? "bg-white text-black shadow-2xl" : "text-zinc-500 hover:text-white"
-              )}
-             >
-                <Activity size={16} /> Visão Geral
-             </button>
-             <button 
-              onClick={() => setActiveTab('crm')}
-              className={clsx(
-                "px-8 py-4 rounded-[1.8rem] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-3",
-                activeTab === 'crm' ? "bg-white text-black shadow-2xl" : "text-zinc-500 hover:text-white"
-              )}
-             >
-                <Target size={16} /> Gestão de Leads
-             </button>
+
+
+  const addSlot = (dayIndex: number, start = '09:00', end = '18:00') => {
+    const next: SchedulingSlot = {
+      id: generateId(),
+      dayOfWeek: dayIndex,
+      startTime: start,
+      endTime: end,
+      isActive: true,
+      status: 'available'
+    };
+    persistSlots([...slots, next]);
+  };
+
+  const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+  const stats = useMemo(() => {
+    const total = slots.length;
+    const active = slots.filter(s => !s.status || s.status === 'available').length;
+    const booked = slots.filter(s => s.status === 'booked').length;
+    const pending = slots.filter(s => s.status === 'pending').length;
+    return { total, active, booked, pending };
+  }, [slots]);
+
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* 1. Header & Controls */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="flex items-center gap-4 bg-black/40 border border-white/5 p-2 rounded-2xl relative max-w-md">
+          <div className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/5 flex items-center gap-3">
+            <div className="p-1.5 rounded-lg bg-white/10 text-white">
+              {scope === 'global' ? <Globe size={14} /> : <User size={14} />}
+            </div>
+            <div>
+              <div className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Modo Atual</div>
+              <div className="text-xs font-bold text-white capitalize">{scope === 'global' ? 'Global Layer' : 'Per Profile'}</div>
+            </div>
+          </div>
+
+          <Link
+            to="/app/settings"
+            className="px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 transition-all flex items-center gap-2 border border-transparent hover:border-white/5"
+          >
+            <Shield size={14} />
+            Configurar
+          </Link>
+        </div>
+
+        {scope === 'per_profile' && (
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar max-w-2xl">
+            {profiles.map(p => (
+              <button
+                key={p.id}
+                onClick={() => setSelectedProfileId(p.id)}
+                className={clsx(
+                  "flex items-center gap-2 px-4 py-2 rounded-xl border transition-all whitespace-nowrap",
+                  selectedProfileId === p.id
+                    ? "bg-neon-blue/10 border-neon-blue/30 text-neon-blue"
+                    : "bg-white/5 border-white/5 text-zinc-500 hover:bg-white/10"
+                )}
+              >
+                <img src={p.avatarUrl} className="w-5 h-5 rounded-full" />
+                <span className="text-[10px] font-bold uppercase tracking-wide">{p.displayName}</span>
+              </button>
+            ))}
           </div>
         )}
+      </div>
 
-        {activeTab === 'crm' && hasCrmAccess ? (
-          <AdvancedCrm leads={allLeads} clientPlan={client?.plan} />
-        ) : (
-          <>
-            <header className="mb-12 flex flex-col md:flex-row items-start md:items-end justify-between gap-8">
-              <div 
-                className="space-y-4 animate-in fade-in slide-in-from-left duration-1000"
-                style={{ 
-                  transform: `translate3d(${mousePos.x}px, ${mousePos.y}px, 0)`,
-                  transition: 'transform 0.2s cubic-bezier(0.23, 1, 0.32, 1)'
-                }}
-              >
-                <div className="inline-flex items-center gap-2.5 px-4 py-1.5 bg-white/[0.03] border border-white/10 rounded-full backdrop-blur-md shadow-2xl">
-                  <div className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,1)]"></span>
+      {/* 2. Stats Summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden group">
+          <div className="absolute inset-0 bg-neon-blue/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <span className="text-4xl font-black text-white mb-2">{stats.total}</span>
+          <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Slots</span>
+        </div>
+        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden group">
+          <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <span className="text-4xl font-black text-emerald-400 mb-2">{stats.active}</span>
+          <span className="text-[10px] font-black text-emerald-600/70 uppercase tracking-widest">Lives</span>
+        </div>
+        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden group">
+          <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <span className="text-4xl font-black text-amber-500 mb-2">{stats.pending}</span>
+          <span className="text-[10px] font-black text-amber-600/70 uppercase tracking-widest">Pendentes</span>
+        </div>
+        <div className="bg-white/[0.02] border border-white/5 rounded-3xl p-8 flex flex-col items-center justify-center relative overflow-hidden group">
+          <div className="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <span className="text-4xl font-black text-purple-400 mb-2">{stats.booked}</span>
+          <span className="text-[10px] font-black text-purple-600/70 uppercase tracking-widest">Reservados</span>
+        </div>
+      </div>
+
+      {/* 3. Grid Planner */}
+      <div className="bg-black/20 border border-white/5 rounded-[3rem] p-8 lg:p-12">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-12">
+          <div>
+            <h3 className="text-2xl font-black italic tracking-tight text-white uppercase">Arquitetura de <span className="text-neon-blue">Disponibilidade</span></h3>
+            <p className="text-sm text-zinc-500 font-medium mt-2 italic">Defina os protocolos de tempo que a rede pode consumir.</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 bg-white/5 p-2 rounded-2xl border border-white/5">
+            <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest px-3">Protocolos Rápidos:</span>
+            <button onClick={() => {
+              if (window.confirm('Aplicar horário comercial a todos os dias úteis?')) {
+                let newSlots = [...slots];
+                [1, 2, 3, 4, 5].forEach(day => {
+                  if (!newSlots.find(s => s.dayOfWeek === day)) {
+                    newSlots.push({ id: generateId(), dayOfWeek: day, startTime: '09:00', endTime: '18:00', isActive: true, status: 'available' });
+                  }
+                });
+                persistSlots(newSlots);
+              }
+            }} className="px-4 py-2 bg-zinc-800 hover:bg-white hover:text-black rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Semana Full</button>
+            <button onClick={() => persistSlots([])} className="px-4 py-2 bg-rose-500/10 text-rose-500 border border-rose-500/20 hover:bg-rose-500 hover:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Limpar Tudo</button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-6">
+          {DAYS.map((day, idx) => {
+            const daySlots = slots.filter(s => s.dayOfWeek === idx).sort((a, b) => a.startTime.localeCompare(b.startTime));
+            return (
+              <div key={idx} className="space-y-4 group/day">
+                <div className="flex items-center justify-between border-b border-white/5 pb-3">
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-black text-white italic tracking-widest uppercase">{day}</span>
+                    <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest">{daySlots.length} HORÁRIOS</span>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-300">Sistema Online</span>
-                </div>
-                
-                <h1 className="text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-[0.9] select-none">
-                  <span className="block opacity-90">Bem-vindo,</span>
-                  <span className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-                    {user?.name.split(' ')[0]}
-                  </span>
-                </h1>
-                
-                <p className="text-zinc-500 text-lg md:text-xl font-medium max-w-xl leading-relaxed">
-                  Sua central de conexões digitais está performando <span className="text-white bg-white/10 px-2 py-0.5 rounded-md">{(summary.ctr).toFixed(1)}% melhor</span> esta semana.
-                </p>
-              </div>
-
-              <div className="flex bg-zinc-900/50 backdrop-blur-2xl p-1.5 rounded-2xl border border-white/5 shadow-2xl animate-in fade-in slide-in-from-right duration-700">
-                {[7, 30].map((d) => (
                   <button
-                    key={d}
-                    onClick={() => setDays(d)}
-                    className={clsx(
-                      "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
-                      days === d ? "bg-white text-black shadow-xl" : "text-zinc-500 hover:text-white"
-                    )}
+                    onClick={() => addSlot(idx)}
+                    className="w-7 h-7 bg-white/5 hover:bg-neon-blue hover:text-black rounded-lg flex items-center justify-center transition-all active:scale-95"
                   >
-                    {d}D
+                    <Plus size={14} strokeWidth={3} />
                   </button>
-                ))}
-              </div>
-            </header>
+                </div>
 
-            <div className={clsx(
-              "w-full bg-zinc-900/40 backdrop-blur-xl border p-8 rounded-[2.5rem] mb-12 flex flex-col md:flex-row items-center justify-between gap-6 transition-all duration-500 animate-in fade-in slide-in-from-top-4",
-              usagePercentage >= 80 ? "border-amber-500/50 shadow-[0_0_40px_rgba(245,158,11,0.1)]" : "border-white/5"
-            )}>
-              <div className="flex items-center gap-6">
-                <div className={clsx(
-                  "w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl transition-colors duration-500",
-                  usagePercentage >= 80 ? "bg-amber-500 text-black" : "bg-blue-600 text-white"
-                )}>
-                  {usagePercentage >= 80 ? <AlertCircle size={28} /> : <Shield size={28} />}
+                <div className="space-y-2">
+                  {daySlots.length === 0 && (
+                    <div className="h-24 rounded-[1.5rem] border-2 border-dashed border-white/5 flex flex-col items-center justify-center gap-1 opacity-40 group-hover/day:opacity-100 transition-opacity">
+                      <Clock size={16} className="text-zinc-700" />
+                      <span className="text-[8px] font-black text-zinc-700 uppercase tracking-widest">Vazio</span>
+                    </div>
+                  )}
+
+                  {daySlots.map(slot => (
+                    <div
+                      key={slot.id}
+                      className={clsx(
+                        "p-4 rounded-2xl border transition-all relative group overflow-hidden",
+                        slot.status === 'booked'
+                          ? "bg-purple-500/10 border-purple-500/30"
+                          : "bg-black/40 border-white/5 hover:border-neon-blue/40"
+                      )}
+                    >
+                      <div className="flex items-center justify-between mb-3 relative z-10">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="time"
+                            value={slot.startTime}
+                            onChange={(e) => updateLocally(slots.map(s => s.id === slot.id ? { ...s, startTime: e.target.value } : s))}
+                            onBlur={() => persistSlots(slots)}
+                            className="bg-transparent text-xs font-black text-white w-12 outline-none p-0 focus:text-neon-blue transition-colors text-center"
+                          />
+                          <span className="text-[9px] font-bold text-zinc-700">➜</span>
+                          <input
+                            type="time"
+                            value={slot.endTime}
+                            onChange={(e) => updateLocally(slots.map(s => s.id === slot.id ? { ...s, endTime: e.target.value } : s))}
+                            onBlur={() => persistSlots(slots)}
+                            className="bg-transparent text-xs font-black text-white w-12 outline-none p-0 focus:text-neon-blue transition-colors text-center"
+                          />
+                        </div>
+                        <button
+                          onClick={() => persistSlots(slots.filter(s => s.id !== slot.id))}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 bg-rose-500/10 text-rose-500 rounded-lg transition-all active:scale-90"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+
+                      {slot.status === 'booked' ? (
+                        <div className="mt-2 pt-2 border-t border-purple-500/20 relative z-10 flex flex-col gap-2">
+                          <div className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors" onClick={() => setViewSlot(slot)} title="Ver dados completos">
+                            <div className="w-1 h-1 rounded-full bg-purple-500" />
+                            <span className="text-[9px] font-black text-purple-300 truncate uppercase hover:underline">{slot.bookedBy?.split(' (')[0]}</span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Liberar este horário? O agendamento será cancelado no sistema.')) {
+                                persistSlots(slots.map(s => s.id === slot.id ? { ...s, status: 'available', bookedBy: undefined } : s));
+                              }
+                            }}
+                            className="bg-purple-500 text-white text-[8px] font-black uppercase tracking-widest py-1.5 rounded-lg hover:bg-white hover:text-black transition-all"
+                          >
+                            Liberar Slot
+                          </button>
+                        </div>
+                      ) : slot.status === 'pending' ? (
+                        <div className="mt-2 pt-2 border-t border-amber-500/20 relative z-10 flex flex-col gap-2 animate-pulse">
+                          <div className="flex items-center gap-2">
+                            <div className="w-1 h-1 rounded-full bg-amber-500" />
+                            <span className="text-[9px] font-black text-amber-300 truncate uppercase">{slot.bookedBy?.split(' (')[0]}</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => {
+                                persistSlots(slots.map(s => s.id === slot.id ? { ...s, status: 'booked' as const } : s));
+                              }}
+                              className="bg-amber-500 text-black text-[8px] font-black uppercase tracking-widest py-1.5 rounded-lg hover:bg-white transition-all outline-none"
+                            >
+                              Confirmar
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (window.confirm('Recusar este agendamento?')) {
+                                  persistSlots(slots.map(s => s.id === slot.id ? { ...s, status: 'available', bookedBy: undefined } : s));
+                                }
+                              }}
+                              className="bg-white/5 text-zinc-400 text-[8px] font-black uppercase tracking-widest py-1.5 rounded-lg hover:bg-rose-500 hover:text-white transition-all outline-none"
+                            >
+                              Recusar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => persistSlots(slots.map(s => s.id === slot.id ? { ...s, startTime: '09:00', endTime: '18:00' } : s))} className="text-[7px] font-black text-zinc-600 hover:text-white uppercase tracking-tighter bg-white/5 px-1.5 py-1 rounded">Full</button>
+                          <button onClick={() => persistSlots(slots.map(s => s.id === slot.id ? { ...s, startTime: '08:00', endTime: '12:00' } : s))} className="text-[7px] font-black text-zinc-600 hover:text-white uppercase tracking-tighter bg-white/5 px-1.5 py-1 rounded">Manhã</button>
+                          <button onClick={() => persistSlots(slots.map(s => s.id === slot.id ? { ...s, startTime: '13:00', endTime: '18:00' } : s))} className="text-[7px] font-black text-zinc-600 hover:text-white uppercase tracking-tighter bg-white/5 px-1.5 py-1 rounded">Tarde</button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {daySlots.length > 0 && (
+                    <div className="flex items-center gap-1.5 pt-2">
+                      <button
+                        onClick={() => {
+                          const start = daySlots[daySlots.length - 1].endTime;
+                          const [h, m] = start.split(':').map(Number);
+                          const endH = (h + 1) % 24;
+                          const end = `${endH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                          addSlot(idx, start, end);
+                        }}
+                        className="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[8px] font-black uppercase tracking-[0.2em] text-zinc-500 hover:text-white transition-all transition-colors"
+                      >
+                        + SEQUÊNCIA
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Client Info Modal */}
+      {viewSlot && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setViewSlot(null)}>
+          <div
+            className="bg-zinc-900 border border-white/10 p-6 rounded-3xl max-w-sm w-full shadow-2xl space-y-4 relative animate-in zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl">
+                  <User size={20} />
                 </div>
                 <div>
-                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-1">Status da Assinatura</div>
-                  <div className="text-2xl font-black tracking-tight flex items-center gap-3">
-                    Plano {PLANS[client?.plan || 'starter'].name}
-                    {usagePercentage >= 80 && (
-                      <span className="text-[9px] bg-amber-500/20 text-amber-500 px-3 py-1 rounded-full border border-amber-500/30 animate-pulse font-black uppercase tracking-widest">
-                        Capacidade Crítica
-                      </span>
-                    )}
-                  </div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Cliente</h3>
+                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
+                    {DAYS[viewSlot.dayOfWeek]} • {viewSlot.startTime} - {viewSlot.endTime}
+                  </p>
                 </div>
               </div>
-              
-              <div className="flex flex-col md:flex-row items-center gap-8 w-full md:w-auto">
-                <div className="text-center md:text-right">
-                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-1">Uso de Slots</div>
-                  <div className="text-2xl font-black tracking-tight">
-                    {clientProfiles.length} <span className="text-zinc-600">/ {client?.maxProfiles}</span>
-                  </div>
-                </div>
-                <Link 
-                  to="/app/upgrade"
-                  className="w-full md:w-auto bg-white text-black px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-xl shadow-white/5 flex items-center justify-center gap-2"
-                >
-                  Expandir Limite
-                  <ChevronRight size={16} />
-                </Link>
-              </div>
+              <button
+                onClick={() => setViewSlot(null)}
+                className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-6 lg:grid-cols-12 gap-6 mb-12">
-              <div className="md:col-span-6 lg:col-span-8 bg-gradient-to-br from-zinc-900 to-black border border-white/10 rounded-[3rem] p-10 flex flex-col justify-between group overflow-hidden relative shadow-2xl animate-in fade-in zoom-in-95 duration-500">
-                <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:opacity-20 transition-all duration-700 pointer-events-none">
-                    <Plus size={300} />
+            <div className="p-4 bg-black/40 rounded-2xl border border-white/5 space-y-1 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              {viewSlot.bookedBy ? (
+                <div className="space-y-3 text-xs text-zinc-300 font-medium">
+                  {viewSlot.bookedBy.split(/(?=[A-Z][a-z]+:)/).map((line, i) => (
+                    <div key={i} className="break-words">{line.trim()}</div>
+                  ))}
                 </div>
-                
-                <div className="space-y-6 relative z-10">
-                    <div className="w-16 h-16 bg-blue-600 rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-blue-600/40">
-                      <Layout size={32} className="text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-3xl font-black tracking-tighter mb-2">Expanda sua Presença</h3>
-                      <p className="text-zinc-500 max-w-sm">Crie novos cartões digitais ultra modernos para diferentes nichos ou marcas.</p>
-                    </div>
-                </div>
+              ) : (
+                <p className="text-xs text-zinc-500 italic">Sem dados registrados.</p>
+              )}
+            </div>
 
-                <div className="mt-12 flex flex-col sm:flex-row gap-4 relative z-10">
-                    <button 
-                      onClick={() => navigate('/app/profiles')}
-                      className="bg-white text-black px-10 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 shadow-xl shadow-white/5"
-                    >
-                      <Plus size={18} />
-                      Novo Perfil Digital
-                    </button>
-                  <Link 
-                      to="/app/insights"
-                      className="bg-zinc-800/80 hover:bg-zinc-700 backdrop-blur-xl text-white px-10 py-5 rounded-[1.5rem] font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all active:scale-95 border border-white/5"
-                    >
-                      <Activity size={18} />
-                      Ver Métricas Reais
-                    </Link>
-                </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setViewSlot(null)}
+                className="flex-1 py-3 bg-white text-black rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-colors"
+              >
+                Fechar
+              </button>
+              <button
+                onClick={() => {
+                  if (window.confirm('Liberar este horário? O agendamento será cancelado.')) {
+                    persistSlots(slots.map(s => s.id === viewSlot.id ? { ...s, status: 'available', bookedBy: undefined } : s));
+                    setViewSlot(null);
+                  }
+                }}
+                className="py-3 px-4 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all"
+              >
+                Cancelar Agendamento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// --- MAIN DASHBOARD ---
+const ClientDashboard: React.FC = () => {
+  const navigate = useNavigate();
+  // Integração com Supabase via Hook
+  const { client, profiles: clientProfiles, loading, refresh } = useClientData();
+  const userClientId = client?.id;
+  const userPlan = client?.plan || 'starter';
+
+  const [days, setDays] = useState(7);
+  const [activeTab, setActiveTab] = useState<'overview' | 'agenda'>('overview');
+  const [selectedSource, setSelectedSource] = useState('all');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
+
+  const [leads, setLeads] = useState<any[]>([]);
+  const [nps, setNps] = useState<any[]>([]);
+
+  const refreshData = (silent = false) => {
+    refresh(silent); // Recarrega dados do banco
+  };
+
+  const startTs = useMemo(() => startDate ? new Date(startDate).getTime() : undefined, [startDate]);
+  const endTs = useMemo(() => endDate ? new Date(endDate + 'T23:59:59').getTime() : undefined, [endDate]);
+
+  // Estados para dados de analytics carregados de forma assíncrona
+  const [summary, setSummary] = useState<any>({
+    totalViews: 0,
+    totalClicks: 0,
+    ctr: 0,
+    uniqueVisitors: 0,
+    avgTimeOnPage: 0,
+    bounceRate: 0,
+    devices: [],
+    topLocations: [],
+    topLinks: [],
+    contentPerformance: { byCategory: [] },
+    hourlyTraffic: Array(24).fill(0),
+    sources: []
+  });
+  const [normalizedEvents, setNormalizedEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAnalytics = async () => {
+      try {
+        const [summaryData, eventsData] = await Promise.all([
+          getProfileSummary('all', days, userClientId, startTs, endTs, selectedSource),
+          getFilteredEvents('all', days, userClientId, startTs, endTs, selectedSource)
+        ]);
+
+        if (isMounted) {
+          if (summaryData) setSummary(summaryData);
+          if (eventsData) {
+            setNormalizedEvents(eventsData.map(e => normalizeEvent(e, clientProfiles)));
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao carregar analytics no dashboard:', err);
+      }
+    };
+
+    if (userClientId) {
+      loadAnalytics();
+
+      // Fetch Leads & NPS from Supabase
+      leadsApi.listByClient(userClientId).then(data => isMounted && setLeads(data));
+      npsApi.listByClient(userClientId).then(data => isMounted && setNps(data));
+    }
+
+    return () => { isMounted = false; };
+  }, [days, userClientId, startTs, endTs, clientProfiles, selectedSource]);
+
+  const heatmap = useMemo(() => {
+    const rows = [
+      { id: 'view', label: 'Hub Visita', color: '59, 130, 246' },
+      { id: 'button', label: 'Botão', color: '0, 242, 255' },
+      { id: 'portfolio', label: 'Portfólio', color: '57, 255, 20' },
+      { id: 'catalog', label: 'Catálogo', color: '245, 158, 11' },
+      { id: 'video', label: 'Vídeo', color: '239, 68, 68' },
+      { id: 'pix', label: 'Pix Sync', color: '234, 179, 8' },
+      { id: 'nps', label: 'Feedback', color: '16, 185, 129' }
+    ];
+    const matrix: number[][] = Array.from({ length: rows.length }, () => Array(24).fill(0));
+    normalizedEvents.forEach(e => {
+      try {
+        const h = new Date(e.ts).getHours();
+        const rIdx = rows.findIndex(r => r.id === (e.type === 'view' ? 'view' : (e as any).assetType));
+        if (rIdx !== -1) matrix[rIdx][h]++;
+      } catch (err) { }
+    });
+    return { matrix, max: Math.max(...matrix.flatMap(h => h), 1), rows };
+  }, [normalizedEvents]);
+
+  const hasCrmAccess = canAccessFeature(userPlan, 'crm');
+  const hasNpsAccess = canAccessFeature(userPlan, 'nps');
+  const hasSchedulingAccess = canAccessFeature(userPlan, 'scheduling');
+
+  // Leads & NPS Logic
+  const ms = days * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  const leadsRecent = useMemo(() =>
+    (leads || [])
+      .filter(l => now - new Date(l.createdAt).getTime() <= ms)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [leads, days, now]);
+
+  const npsRecent = useMemo(() =>
+    (nps || [])
+      .filter(n => now - new Date(n.createdAt).getTime() <= ms)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [nps, days, now]);
+
+  const npsScore = npsRecent.length
+    ? ((npsRecent.filter(n => n.score >= 9).length / npsRecent.length) * 100) - ((npsRecent.filter(n => n.score <= 6).length / npsRecent.length) * 100)
+    : 0;
+
+  // Se estiver carregando, mostrar loading state simples (MOVIDO PARA CÁ)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center text-white">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-neon-blue border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-xs font-black uppercase tracking-widest text-zinc-500">Sincronizando...</span>
+        </div>
+      </div>
+    );
+  }
+
+  const planConfig = PLANS_CONFIG[client?.plan || 'starter'];
+  const usagePercentage = Math.min((clientProfiles.length / (planConfig.maxProfiles || 1)) * 100, 100);
+  const kpis = [
+    { label: 'Alcance', value: summary?.totalViews || 0, icon: Globe, trend: '+12%', color: 'blue' },
+    { label: 'Engajamento', value: summary?.totalClicks || 0, icon: MousePointer2, trend: '+5%', color: 'emerald' },
+    { label: 'Taxa CTR', value: `${(summary?.ctr || 0).toFixed(1)}% `, icon: BarChart3, trend: '+2.1%', color: 'amber' },
+    { label: 'Leads (CRM)', value: hasCrmAccess ? leadsRecent.length : <Lock size={14} />, icon: MessageSquare, locked: !hasCrmAccess, color: 'purple' },
+    { label: 'NPS Global', value: hasNpsAccess ? Math.round(npsScore) : <Lock size={14} />, icon: Smile, locked: !hasNpsAccess, color: 'rose' }
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden pb-32">
+      <TopBar title="Centro de Comando" />
+
+      <main className="max-w-[1600px] mx-auto px-6 lg:px-12 pt-32 relative z-10">
+
+        {/* HEADER */}
+        <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
+          <div>
+            <div className="flex flex-wrap items-center gap-3 mb-4">
+              <span className="px-4 py-1.5 rounded-full glass-neon-blue text-[10px] font-black uppercase tracking-[0.25em] text-neon-blue">
+                {PLANS[client?.plan || 'starter'].name} Protocol
+              </span>
+              {usagePercentage >= 80 && (
+                <span className="px-4 py-1.5 rounded-full bg-rose-500/10 text-rose-500 text-[10px] font-black uppercase tracking-[0.25em] animate-pulse">
+                  Capacidade Crítica
+                </span>
+              )}
+            </div>
+            <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none italic">
+              Hello, <span className="text-neon-blue drop-shadow-[0_0_15px_rgba(0,242,255,0.4)]">{client?.email?.split('@')[0] || 'User'}</span>
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* Date Controls */}
+            <div className="flex bg-black/40 backdrop-blur-xl border border-white/5 rounded-2xl p-1.5 shadow-2xl items-center gap-2">
+              {[7, 30].map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setDays(d)}
+                  className={clsx(
+                    "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all relative overflow-hidden",
+                    days === d ? "bg-white text-black" : "text-zinc-400 hover:text-white"
+                  )}
+                >
+                  {d}D
+                </button>
+              ))}
+              <div className="flex items-center gap-2 px-3 border-l border-white/5">
+                <Target size={14} className="text-zinc-600" />
+                <select
+                  value={selectedSource}
+                  onChange={e => setSelectedSource(e.target.value)}
+                  className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest text-zinc-400 outline-none cursor-pointer hover:text-white transition-colors"
+                >
+                  <option value="all">Origens</option>
+                  <option value="instagram">Instagram</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="facebook">Facebook</option>
+                  <option value="linkedin">LinkedIn</option>
+                  <option value="twitter">X / Twitter</option>
+                  <option value="direct">Direto</option>
+                  <option value="community">Comunidade</option>
+                  <option value="qr">QR Code</option>
+                </select>
               </div>
+              <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-transparent text-white text-[10px] outline-none w-24 px-2" />
+            </div>
 
-              <div className="md:col-span-3 lg:col-span-4 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col items-center justify-center text-center shadow-2xl animate-in fade-in zoom-in-95 duration-700">
-                <div className="relative w-40 h-40 mb-6">
-                    <svg className="w-full h-full transform -rotate-90">
-                      <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-white/5" />
-                      <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="12" fill="transparent" 
-                        className="text-blue-500 transition-all duration-1000"
-                        strokeDasharray={440}
-                        strokeDashoffset={440 - (440 * usagePercentage) / 100}
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-4xl font-black leading-none">{clientProfiles.length}</span>
-                      <span className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Ativos</span>
-                    </div>
-                </div>
-                <div className="space-y-1">
-                    <h4 className="font-black text-lg">Capacidade</h4>
-                    <p className="text-zinc-500 text-xs font-medium">Você está usando {usagePercentage.toFixed(0)}% dos seus {client?.maxProfiles} slots disponíveis.</p>
-                </div>
-                <Link to="/app/settings" className="mt-6 text-blue-500 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors flex items-center gap-2">
-                    Expandir Plano <ArrowUpRight size={14} />
-                </Link>
-              </div>
 
-              <div className="md:col-span-3 lg:col-span-4 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between shadow-2xl group animate-in fade-in zoom-in-95 duration-500 delay-100">
-                <div className="flex items-center justify-between mb-8">
-                    <div className="text-purple-500 bg-purple-500/10 p-4 rounded-2xl group-hover:scale-110 transition-transform"><Users size={24} /></div>
-                    <div className="text-right">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Alcance Total</div>
-                      <div className="text-3xl font-black tracking-tighter">{summary.totalViews}</div>
-                    </div>
+            <button onClick={() => navigate('/app/profiles')} className="bg-white text-black px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-zinc-200 transition-all active:scale-95">
+              <Plus size={18} strokeWidth={3} />
+              Deploy Novo
+            </button>
+          </div>
+        </header>
+
+        {/* TABS Navigation */}
+        <div className="mb-12 flex gap-10 border-b border-white/5">
+          {[
+            { id: 'overview', label: 'Network Intelligence', icon: Activity },
+            { id: 'agenda', label: 'Agenda & Slots', icon: Calendar, locked: !hasSchedulingAccess }
+          ].map((tab: any) => (
+            <button
+              key={tab.id}
+              onClick={() => !tab.locked && setActiveTab(tab.id)}
+              disabled={tab.locked}
+              className={clsx(
+                "pb-5 text-[10px] font-black uppercase tracking-[0.3em] border-b-2 transition-all flex items-center gap-3",
+                activeTab === tab.id ? "border-neon-blue text-white" : "border-transparent text-zinc-600 hover:text-zinc-400",
+                tab.locked && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              <tab.icon size={16} className={clsx(activeTab === tab.id ? "text-neon-blue" : "text-zinc-700")} />
+              {tab.label}
+              {tab.locked && <Lock size={12} />}
+            </button>
+          ))}
+        </div>
+
+        {/* CONTENT */}
+        {activeTab === 'agenda' && hasSchedulingAccess ? (
+          <AgendaTab client={client} profiles={clientProfiles} onUpdate={() => refreshData(true)} />
+        ) : (
+          <div className="space-y-8 animate-in fade-in duration-1000">
+            {/* Overview Content */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
+              {kpis.map((kpi, i) => (
+                <div key={i} className={clsx("p-6 rounded-[2rem] border border-white/5 glass-neon-blue", kpi.locked && "opacity-50")}>
+                  <div className="flex justify-between items-center mb-6">
+                    <div className="p-3 rounded-2xl bg-white/5"><kpi.icon size={22} color={kpi.color === 'emerald' ? '#10b981' : kpi.color === 'rose' ? '#f43f5e' : '#00f2ff'} /></div>
+                  </div>
+                  <div className="text-[10px] font-black uppercase text-zinc-500 mb-1">{kpi.label}</div>
+                  <div className="text-3xl font-black text-white">{kpi.value}</div>
                 </div>
-                <div className="h-12 flex items-end gap-1 px-1">
-                    {summary.viewsByDate.slice(-10).map((d, i) => (
-                      <div key={i} className="flex-1 bg-purple-500/20 rounded-t-sm hover:bg-purple-500 transition-all" style={{ height: `${Math.max((d.value / (summary.totalViews || 1)) * 100, 10)}%` }}></div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 glass-neon-blue rounded-[3rem] p-10 border border-white/5">
+                <h3 className="text-xl font-black italic tracking-tight mb-8">Traffic <span className="text-neon-blue">Pulse</span></h3>
+
+                <div className="space-y-4">
+                  <div className="flex mb-4 ml-24">
+                    {[0, 6, 12, 18, 23].map(h => (
+                      <div key={h} className="flex-1 text-[8px] font-black text-zinc-700 uppercase italic" style={{ marginLeft: h === 0 ? 0 : 'auto' }}>
+                        {h.toString().padStart(2, '0')}h
+                      </div>
                     ))}
-                </div>
-              </div>
+                  </div>
 
-              <div className="md:col-span-3 lg:col-span-4 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between shadow-2xl group animate-in fade-in zoom-in-95 duration-500 delay-200">
-                <div className="flex items-center justify-between mb-8">
-                    <div className="text-emerald-500 bg-emerald-500/10 p-4 rounded-2xl group-hover:scale-110 transition-transform"><MousePointer2 size={24} /></div>
-                    <div className="text-right">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Engajamento</div>
-                      <div className="text-3xl font-black tracking-tighter">{summary.totalClicks}</div>
-                    </div>
-                </div>
-                <div className="h-12 flex items-end gap-1 px-1">
-                    {summary.clicksByDate.slice(-10).map((d, i) => (
-                      <div key={i} className="flex-1 bg-emerald-500/20 rounded-t-sm hover:bg-emerald-500 transition-all" style={{ height: `${Math.max((d.value / (summary.totalClicks || 1)) * 100, 10)}%` }}></div>
+                  <div className="space-y-3">
+                    {heatmap.rows.map((row, r) => (
+                      <div key={r} className="flex items-center gap-4 group/row">
+                        <div className="w-20 text-[9px] font-black text-zinc-600 uppercase italic tracking-tighter group-hover/row:text-white transition-colors">{row.label}</div>
+                        <div className="flex-1 flex gap-1 h-6">
+                          {heatmap.matrix[r].map((v, h) => (
+                            <div
+                              key={h}
+                              className="flex-1 rounded-sm transition-all hover:scale-125 hover:z-10 cursor-help relative group/cell"
+                              style={{
+                                backgroundColor: v > 0
+                                  ? `rgba(${row.color}, ${0.1 + (v / heatmap.max) * 0.9})`
+                                  : 'rgba(255,255,255,0.02)',
+                                boxShadow: v === heatmap.max && v > 0 ? `0 0 10px rgba(${row.color}, 0.5)` : 'none'
+                              }}
+                            >
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 hidden group-hover/cell:block z-50">
+                                <div className="bg-black border border-white/10 p-2.5 rounded-xl shadow-2xl whitespace-nowrap animate-in fade-in zoom-in-95 duration-200">
+                                  <div className="text-[8px] font-black uppercase mb-1" style={{ color: `rgb(${row.color})` }}>{row.label} às {h}h</div>
+                                  <div className="text-xs font-black text-white italic">{v} <span className="text-[9px] text-zinc-600 not-italic uppercase">Signals</span></div>
+                                </div>
+                                <div className="w-2 h-2 bg-black border-r border-b border-white/10 rotate-45 transform translate-x-3 -translate-y-1 mx-auto" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     ))}
-                </div>
-              </div>
-
-              <div className="md:col-span-3 lg:col-span-4 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between shadow-2xl group animate-in fade-in zoom-in-95 duration-500 delay-300">
-                <div className="flex items-center justify-between mb-8">
-                    <div className="text-amber-500 bg-amber-500/10 p-4 rounded-2xl group-hover:scale-110 transition-transform"><BarChart3 size={24} /></div>
-                    <div className="text-right">
-                      <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Taxa CTR</div>
-                      <div className="text-3xl font-black tracking-tighter">{summary.ctr.toFixed(1)}%</div>
-                    </div>
-                </div>
-                <div className="space-y-2">
-                    <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden shadow-inner">
-                      <div className="h-full bg-amber-500 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)]" style={{ width: `${summary.ctr}%` }}></div>
-                    </div>
-                    <p className="text-[8px] font-black uppercase text-zinc-600 tracking-widest text-center">Performance média global</p>
-                </div>
-              </div>
-
-              {/* Leads (CRM) */}
-              <div className="md:col-span-3 lg:col-span-6 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between shadow-2xl group animate-in fade-in zoom-in-95 duration-500 delay-200">
-                <div className="flex items-center justify-between mb-8">
-                  <div className={clsx(
-                    "p-4 rounded-2xl group-hover:scale-110 transition-transform",
-                    hasCrmAccess ? "text-blue-400 bg-blue-500/10" : "text-zinc-500 bg-white/5"
-                  )}><MessageSquare size={24} /></div>
-                  <div className="text-right">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Leads Recentes</div>
-                    <div className="text-3xl font-black tracking-tighter">{hasCrmAccess ? leadsRecent.length : '—'}</div>
                   </div>
                 </div>
-                {hasCrmAccess ? (
-                  <div className="space-y-2">
-                    {leadsRecent.length === 0 ? (
-                      <div className="text-xs text-zinc-500 flex flex-col items-center justify-center py-4 opacity-60">
-                         <span>Nenhum contato recebido.</span>
-                         <span className="text-[10px] mt-1">Compartilhe mais seu perfil!</span>
-                      </div>
-                    ) : (
-                      leadsRecent.slice(0, 5).map((l) => (
-                        <div key={l.id} className="flex items-center justify-between gap-3 text-xs p-2 hover:bg-white/5 rounded-xl transition-colors">
-                          <div className="min-w-0">
-                            <div className="font-bold truncate text-white">{l.name}</div>
-                            <div className="text-[10px] text-zinc-500 truncate">{l.contact || l.email || l.phone || 'Sem contato'}</div>
+              </div>
+              <div className="glass-neon-blue rounded-[3rem] p-10 border border-white/5">
+                <header className="flex items-center justify-between mb-8">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-zinc-300">Module Engagement</h3>
+                  <div className="p-2 bg-white/5 rounded-lg text-neon-blue"><Target size={14} /></div>
+                </header>
+                <div className="space-y-5">
+                  {(summary?.contentPerformance?.byCategory || []).filter(c => c.count > 0).length > 0 ? (
+                    (summary?.contentPerformance?.byCategory || [])
+                      .filter(c => c.count > 0)
+                      .sort((a, b) => b.count - a.count)
+                      .map((cat, i) => (
+                        <div key={i} className="space-y-2">
+                          <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                            <span className="text-zinc-500">{(() => {
+                              switch (cat.category) {
+                                case 'button': return 'Botões';
+                                case 'portfolio': return 'Portfólio';
+                                case 'catalog': return 'Catálogo';
+                                case 'video': return 'Vídeos';
+                                case 'pix': return 'Pix Sync';
+                                case 'nps': return 'Feedback';
+                                default: return cat.category;
+                              }
+                            })()}</span>
+                            <span className="text-white italic">{cat.percentage.toFixed(0)}%</span>
                           </div>
-                          <div className="text-[9px] text-zinc-600 whitespace-nowrap font-mono">{new Date(l.createdAt).toLocaleDateString('pt-BR')}</div>
+                          <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-white transition-all duration-1000"
+                              style={{
+                                width: `${cat.percentage}%`,
+                                backgroundColor: (() => {
+                                  switch (cat.category) {
+                                    case 'button': return '#00f2ff';
+                                    case 'video': return '#ef4444';
+                                    case 'catalog': return '#f59e0b';
+                                    case 'nps': return '#10b981';
+                                    default: return '#ffffff';
+                                  }
+                                })()
+                              }}
+                            ></div>
+                          </div>
                         </div>
                       ))
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-xs text-zinc-500 flex items-center gap-2 font-bold uppercase tracking-widest">
-                    <Lock size={14} /> Disponível no Business
-                  </div>
-                )}
-              </div>
-
-              {/* NPS Dashboard */}
-              <div className="md:col-span-3 lg:col-span-6 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between shadow-2xl group animate-in fade-in zoom-in-95 duration-500 delay-300">
-                <div className="flex items-center justify-between mb-8">
-                  <div className={clsx(
-                    "p-4 rounded-2xl group-hover:scale-110 transition-transform",
-                    hasNpsAccess ? "text-emerald-400 bg-emerald-500/10" : "text-zinc-500 bg-white/5"
-                  )}><TrendingUp size={24} /></div>
-                  <div className="text-right">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500">NPS Score</div>
-                    <div className={clsx("text-3xl font-black tracking-tighter", hasNpsAccess && npsScore > 0 ? "text-emerald-500" : hasNpsAccess ? "text-zinc-300" : "")}>{hasNpsAccess ? Math.round(npsScore) : '—'}</div>
-                  </div>
+                  ) : (
+                    <div className="text-center py-10 opacity-20 italic text-[10px] font-black uppercase">No Interactions</div>
+                  )}
                 </div>
-                {hasNpsAccess ? (
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-5">
-                      <div className="w-20 h-20 rounded-full border-4 border-white/5 flex items-center justify-center bg-black/20 shadow-inner">
-                        <span className="text-2xl font-black text-white">{npsAvg.toFixed(1)}</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-xs text-zinc-400 font-bold mb-1">Satisfação Geral</div>
-                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                          <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000" style={{ width: `${(npsAvg / 10) * 100}%` }}></div>
-                        </div>
-                        <div className="text-[10px] uppercase tracking-widest text-zinc-600 mt-2">{npsRecent.length} Avaliações</div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="bg-emerald-500/10 p-3 rounded-2xl border border-emerald-500/10 text-center flex flex-col items-center gap-1">
-                        <Smile size={16} className="text-emerald-500 mb-1" />
-                        <div className="text-emerald-500 font-black text-xl leading-none">{npsPromoters}</div>
-                        <div className="text-[8px] uppercase tracking-widest text-emerald-500/60">Promotores</div>
-                      </div>
-                      <div className="bg-zinc-500/10 p-3 rounded-2xl border border-zinc-500/10 text-center flex flex-col items-center gap-1">
-                        <Meh size={16} className="text-zinc-400 mb-1" />
-                        <div className="text-zinc-400 font-black text-xl leading-none">{npsNeutrals}</div>
-                        <div className="text-[8px] uppercase tracking-widest text-zinc-500/60">Neutros</div>
-                      </div>
-                      <div className="bg-red-500/10 p-3 rounded-2xl border border-red-500/10 text-center flex flex-col items-center gap-1">
-                        <Frown size={16} className="text-red-500 mb-1" />
-                        <div className="text-red-500 font-black text-xl leading-none">{npsDetractors}</div>
-                        <div className="text-[8px] uppercase tracking-widest text-red-500/60">Detratores</div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 pt-6 border-t border-white/5 space-y-4">
-                      <div className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 flex items-center gap-2">
-                        <Star size={12} /> Comentários Recentes
-                      </div>
-                      <div className="max-h-40 overflow-y-auto no-scrollbar space-y-3">
-                        {npsRecent.filter(n => n.comment).length === 0 ? (
-                          <div className="text-[10px] text-zinc-600 italic">Nenhum comentário enviado ainda.</div>
-                        ) : (
-                          npsRecent.filter(n => n.comment).map((n) => (
-                            <div key={n.id} className="bg-black/40 p-3 rounded-xl border border-white/5 group">
-                              <div className="flex items-center justify-between mb-1.5">
-                                <div className="flex items-center gap-1.5">
-                                  {n.score >= 9 ? <Smile size={12} className="text-emerald-500" /> : n.score >= 7 ? <Meh size={12} className="text-zinc-400" /> : <Frown size={12} className="text-red-500" />}
-                                  <span className="text-[10px] font-black">{n.score} / 10</span>
-                                </div>
-                                <span className="text-[8px] text-zinc-600 font-mono">{new Date(n.createdAt).toLocaleDateString()}</span>
-                              </div>
-                              <p className="text-[10px] text-zinc-400 leading-relaxed italic">"{n.comment}"</p>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-xs text-zinc-500 flex items-center gap-2 font-bold uppercase tracking-widest">
-                    <Lock size={14} /> Disponível no Pro
-                  </div>
-                )}
               </div>
             </div>
-          </>
+
+            {/* RESTORED INSIGHTS SECTION */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Devices */}
+              <div className="glass-neon-blue rounded-[2.5rem] p-8 border border-white/5">
+                <h3 className="text-sm font-black uppercase tracking-widest text-zinc-300 mb-6 flex items-center gap-2">
+                  <Smartphone size={16} className="text-zinc-500" /> Dispositivos
+                </h3>
+                <div className="space-y-4">
+                  {summary.devices.map((d, i) => (
+                    <div key={i} className="space-y-2">
+                      <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                        <span>{d.name}</span>
+                        <span>{d.percentage}%</span>
+                      </div>
+                      <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-full bg-white transition-all duration-1000" style={{ width: `${d.percentage}%` }}></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Top Links */}
+              <div className="glass-neon-blue rounded-[2.5rem] p-8 border border-white/5">
+                <h3 className="text-sm font-black uppercase tracking-widest text-zinc-300 mb-6 flex items-center gap-2">
+                  <LinkIcon size={16} className="text-zinc-500" /> Top Content
+                </h3>
+                <div className="space-y-3">
+                  {summary.topLinks.length > 0 ? summary.topLinks.map((l, i) => (
+                    <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5">
+                      <span className="text-[10px] font-bold truncate max-w-[150px]">{l.label || 'Link sem nome'}</span>
+                      <span className="text-[10px] text-zinc-500 font-mono bg-black/40 px-2 py-1 rounded">{l.clicks} cliq</span>
+                    </div>
+                  )) : (
+                    <div className="text-center text-zinc-600 text-[10px]">Sem dados de cliques</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Sources */}
+              <div className="glass-neon-blue rounded-[2.5rem] p-8 border border-white/5">
+                <h3 className="text-sm font-black uppercase tracking-widest text-zinc-300 mb-6 flex items-center gap-2">
+                  <Target size={16} className="text-zinc-500" /> Origem Tráfego
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {summary.sources.map((s, i) => (
+                    <div key={i} className="px-4 py-2 rounded-xl bg-white/5 border border-white/5 flex items-center gap-2">
+                      <span className="text-xs font-bold capitalize">{s.name}</span>
+                      <span className="text-[10px] text-zinc-500 font-mono">{s.percentage.toFixed(0)}%</span>
+                    </div>
+                  ))}
+                  {summary.sources.length === 0 && <span className="text-zinc-600 text-[10px]">Sem dados de origem</span>}
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>

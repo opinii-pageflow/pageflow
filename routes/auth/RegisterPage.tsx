@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, Loader2, Mail, ChevronRight, Building, ShieldCheck } from 'lucide-react';
-import { loginAs, updateStorage } from '../../lib/storage';
+import { loginAs } from '../../lib/storage';
 import { Client } from '../../types';
 import { PLANS } from '../../lib/plans';
 
@@ -10,19 +10,9 @@ const RegisterPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ⚠️ No seu app atual esse campo "name" está sendo usado como "Nome da Empresa / Profissional"
-  // Para o trigger do Supabase, vamos mandar:
-  // - company_name = name (este input)
-  // - name = name (fallback simples)
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  const getSupabaseEnv = () => {
-    const url = (import.meta as any).env?.VITE_SUPABASE_URL as string | undefined;
-    const anon = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string | undefined;
-    return { url, anon };
-  };
 
   const safeSlug = (input: string) =>
     input
@@ -37,157 +27,115 @@ const RegisterPage: React.FC = () => {
     setError('');
 
     try {
-      const { url, anon } = getSupabaseEnv();
-      if (!url || !anon) {
-        throw new Error(
-          'Supabase não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no seu ambiente (.env / Dyad).'
-        );
-      }
-
       const companyName = name.trim();
       if (!companyName) {
         throw new Error('Informe o nome da empresa/profissional.');
       }
 
-      // 1) Signup no Supabase Auth via HTTP (sem supabase-js)
-      // Envia meta que o trigger usa: raw_user_meta_data.name e raw_user_meta_data.company_name
-      const signupRes = await fetch(`${url}/auth/v1/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: anon,
-        },
-        body: JSON.stringify({
-          email,
-          password,
+      // Importar cliente Supabase
+      const { supabase } = await import('../../lib/supabase');
+
+      // 1) Signup no Supabase Auth usando cliente oficial
+      const { data: signupData, error: signupError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
           data: {
             name: companyName,
             company_name: companyName,
           },
-        }),
+        },
       });
 
-      const signupJson = await signupRes.json().catch(() => null);
-
-      if (!signupRes.ok) {
-        const msg =
-          signupJson?.msg ||
-          signupJson?.error_description ||
-          signupJson?.error ||
-          'Erro ao criar conta. Verifique os dados e tente novamente.';
-        throw new Error(msg);
+      if (signupError) {
+        throw new Error(signupError.message || 'Erro ao criar conta. Verifique os dados e tente novamente.');
       }
 
-      // Quando confirmação de email está DESATIVADA, normalmente vem session aqui.
-      // Mesmo assim, por segurança, se não vier session, fazemos login logo em seguida.
-      let accessToken: string | undefined = signupJson?.session?.access_token;
-      let userId: string | undefined = signupJson?.user?.id;
+      if (!signupData.user) {
+        throw new Error('Erro ao criar usuário. Tente novamente.');
+      }
 
+      const userId = signupData.user.id;
+      const accessToken = signupData.session?.access_token;
+
+      // Se não tiver session (email confirmation habilitado), informar usuário
       if (!accessToken) {
-        // 2) Fallback: login pra obter session/token
-        const loginRes = await fetch(`${url}/auth/v1/token?grant_type=password`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: anon,
-          },
-          body: JSON.stringify({ email, password }),
-        });
-
-        const loginJson = await loginRes.json().catch(() => null);
-
-        if (!loginRes.ok) {
-          const msg =
-            loginJson?.msg ||
-            loginJson?.error_description ||
-            loginJson?.error ||
-            'Conta criada, mas falhou ao autenticar. Tente fazer login.';
-          throw new Error(msg);
-        }
-
-        accessToken = loginJson?.access_token;
-        userId = loginJson?.user?.id;
+        setError('Conta criada! Verifique seu email para confirmar o cadastro antes de fazer login.');
+        setLoading(false);
+        return;
       }
 
-      if (!accessToken || !userId) {
-        throw new Error('Não foi possível autenticar após o cadastro. Tente fazer login.');
-      }
+      // 2) Buscar client_id via client_members
+      let clientId = userId;
 
-      // 3) Buscar a company_id via PostgREST (company_members)
-      // O trigger handle_new_user já criou company + membership automaticamente.
-      const membersRes = await fetch(
-        `${url}/rest/v1/company_members?select=company_id&user_id=eq.${userId}&limit=1`,
-        {
-          method: 'GET',
-          headers: {
-            apikey: anon,
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
+      try {
+        // Tentar buscar na tabela de membros (criada pelo trigger)
+        const { data: memberData } = await supabase
+          .from('client_members')
+          .select('client_id')
+          .eq('user_id', userId)
+          .limit(1)
+          .single();
+
+        // Casting explícito pois os tipos do DB podem estar desatualizados
+        const safeMemberData = memberData as { client_id: string } | null;
+
+        if (safeMemberData?.client_id) {
+          clientId = safeMemberData.client_id;
+        } else {
+          // Fallback: buscar direto na tabela clients por email
+          const { data: clientData } = await supabase
+            .from('clients')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+          const safeClientData = clientData as { id: string } | null;
+
+          if (safeClientData?.id) {
+            clientId = safeClientData.id;
+          }
         }
-      );
-
-      const membersJson = await membersRes.json().catch(() => null);
-
-      if (!membersRes.ok || !Array.isArray(membersJson) || !membersJson[0]?.company_id) {
-        // Se isso falhar, é porque RLS/policy de read está errada ou trigger não rodou.
-        throw new Error(
-          'Conta criada, mas não consegui localizar sua companhia. Verifique RLS de company_members e o trigger handle_new_user.'
-        );
+      } catch (err) {
+        console.warn('Erro ao buscar vinculo de cliente:', err);
       }
-
-      const companyId = membersJson[0].company_id as string;
-
-      // 4) Buscar dados da company (plan/maxProfiles) para manter compatibilidade com o app atual
-      const companyRes = await fetch(
-        `${url}/rest/v1/companies?select=id,name,slug,plan,max_profiles,is_active&id=eq.${companyId}&limit=1`,
-        {
-          method: 'GET',
-          headers: {
-            apikey: anon,
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const companyJson = await companyRes.json().catch(() => null);
-      const company = Array.isArray(companyJson) ? companyJson[0] : null;
 
       const starterPlan = PLANS.starter;
 
-      // 5) Compat: salvar um "Client" mínimo no storage, sem password
-      // (para não quebrar páginas que ainda dependem de data.clients)
+      // 3) Buscar dados completos do cliente
+      const { data: clientProfile } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('id', clientId)
+        .single();
+
+      const safeClientProfile = clientProfile as any; // Casting para evitar erro de 'possibly null' restritivo
+
+      // 4) Salvar no storage local (Active Client)
+      // Se clientProfile for null, usa dados do form (fallback para localStorage funcionar)
       const newClient: Client = {
-        id: company?.id || companyId,
-        name: company?.name || companyName,
-        slug: company?.slug || safeSlug(companyName),
+        id: safeClientProfile?.id || clientId,
+        name: safeClientProfile?.name || companyName,
+        slug: safeClientProfile?.slug || safeSlug(companyName),
         email,
-        password: '', // não armazenar senha local
-        plan: company?.plan || starterPlan.id,
-        maxProfiles: typeof company?.max_profiles === 'number' ? company.max_profiles : starterPlan.maxProfiles,
-        createdAt: new Date().toISOString(),
-        isActive: company?.is_active !== false,
+        password: '',
+        plan: safeClientProfile?.plan || starterPlan.id,
+        userType: safeClientProfile?.user_type || 'client',
+        maxProfiles: typeof safeClientProfile?.max_profiles === 'number' ? safeClientProfile.max_profiles : starterPlan.maxProfiles,
+        createdAt: safeClientProfile?.created_at || new Date().toISOString(),
+        isActive: safeClientProfile?.is_active !== false,
       };
 
-      updateStorage(prev => {
-        const existing = (prev.clients || []).find(c => c.id === newClient.id);
-        return {
-          ...prev,
-          clients: existing ? prev.clients : [...prev.clients, newClient],
-        };
-      });
-
-      // 6) Compat: login do app local com clientId = companyId
+      // 5) Login local
       loginAs({
-        id: `user-${companyId}`,
+        id: `user-${newClient.id}`,
         role: 'client',
-        clientId: companyId,
-        name: companyName,
+        clientId: newClient.id,
+        name: newClient.name,
         email,
       });
 
-      // ✅ Aqui você pode escolher rota inicial
+      // 6) Redirecionar
       navigate('/app/profiles');
     } catch (err: any) {
       setError(err?.message || 'Erro ao criar conta. Tente novamente.');

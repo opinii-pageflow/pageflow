@@ -12,31 +12,28 @@ const PhoneFrame: React.FC<Props> = ({ children, className, viewportClassName, n
   return (
     <div
       className={clsx(
-        'relative w-full rounded-[2.8rem] bg-zinc-950/60 border border-white/10 shadow-2xl backdrop-blur-3xl p-3',
+        'relative w-full h-full rounded-[2.5rem] bg-black border border-neon-blue/20 shadow-[0_0_50px_rgba(0,242,255,0.1)] backdrop-blur-3xl p-2.5 flex flex-col',
         className
       )}
     >
       {/* brilho/metal do frame */}
-      <div className="pointer-events-none absolute inset-0 rounded-[2.8rem] bg-[linear-gradient(135deg,rgba(255,255,255,0.08),transparent_45%,rgba(255,255,255,0.06))]" />
+      <div className="pointer-events-none absolute inset-0 rounded-[2.5rem] bg-[linear-gradient(135deg,rgba(255,255,255,0.08),transparent_45%,rgba(255,255,255,0.06))]" />
 
-      <div className="relative rounded-[2.3rem] bg-black border border-white/10 overflow-hidden">
+      <div className="relative flex-1 w-full rounded-[2rem] bg-black border border-white/10 overflow-hidden flex flex-col">
         {notch && (
           <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-2 z-20">
-            <div className="h-6 w-28 rounded-full bg-zinc-900/80 border border-white/10 shadow-sm" />
-            <div className="absolute right-4 top-1.5 h-2 w-2 rounded-full bg-white/10" />
+            <div className="h-5 w-24 rounded-full bg-zinc-900/90 border border-white/10 shadow-sm" />
           </div>
         )}
 
         {/* Viewport com scroll real */}
         <div
           className={clsx(
-            'relative w-full overflow-y-auto overflow-x-hidden overscroll-contain no-scrollbar',
-            'h-[650px]',
+            'relative w-full flex-1 overflow-y-auto overflow-x-hidden overscroll-contain no-scrollbar',
             viewportClassName
           )}
         >
-          {/* safe area para o notch */}
-          <div className={clsx(notch ? 'pt-10' : 'pt-0')}>{children}</div>
+          {children}
         </div>
       </div>
     </div>

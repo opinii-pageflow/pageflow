@@ -4,513 +4,273 @@ import {
   Check,
   Layout,
   Sparkles,
-  Shield,
-  Briefcase,
-  UserCircle2,
-  Grid3X3,
-  Rows3,
-  Newspaper,
-  RectangleHorizontal,
-  PanelLeft,
-  Layers,
-  Grip,
-  Image as ImageIcon,
-  // ⚠️ Columns3 e BadgeCheck podem não existir dependendo da versão do lucide-react
-  // Columns3,
-  // BadgeCheck,
+  ImageIcon,
   Columns2,
-  Badge,
+  UserCircle2,
+  Layers,
+  Maximize2,
+  Grid3X3,
+  Lock,
+  Crown
 } from 'lucide-react';
+import clsx from 'clsx';
+import { getStorage, getCurrentUser } from '../../lib/storage';
+import { PLAN_RANK } from '../../lib/permissions';
+import { PlanType } from '../../types';
 
 interface Props {
   profile: Profile;
+  clientPlan?: PlanType;
   onUpdate: (updates: Partial<Profile>) => void;
 }
 
 type Tpl = {
   id: string;
   label: string;
+  description: string;
   icon: React.ReactNode;
   preview: React.ReactNode;
+  minPlan: PlanType;
 };
 
-const ThumbShell: React.FC<{
-  active: boolean;
-  label: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}> = ({ active, label, icon, children }) => {
-  return (
-    <div
-      className={[
-        'w-full aspect-[4/5] rounded-xl border transition-all relative overflow-hidden flex flex-col',
-        active
-          ? 'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/10'
-          : 'border-white/10 bg-zinc-950/40 hover:border-white/25',
-      ].join(' ')}
-    >
-      <div className="px-2 pt-2 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <span
-            className={[
-              'w-6 h-6 rounded-lg grid place-items-center border',
-              active ? 'border-blue-400/30 bg-blue-400/10' : 'border-white/10 bg-white/5',
-            ].join(' ')}
-          >
-            {icon}
-          </span>
-          <span className="text-[9px] font-extrabold tracking-wider text-white/70 uppercase">
-            {label}
-          </span>
-        </div>
-
-        {active ? (
-          <span className="w-5 h-5 rounded-full bg-blue-500/20 border border-blue-400/30 grid place-items-center">
-            <Check size={12} className="text-blue-300" />
-          </span>
-        ) : (
-          <span className="w-5 h-5 rounded-full bg-white/5 border border-white/10" />
-        )}
-      </div>
-
-      <div className="flex-1 p-2">{children}</div>
-    </div>
-  );
-};
-
-const TemplatesTab: React.FC<Props> = ({ profile, onUpdate }) => {
+const TemplatesTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
   const templates: Tpl[] = useMemo(() => {
-    const t: Tpl[] = [
-      /**
-       * IMPORTANT:
-       * - NÃO remover templates existentes (compatibilidade com perfis já criados).
-       * - Pode adicionar novos ids, desde que o renderer tenha fallback (PublicProfileRenderer já tem).
-       * - Previews aqui são “miniaturas” apenas (ThumbShell), mas devem ser visualmente bem diferentes.
-       */
-
-      // 1) Capa / Hero (capa mais presente e contrastada)
+    return [
       {
-        id: 'Cover Clean',
-        label: 'Hero Cover (Clean)',
-        icon: <ImageIcon size={14} />,
-        preview: (
-          <div className="h-full flex flex-col relative">
-            <div className="h-14 rounded-lg bg-gradient-to-b from-white/30 via-white/16 to-white/8 border border-white/14 relative overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.25),transparent_55%),radial-gradient(circle_at_80%_70%,rgba(99,102,241,0.18),transparent_55%)]" />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/0 to-black/25" />
-            </div>
-            <div className="-mt-6 mx-auto w-12 h-12 rounded-full bg-white/14 border border-white/22 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/26 mx-auto" />
-            <div className="mt-1 w-1/2 h-1 rounded-full bg-white/14 mx-auto" />
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-3 rounded-xl bg-white/9 border border-white/12"
-                />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Hero Banner',
-        label: 'Hero Cover (Banner)',
-        icon: <RectangleHorizontal size={14} />,
-        preview: (
-          <div className="h-full flex flex-col relative">
-            <div className="h-16 rounded-lg bg-gradient-to-r from-blue-500/22 via-indigo-500/18 to-purple-500/20 border border-white/12 relative overflow-hidden">
-              <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(255,255,255,0.10),transparent_35%,rgba(255,255,255,0.06))]" />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/0 to-black/35" />
-            </div>
-            <div className="-mt-5 mx-auto w-10 h-10 rounded-2xl bg-white/12 border border-white/20" />
-            <div className="mt-2 w-3/4 h-1 rounded-full bg-white/24 mx-auto" />
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-
-      {
-        id: 'Full Cover',
-        label: 'Full Cover (Edge)',
-        icon: <ImageIcon size={14} />,
-        preview: (
-          <div className="h-full flex flex-col relative">
-            <div className="h-24 -mx-2 -mt-2 rounded-b-2xl bg-gradient-to-b from-white/28 via-white/14 to-white/6 border border-white/12 relative overflow-hidden">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(16,185,129,0.20),transparent_55%),radial-gradient(circle_at_80%_70%,rgba(59,130,246,0.18),transparent_55%)]" />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/15 to-black/55" />
-            </div>
-            <div className="-mt-10 mx-auto w-14 h-14 rounded-2xl bg-white/14 border border-white/22 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]" />
-            <div className="mt-2 w-2/3 h-1 rounded-full bg-white/24 mx-auto" />
-            <div className="mt-1 w-1/2 h-1 rounded-full bg-white/12 mx-auto" />
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Full Cover Overlay',
-        label: 'Full Cover (Overlay)',
-        icon: <Layers size={14} />,
-        preview: (
-          <div className="h-full flex flex-col relative">
-            <div className="h-24 -mx-2 -mt-2 rounded-b-2xl bg-gradient-to-r from-purple-500/18 via-blue-500/14 to-emerald-500/16 border border-white/12 relative overflow-hidden">
-              <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(255,255,255,0.10),transparent_35%,rgba(255,255,255,0.06))]" />
-              <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/10 to-black/60" />
-            </div>
-            <div className="-mt-10 mx-auto w-14 h-14 rounded-full bg-white/14 border border-white/22 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]" />
-            <div className="mt-2 w-3/4 h-1 rounded-full bg-white/22 mx-auto" />
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-
-      // 2) Split / Sidebar / Avatar grande (novos ids com fallback seguro no renderer público)
-      {
-        id: 'Split Header',
-        label: 'Split',
-        icon: <Columns2 size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="h-10 rounded-lg overflow-hidden border border-white/12 bg-white/10 grid grid-cols-2">
-              <div className="bg-gradient-to-b from-blue-500/20 to-transparent" />
-              <div className="bg-gradient-to-b from-white/10 to-transparent" />
-            </div>
-            <div className="-mt-4 mx-2 flex items-start gap-2">
-              <div className="w-10 h-10 rounded-2xl bg-white/12 border border-white/18" />
-              <div className="flex-1 pt-1">
-                <div className="w-4/5 h-1 rounded-full bg-white/20" />
-                <div className="w-1/2 h-1 rounded-full bg-white/10 mt-1" />
-              </div>
-            </div>
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Sidebar',
-        label: 'Sidebar',
-        icon: <PanelLeft size={14} />,
-        preview: (
-          <div className="h-full grid grid-cols-[40%_1fr] gap-2">
-            <div className="rounded-lg border border-white/12 bg-white/7 p-2 flex flex-col items-center gap-2">
-              <div className="w-10 h-10 rounded-2xl bg-white/12 border border-white/18" />
-              <div className="w-4/5 h-1 rounded-full bg-white/18" />
-              <div className="w-3/5 h-1 rounded-full bg-white/10" />
-            </div>
-            <div className="flex flex-col gap-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Big Avatar',
-        label: 'Big Avatar',
-        icon: <UserCircle2 size={14} />,
-        preview: (
-          <div className="h-full flex flex-col items-center">
-            <div className="w-16 h-16 rounded-full bg-white/14 border border-white/22 mt-4" />
-            <div className="mt-3 w-3/4 h-1 rounded-full bg-white/24" />
-            <div className="mt-1 w-1/2 h-1 rounded-full bg-white/12" />
-            <div className="mt-4 space-y-2 w-full">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-
-      // 3) Estilos / Efeitos
-      {
-        id: 'Neon',
-        label: 'Neon',
-        icon: <Sparkles size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="h-12 rounded-lg border border-white/12 bg-[radial-gradient(circle_at_20%_20%,rgba(124,58,237,0.20),transparent_55%),radial-gradient(circle_at_80%_80%,rgba(59,130,246,0.16),transparent_55%)]" />
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12 shadow-[0_0_18px_rgba(59,130,246,0.10)]" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Chips',
-        label: 'Chips',
-        icon: <Grip size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="mt-2 flex flex-wrap gap-2 justify-center">
-              {Array.from({ length: 7 }).map((_, i) => (
-                <div key={i} className="h-3 w-12 rounded-full bg-white/10 border border-white/14" />
-              ))}
-            </div>
-            <div className="mt-4 h-10 rounded-lg bg-white/5 border border-white/10" />
-          </div>
-        ),
-      },
-      {
-        id: 'Glassmorphism',
-        label: 'Glass',
-        icon: <Layers size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="h-12 rounded-lg bg-white/6 border border-white/12 backdrop-blur-xl" />
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/7 border border-white/12 backdrop-blur-xl" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-
-      // 4) Base / Minimal
-      {
-        id: 'Minimal Card',
-        label: 'Minimal',
+        id: 'Minimal Pro',
+        label: 'Minimal Pro',
+        description: 'Clean, focado no essencial e extremamente profissional.',
+        minPlan: 'starter',
         icon: <Layout size={14} />,
         preview: (
-          <div className="h-full flex flex-col">
-            <div className="h-10 rounded-lg bg-white/6 border border-white/12" />
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" />
-              ))}
+          <div className="h-full flex flex-col gap-2">
+            <div className="h-2 w-1/3 bg-white/20 rounded-full mx-auto" />
+            <div className="w-10 h-10 rounded-full bg-white/10 border border-white/20 mx-auto" />
+            <div className="space-y-2 mt-2">
+              <div className="h-4 rounded-xl bg-white/10 border border-white/10" />
+              <div className="h-4 rounded-xl bg-white/10 border border-white/10" />
             </div>
           </div>
         ),
       },
-
-      // 5) Grid / Variantes de botões
       {
-        id: 'Button Grid',
-        label: 'Grid',
-        icon: <Grid3X3 size={14} />,
+        id: 'Full Cover Hero',
+        label: 'Full Cover Hero',
+        description: 'Capa expansiva e impacto visual imediato.',
+        minPlan: 'starter',
+        icon: <ImageIcon size={14} />,
         preview: (
-          <div className="h-full flex flex-col">
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-10 rounded-xl bg-white/9 border border-white/12" />
-              ))}
+          <div className="h-full flex flex-col relative -mx-2 -mt-2">
+            <div className="h-20 rounded-b-2xl bg-gradient-to-br from-white/30 to-white/10 border-b border-white/20" />
+            <div className="-mt-6 mx-auto w-12 h-12 rounded-2xl bg-white/20 border border-white/30 shadow-xl" />
+            <div className="p-4 space-y-2">
+              <div className="h-3 rounded-lg bg-white/10 w-full" />
+              <div className="h-3 rounded-lg bg-white/10 w-full" />
             </div>
           </div>
         ),
       },
       {
-        id: 'Icon Grid',
-        label: 'Icon Grid',
-        icon: <Grid3X3 size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-12 rounded-xl bg-white/9 border border-white/12 flex flex-col items-center justify-center gap-1">
-                  <div className="w-5 h-5 rounded bg-white/10 border border-white/14" />
-                  <div className="w-8 h-1 rounded-full bg-white/16" />
-                </div>
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Two Columns',
-        label: '2 Cols',
+        id: 'Split Modern',
+        label: 'Split Modern',
+        description: 'Layout assimétrico, moderno e dinâmico.',
+        minPlan: 'pro',
         icon: <Columns2 size={14} />,
         preview: (
           <div className="h-full flex flex-col">
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" />
-              ))}
+            <div className="h-10 rounded-xl bg-white/10 border border-white/20 flex items-center px-3 gap-3">
+              <div className="w-6 h-6 rounded-lg bg-white/20" />
+              <div className="h-2 w-1/2 bg-white/10 rounded-full" />
             </div>
-            <div className="mt-3 h-10 rounded-lg bg-white/6 border border-white/12" />
-          </div>
-        ),
-      },
-
-      // 6) Listas / Cards
-      {
-        id: 'Button List Bold',
-        label: 'Bold List',
-        icon: <Rows3 size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="space-y-2 mt-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-4 rounded-2xl bg-white/10 border border-white/14" />
-              ))}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="h-12 rounded-xl bg-white/10 border border-white/10" />
+              <div className="h-12 rounded-xl bg-white/10 border border-white/10" />
             </div>
           </div>
         ),
       },
       {
-        id: 'Stacked Cards',
-        label: 'Stacked',
-        icon: <Layers size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="space-y-2 mt-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" style={{ transform: `translateY(${Math.min(i, 4) * 2}px)` }} />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Rounded Pills',
-        label: 'Pills',
-        icon: <Grip size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="space-y-2 mt-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-full bg-white/9 border border-white/12" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-
-      // 7) Editorial / Pro / Corporate
-      {
-        id: 'Magazine',
-        label: 'Magazine',
-        icon: <Newspaper size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="h-14 rounded-lg bg-white/6 border border-white/12" />
-            <div className="-mt-5 ml-2 w-10 h-10 rounded-2xl bg-white/12 border border-white/20" />
-            <div className="mt-2 space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Verified Pro',
-        label: 'Verified',
-        icon: <Badge size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="h-12 rounded-lg bg-white/6 border border-white/12 flex items-center justify-between px-3">
-              <div className="w-12 h-2 rounded-full bg-white/18" />
-              <div className="w-7 h-7 rounded-full bg-white/10 border border-white/14" />
-            </div>
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Corporate',
-        label: 'Corporate',
-        icon: <Briefcase size={14} />,
-        preview: (
-          <div className="h-full flex flex-col">
-            <div className="h-10 rounded-lg bg-white/6 border border-white/12 flex items-end gap-2 px-2 pb-2">
-              <div className="w-8 h-8 rounded-2xl bg-white/12 border border-white/18" />
-              <div className="flex-1">
-                <div className="w-3/4 h-1 rounded-full bg-white/20" />
-                <div className="w-1/2 h-1 rounded-full bg-white/10 mt-1" />
-              </div>
-            </div>
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" />
-              ))}
-            </div>
-          </div>
-        ),
-      },
-      {
-        id: 'Avatar Left',
-        label: 'Avatar Left',
+        id: 'Big Avatar Story',
+        label: 'Big Avatar Story',
+        description: 'Destaque total para sua imagem de perfil.',
+        minPlan: 'pro',
         icon: <UserCircle2 size={14} />,
         preview: (
-          <div className="h-full flex flex-col">
-            <div className="h-10 rounded-lg bg-white/6 border border-white/12 flex items-end gap-2 px-2 pb-2">
-              <div className="w-8 h-8 rounded-full bg-white/12 border border-white/18" />
-              <div className="flex-1">
-                <div className="w-3/4 h-1 rounded-full bg-white/20" />
-                <div className="w-1/2 h-1 rounded-full bg-white/10 mt-1" />
-              </div>
+          <div className="h-full flex flex-col items-center pt-2">
+            <div className="w-16 h-16 rounded-full border-2 border-blue-500 p-1">
+              <div className="w-full h-full rounded-full bg-white/20" />
             </div>
-            <div className="mt-3 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-3 rounded-xl bg-white/9 border border-white/12" />
-              ))}
+            <div className="mt-3 w-3/4 h-2 bg-white/20 rounded-full" />
+            <div className="mt-4 space-y-2 w-full">
+              <div className="h-4 rounded-full bg-white/10 border border-white/10" />
             </div>
           </div>
         ),
       },
-
-      // 8) Criador / Social
       {
-        id: 'Creator',
-        label: 'Creator',
-        icon: <Shield size={14} />,
+        id: 'Neon Modern Dark',
+        label: 'Neon Modern Dark',
+        description: 'Vibrante, tecnológico e com alta profundidade.',
+        minPlan: 'pro',
+        icon: <Sparkles size={14} />,
         preview: (
-          <div className="h-full flex flex-col">
-            <div className="h-12 rounded-lg bg-[radial-gradient(circle_at_20%_20%,rgba(59,130,246,0.20),transparent_55%),radial-gradient(circle_at_80%_80%,rgba(16,185,129,0.16),transparent_55%)] border border-white/12" />
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-10 rounded-xl bg-white/9 border border-white/12" />
-              ))}
+          <div className="h-full flex flex-col p-2 bg-black/40 rounded-xl">
+            <div className="h-12 rounded-lg border border-blue-500/30 bg-blue-500/5 shadow-[0_0_15px_rgba(59,130,246,0.2)] flex items-center justify-center">
+              <div className="w-3/4 h-1 bg-blue-500/40 rounded-full" />
+            </div>
+            <div className="mt-3 space-y-2">
+              <div className="h-3 rounded-lg bg-white/5 border border-white/10" />
+              <div className="h-3 rounded-lg bg-white/5 border border-white/10" />
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: 'Stack Sections',
+        label: 'Stack Sections',
+        description: 'Visual modular por blocos. SaaS moderno e estruturado.',
+        minPlan: 'business',
+        icon: <Layers size={14} />,
+        preview: (
+          <div className="h-full flex flex-col gap-3 py-1">
+            <div className="h-8 w-full bg-white/5 border border-white/10 rounded-xl flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-white/20 border-2 border-zinc-900 -mb-4" />
+            </div>
+            <div className="space-y-2 mt-2">
+              <div className="h-8 rounded-xl bg-white/10 border border-white/10" />
+              <div className="h-8 rounded-xl bg-white/10 border border-white/10" />
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: 'Centered Hero',
+        label: 'Centered Hero',
+        description: 'Foco total na marca pessoal com impacto visual.',
+        minPlan: 'business',
+        icon: <Maximize2 size={14} />,
+        preview: (
+          <div className="h-full flex flex-col relative -mx-2 -mt-2">
+            <div className="h-28 rounded-b-[2rem] bg-white/10 border-b border-white/10" />
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full border-4 border-zinc-900 bg-white/20" />
+            <div className="mt-8 px-4 space-y-2">
+              <div className="h-3 w-1/2 bg-white/20 rounded-full mx-auto" />
+              <div className="h-2 w-full bg-white/10 rounded-full mx-auto" />
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: 'Card Grid Profile',
+        label: 'Card Grid Profile',
+        description: 'Layout interativo em grid. Visual dinâmico e funcional.',
+        minPlan: 'business',
+        icon: <Grid3X3 size={14} />,
+        preview: (
+          <div className="h-full flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-white/20" />
+              <div className="h-2 w-1/3 bg-white/10 rounded-full" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="h-10 rounded-xl bg-white/10 border border-white/10" />
+              <div className="h-10 rounded-xl bg-white/10 border border-white/10" />
+              <div className="h-14 col-span-2 rounded-xl bg-white/10 border border-white/10" />
             </div>
           </div>
         ),
       },
     ];
-
-    return t;
   }, []);
 
-  const selected = profile.layoutTemplate || 'Minimal Card';
+  const userPlan = clientPlan || 'starter';
+  const currentRank = PLAN_RANK[userPlan];
+
+  const selected = profile.layoutTemplate || 'Minimal Pro';
+
+  const handleSelect = (tpl: Tpl) => {
+    const isLocked = currentRank < PLAN_RANK[tpl.minPlan];
+    const isCurrentlyUsed = selected === tpl.id;
+
+    if (isLocked && !isCurrentlyUsed) {
+      alert(`O template "${tpl.label}" está disponível a partir do plano ${tpl.minPlan.toUpperCase()}. Faça upgrade para desbloquear!`);
+      return;
+    }
+
+    onUpdate({ layoutTemplate: tpl.id });
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {templates.map((tpl) => {
           const active = selected === tpl.id;
+          const isLocked = currentRank < PLAN_RANK[tpl.minPlan];
+
           return (
             <button
               key={tpl.id}
               type="button"
-              onClick={() => onUpdate({ layoutTemplate: tpl.id })}
-              className="text-left"
+              onClick={() => handleSelect(tpl)}
+              className={clsx(
+                "group text-left focus:outline-none transition-all",
+                isLocked && !active && "opacity-60 grayscale-[0.5]"
+              )}
             >
-              <ThumbShell active={active} label={tpl.label} icon={tpl.icon}>
-                {tpl.preview}
-              </ThumbShell>
+              <div
+                className={clsx(
+                  "w-full rounded-[2rem] border transition-all duration-300 overflow-hidden flex flex-col relative",
+                  active
+                    ? "border-blue-500 bg-blue-600/5 shadow-2xl shadow-blue-500/10 ring-2 ring-blue-500/20"
+                    : "border-white/5 bg-zinc-900/40 hover:border-white/20 hover:bg-zinc-900/60"
+                )}
+              >
+                {isLocked && !active && (
+                  <div className="absolute top-4 right-4 z-10 w-7 h-7 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-zinc-400 group-hover:text-amber-400 transition-colors">
+                    <Lock size={12} />
+                  </div>
+                )}
+
+                <div className="p-4 flex items-center justify-between border-b border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className={clsx(
+                      "w-8 h-8 rounded-xl grid place-items-center border",
+                      active ? "border-blue-500 bg-blue-500 text-white" : "border-white/10 bg-white/5 text-zinc-500"
+                    )}>
+                      {tpl.icon}
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-white">
+                          {tpl.label}
+                        </span>
+                        {isLocked && (
+                          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-[7px] font-black text-amber-500 uppercase tracking-tighter">
+                            <Crown size={8} /> Pro
+                          </span>
+                        )}
+                        {active && isLocked && (
+                          <span className="text-[7px] font-bold text-blue-400 uppercase tracking-tighter bg-blue-500/10 px-1.5 py-0.5 rounded-md border border-blue-500/20">Em Uso</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {active && (
+                    <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                      <Check size={12} className="text-white" strokeWidth={4} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-6 bg-black/20">
+                  <div className="aspect-[16/10] w-full rounded-2xl overflow-hidden bg-zinc-950/20 shadow-inner p-4 relative">
+                    {tpl.preview}
+                  </div>
+                  <p className="mt-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-relaxed">
+                    {tpl.description}
+                  </p>
+                </div>
+              </div>
             </button>
           );
         })}

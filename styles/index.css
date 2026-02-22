@@ -1,26 +1,158 @@
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme {
+  --color-neon-blue: #00f2ff;
+  --color-neon-green: #39ff14;
+  --color-bg-dark: #050505;
+
+  --font-heading: "Poppins", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-button: "Inter", sans-serif;
+}
+
+:root {
+  /* Futuristic Neon Palette Variables for fallback and manual access */
+  --neon-blue: #00f2ff;
+  --neon-green: #39ff14;
+  --bg-dark: #050505;
+  --bg-card: rgba(10, 10, 10, 0.7);
+
+  /* Typography Fallbacks */
+  --font-heading: 'Poppins', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-button: 'Inter', sans-serif;
+}
 
 body {
-  font-family: 'Inter', sans-serif;
+  font-family: var(--font-body);
   margin: 0;
   padding: 0;
-  background-color: #000;
+  background-color: #020202;
   color: #fff;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
+/* Fundo Global Premium - Desativado em Perfis Públicos */
+body:not(.is-public-profile)::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 242, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 242, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body:not(.is-public-profile)::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Fallback opcional para compatibilidade */
+.app-theme-dark {
+  position: relative;
+  min-height: 100vh;
+}
+
+/* Neon Glow Patterns */
+.neon-glow-blue {
+  box-shadow: 0 0 15px rgba(0, 242, 255, 0.3), 0 0 30px rgba(0, 242, 255, 0.1);
+}
+
+.neon-glow-green {
+  box-shadow: 0 0 15px rgba(57, 255, 20, 0.3), 0 0 30px rgba(57, 255, 20, 0.1);
+}
+
+/* Glassmorphism Refined */
 .glass-effect {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.glass-neon-blue {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 242, 255, 0.2);
+  box-shadow: 0 0 20px rgba(0, 242, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-neon-blue:hover {
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 25px rgba(0, 242, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.glass-neon-green {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(57, 255, 20, 0.2);
+  box-shadow: 0 0 20px rgba(57, 255, 20, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-neon-green:hover {
+  border-color: var(--neon-green);
+  box-shadow: 0 0 25px rgba(57, 255, 20, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Neon Text */
+.text-neon-blue {
+  color: var(--neon-blue);
+  text-shadow: 0 0 8px rgba(0, 242, 255, 0.5);
+}
+
+.text-neon-green {
+  color: var(--neon-green);
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.5);
+}
+
+/* Animations */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes bounce-subtle {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s ease-in-out infinite;
+}
+
+/* Scrollbar Refinada */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -28,12 +160,12 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 242, 255, 0.2);
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--neon-blue);
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -45,7 +177,25 @@ body {
   scrollbar-width: none;
 }
 
-/* Tipografia Adicional */
-h1, h2, h3, h4, .font-heading {
-  font-family: 'Poppins', sans-serif;
+/* Efeitos de Fundo (Existentes aprimorados) */
+.bg-effect-noise {
+  position: fixed;
+  inset: 0;
+  opacity: 0.1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  z-index: 1;
+}
+
+.profile-root {
+  font-family: var(--font-body);
+  position: relative;
+}
+
+.profile-root h1,
+.profile-root h2,
+.profile-root h3,
+.profile-root h4 {
+  font-family: var(--font-heading) !important;
+  letter-spacing: -0.02em;
 }

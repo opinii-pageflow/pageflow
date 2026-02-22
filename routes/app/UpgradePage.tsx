@@ -1,17 +1,34 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentUser, getStorage } from '../../lib/storage';
-import { PLANS, PLAN_TYPES } from '../../lib/plans';
-import TopBar from '../../components/common/TopBar';
-import { Check, Zap, Shield, Rocket, Crown, ChevronRight, Star } from 'lucide-react';
+import { useClientData } from '@/hooks/useClientData';
+import { PLANS, PLAN_TYPES } from '@/lib/plans';
+import TopBar from '@/components/common/TopBar';
+import { Check, Zap, Shield, Rocket, Crown, ChevronRight, Star, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 
 const UpgradePage: React.FC = () => {
   const navigate = useNavigate();
-  const user = getCurrentUser();
-  const data = getStorage();
-  const client = data.clients.find(c => c.id === user?.clientId);
+  const { client, loading, error, refresh } = useClientData();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#020202] flex items-center justify-center">
+        <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#020202] flex flex-col items-center justify-center p-6 text-center">
+        <Rocket className="w-10 h-10 text-rose-500 mb-6 animate-pulse" />
+        <h2 className="text-2xl font-black text-white uppercase italic mb-2 tracking-tighter">Upgrade Protocolo Offline</h2>
+        <p className="text-zinc-500 mb-8 max-w-sm">{error}</p>
+        <button onClick={() => refresh()} className="bg-white text-black px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 transition-all">Restaurar Conexão</button>
+      </div>
+    );
+  }
 
   const planIcons: Record<string, any> = {
     starter: Shield,
@@ -23,7 +40,7 @@ const UpgradePage: React.FC = () => {
   const getDisplayPrice = (planId: keyof typeof PLANS) => {
     const plan = PLANS[planId];
     if (plan.monthlyPrice === 0) return 'Grátis';
-    
+
     if (billingCycle === 'annual') {
       const discounted = plan.monthlyPrice * 0.8;
       return `R$ ${Math.floor(discounted)}`;
@@ -34,7 +51,7 @@ const UpgradePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#020202] text-white overflow-x-hidden pb-20">
       <TopBar title="Upgrade de Plano" showBack />
-      
+
       <div className="fixed inset-0 pointer-events-none opacity-20">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]"></div>
       </div>
@@ -51,7 +68,7 @@ const UpgradePage: React.FC = () => {
         {/* BILLING TOGGLE */}
         <div className="flex items-center justify-center gap-4 mb-16 animate-in fade-in duration-1000 delay-200">
           <span className={clsx("text-xs font-bold transition-colors", billingCycle === 'monthly' ? "text-white" : "text-zinc-500")}>Pagamento Mensal</span>
-          <button 
+          <button
             onClick={() => setBillingCycle(prev => prev === 'monthly' ? 'annual' : 'monthly')}
             className="w-12 h-6 bg-zinc-800 rounded-full relative p-1 transition-all"
           >
@@ -71,12 +88,12 @@ const UpgradePage: React.FC = () => {
             const isFeatured = planId === 'business';
 
             return (
-              <div 
+              <div
                 key={planId}
                 className={clsx(
                   "relative p-8 rounded-[2.5rem] border transition-all duration-500 flex flex-col group",
-                  isFeatured 
-                    ? "bg-blue-600 border-blue-500 shadow-[0_0_50px_rgba(37,99,235,0.2)] lg:scale-105 z-10" 
+                  isFeatured
+                    ? "bg-blue-600 border-blue-500 shadow-[0_0_50px_rgba(37,99,235,0.2)] lg:scale-105 z-10"
                     : "bg-zinc-900/40 border-white/5 hover:border-white/10"
                 )}
                 style={{ animationDelay: `${idx * 150}ms` }}
@@ -111,11 +128,26 @@ const UpgradePage: React.FC = () => {
 
                 <button
                   disabled={isCurrent}
-                  onClick={() => alert(`Iniciando upgrade para ${plan.name}...`)}
+                  onClick={() => {
+                    if (client) {
+                      import('@/lib/analytics').then(({ trackEvent }) => {
+                        trackEvent({
+                          clientId: client.id,
+                          profileId: 'system', // Upgrade é nível sistema/cliente
+                          type: 'click',
+                          assetId: `upgrade-${planId}`,
+                          assetType: 'button',
+                          assetLabel: `Upgrade: ${plan.name}`,
+                          source: 'dashboard_upgrade'
+                        });
+                      });
+                    }
+                    alert(`Iniciando upgrade para ${plan.name}...`);
+                  }}
                   className={clsx(
                     "w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-2",
-                    isCurrent 
-                      ? "bg-white/5 text-zinc-600 border border-white/5 cursor-default" 
+                    isCurrent
+                      ? "bg-white/5 text-zinc-600 border border-white/5 cursor-default"
                       : isFeatured ? "bg-white text-blue-600 hover:bg-zinc-100 shadow-xl" : "bg-zinc-800 text-white hover:bg-zinc-700 border border-white/5"
                   )}
                 >

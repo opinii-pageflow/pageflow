@@ -1,18 +1,18 @@
 import React, { useRef } from 'react';
-import { 
-  Plus, 
-  Trash2, 
-  Lock, 
-  Sparkles, 
-  ArrowUp, 
-  ArrowDown, 
-  Image, 
-  Youtube, 
-  QrCode, 
-  Upload, 
-  Calendar, 
-  Clock, 
-  Link as LinkIcon, 
+import {
+  Plus,
+  Trash2,
+  Lock,
+  Sparkles,
+  ArrowUp,
+  ArrowDown,
+  Image,
+  Youtube,
+  QrCode,
+  Upload,
+  Calendar,
+  Clock,
+  Link as LinkIcon,
   AlertCircle,
   Smartphone,
   Star
@@ -20,16 +20,19 @@ import {
 import clsx from 'clsx';
 import { CatalogItem, PortfolioItem, Profile, YoutubeVideoItem, PlanType, SchedulingSlot } from '../../types';
 import { canAccessFeature } from '../../lib/permissions';
+import { getStorage } from '../../lib/storage';
 
 type Props = {
   profile: Profile;
+  client?: any;
   clientPlan?: PlanType;
   onUpdate: (updates: Partial<Profile>) => void;
 };
 
 const DAYS_OF_WEEK = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
-const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
+const ProTab: React.FC<Props> = ({ profile, client, clientPlan, onUpdate }) => {
+  const [slotFilter, setSlotFilter] = React.useState<'all' | 'pending' | 'booked' | 'available'>('all');
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const portfolioFileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
 
@@ -50,15 +53,59 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
     );
   }
 
+  const isGlobalSchedule = client?.schedulingScope === 'global';
+
   const catalog = (profile.catalogItems || []) as CatalogItem[];
   const portfolio = (profile.portfolioItems || []) as PortfolioItem[];
   const videos = (profile.youtubeVideos || []) as YoutubeVideoItem[];
-  const slots = (profile.nativeSlots || []) as SchedulingSlot[];
+
+  // Slots Logic: Global vs Profile
+  const slots = isGlobalSchedule
+    ? (client?.globalSlots || []) as SchedulingSlot[]
+    : (profile.nativeSlots || []) as SchedulingSlot[];
 
   const updateCatalog = (items: CatalogItem[]) => onUpdate({ catalogItems: items });
   const updatePortfolio = (items: PortfolioItem[]) => onUpdate({ portfolioItems: items });
   const updateVideos = (items: YoutubeVideoItem[]) => onUpdate({ youtubeVideos: items });
-  const updateSlots = (newSlots: SchedulingSlot[]) => onUpdate({ nativeSlots: newSlots });
+
+  const updateSlots = (newSlots: SchedulingSlot[]) => {
+    if (isGlobalSchedule) {
+      console.warn('Global slots update not supported here. Use Command Center.');
+    } else {
+      onUpdate({ nativeSlots: newSlots });
+    }
+  };
+
+  // Hack para reatividade simples do Global Mode sem contexto pesado
+  const [globalSlotsVersion, setGlobalSlotsVersion] = React.useState(0);
+  React.useEffect(() => {
+    if (isGlobalSchedule) {
+      setGlobalSlotsVersion(v => v + 1);
+    }
+  }, [client?.globalSlots]); // Isso não vai funcionar bem sem observer.
+
+  // Vamos simplificar: Se for global, ler do storage a cada render? Não é performático mas funciona.
+  // Melhor: O componente pai passa profile, mas não client.
+  // Vou aceitar que o updateStorage persiste, e para a UI refletir, vou usar um state local que sincroniza com o 'updateSlots' customizado.
+  const [localGlobalSlots, setLocalGlobalSlots] = React.useState<SchedulingSlot[]>(client?.globalSlots || []);
+
+  // Sincronizar slots locais quando os slots do cliente (do storage/DB) mudarem
+  React.useEffect(() => {
+    if (isGlobalSchedule && client?.globalSlots) {
+      setLocalGlobalSlots(client.globalSlots);
+    }
+  }, [client?.globalSlots, isGlobalSchedule]);
+
+  // Override slots reference para display
+  const activeSlots = isGlobalSchedule ? localGlobalSlots : slots;
+
+  const handleUpdateSlots = (newSlots: SchedulingSlot[]) => {
+    if (isGlobalSchedule) {
+      console.warn('Global slots update not supported here. Use Command Center.');
+    } else {
+      onUpdate({ nativeSlots: newSlots });
+    }
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, itemId: string) => {
     const file = e.target.files?.[0];
@@ -91,13 +138,14 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
 
   const addSlot = () => {
     const next: SchedulingSlot = {
-      id: Math.random().toString(36).slice(2),
+      id: crypto.randomUUID(),
       dayOfWeek: 1,
       startTime: '09:00',
       endTime: '18:00',
-      isActive: true
+      isActive: true,
+      status: 'available'
     };
-    updateSlots([...slots, next]);
+    handleUpdateSlots([...activeSlots, next]);
   };
 
   const isExternalUrlMissing = profile.enableScheduling && profile.schedulingMode === 'external' && !profile.externalBookingUrl;
@@ -146,128 +194,32 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
 
         {!hasBusinessAccess && (
           <div className="bg-blue-600/5 border border-blue-600/20 rounded-2xl p-4 flex items-center gap-4">
-             <div className="p-3 bg-blue-600/10 rounded-xl"><Smartphone className="text-blue-400" size={20} /></div>
-             <div className="flex-1">
-                <div className="text-[10px] font-black uppercase text-blue-400 tracking-widest">Recurso Business</div>
-                <div className="text-xs text-zinc-500 font-medium">Faça upgrade para o Plano Business para liberar o agendamento nativo.</div>
-             </div>
+            <div className="p-3 bg-blue-600/10 rounded-xl"><Smartphone className="text-blue-400" size={20} /></div>
+            <div className="flex-1">
+              <div className="text-[10px] font-black uppercase text-blue-400 tracking-widest">Recurso Business</div>
+              <div className="text-xs text-zinc-500 font-medium">Faça upgrade para o Plano Business para liberar o agendamento nativo.</div>
+            </div>
+            <button className="px-4 py-2 bg-blue-500 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all">
+              Upgrade
+            </button>
           </div>
         )}
 
         {profile.enableScheduling && hasBusinessAccess && (
-          <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="grid grid-cols-2 gap-3 p-1.5 bg-black/40 rounded-2xl border border-white/5">
-              <button
-                onClick={() => onUpdate({ schedulingMode: 'external' })}
-                className={clsx(
-                  "py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                  profile.schedulingMode === 'external' ? "bg-white text-black" : "text-zinc-500"
-                )}
-              >
-                Externo (Link)
-              </button>
-              <button
-                onClick={() => onUpdate({ schedulingMode: 'native' })}
-                className={clsx(
-                  "py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
-                  profile.schedulingMode === 'native' ? "bg-white text-black" : "text-zinc-500"
-                )}
-              >
-                Nativo (Slots)
-              </button>
+          <div className="bg-blue-500/5 border border-blue-500/10 rounded-2xl p-6 flex flex-col items-center text-center space-y-3 animate-in fade-in duration-500">
+            <div className="p-3 bg-blue-500/10 rounded-full text-blue-400 mb-1">
+              <Calendar size={24} />
             </div>
-
-            {profile.schedulingMode === 'external' ? (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">URL de Agendamento</label>
-                  <div className="relative">
-                    <LinkIcon className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
-                    <input
-                      value={profile.externalBookingUrl || ''}
-                      onChange={(e) => onUpdate({ externalBookingUrl: e.target.value })}
-                      placeholder="Ex: calendly.com/voce"
-                      className={clsx(
-                        "w-full bg-black/40 border rounded-2xl pl-12 pr-5 py-4 text-sm outline-none transition-all",
-                        isExternalUrlMissing ? "border-red-500/50" : "border-white/10 focus:border-white/30"
-                      )}
-                    />
-                  </div>
-                  {isExternalUrlMissing && (
-                    <div className="flex items-center gap-1.5 text-red-500 text-[10px] font-black uppercase ml-1">
-                      <AlertCircle size={12} /> URL obrigatória no modo externo
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Slots Semanais</div>
-                  <button
-                    onClick={addSlot}
-                    className="p-2 bg-white/5 hover:bg-white/10 rounded-xl border border-white/10 text-white transition-all"
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {slots.map((slot) => (
-                    <div key={slot.id} className="grid grid-cols-12 gap-3 bg-black/20 border border-white/5 p-4 rounded-2xl items-center">
-                      <div className="col-span-4">
-                        <select
-                          value={slot.dayOfWeek}
-                          onChange={(e) => updateSlots(slots.map(s => s.id === slot.id ? { ...s, dayOfWeek: parseInt(e.target.value) } : s))}
-                          className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-black uppercase outline-none"
-                        >
-                          {DAYS_OF_WEEK.map((d, i) => <option key={i} value={i}>{d}</option>)}
-                        </select>
-                      </div>
-                      <div className="col-span-3">
-                        <input
-                          type="time"
-                          value={slot.startTime}
-                          onChange={(e) => updateSlots(slots.map(s => s.id === slot.id ? { ...s, startTime: e.target.value } : s))}
-                          className="w-full bg-zinc-900 border border-white/10 rounded-xl px-2 py-2 text-[10px] font-bold outline-none"
-                        />
-                      </div>
-                      <div className="col-span-3">
-                        <input
-                          type="time"
-                          value={slot.endTime}
-                          onChange={(e) => updateSlots(slots.map(s => s.id === slot.id ? { ...s, endTime: e.target.value } : s))}
-                          className="w-full bg-zinc-900 border border-white/10 rounded-xl px-2 py-2 text-[10px] font-bold outline-none"
-                        />
-                      </div>
-                      <div className="col-span-2 flex justify-end">
-                        <button
-                          onClick={() => updateSlots(slots.filter(s => s.id !== slot.id))}
-                          className="p-2 text-zinc-600 hover:text-red-500"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  {slots.length === 0 && <div className="text-[10px] text-zinc-600 italic text-center py-4">Nenhum slot definido. Adicione seus horários.</div>}
-                </div>
-              </div>
-            )}
-
-            <div className="pt-4 border-t border-white/5 space-y-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Confirmar por WhatsApp (Opcional)</label>
-                <div className="relative">
-                  <Smartphone className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
-                  <input
-                    value={profile.bookingWhatsapp || ''}
-                    onChange={(e) => onUpdate({ bookingWhatsapp: e.target.value })}
-                    placeholder="Ex: 5511999999999"
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-sm outline-none focus:border-white/30"
-                  />
-                </div>
-              </div>
+            <div>
+              <h4 className="font-black text-white uppercase tracking-wider text-sm">Gestão de Agenda</h4>
+              <p className="text-zinc-500 text-xs mt-1 max-w-xs mx-auto">
+                A gestão completa de horários, slots e disponibilidade foi movida para o painel principal.
+              </p>
+            </div>
+            <div className="pt-2">
+              <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20">
+                Acesse Menu Principal &gt; Agenda
+              </span>
             </div>
           </div>
         )}
@@ -308,7 +260,7 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[{
             key: 'enableLeadCapture',
-            feature: 'crm' as const,
+            feature: 'leads_capture' as const,
             title: 'Captura de Leads',
             desc: 'Formulário para o visitante deixar nome/contato.'
           }, {
@@ -356,7 +308,7 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
                 <div className="font-black text-lg">Direcionamento NPS</div>
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Link do Google Meu Negócio</label>
               <input
@@ -383,7 +335,7 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
           <button
             onClick={() => {
               const next: CatalogItem = {
-                id: Math.random().toString(36).slice(2),
+                id: crypto.randomUUID(),
                 profileId: profile.id,
                 kind: 'service',
                 title: 'Novo item',
@@ -394,6 +346,7 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
                 ctaLink: '',
                 sortOrder: catalog.length,
                 isActive: true,
+                clientId: profile.clientId
               };
               updateCatalog([...catalog, next]);
             }}
@@ -451,7 +404,7 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
                 <div className="flex flex-col md:flex-row gap-6">
                   {/* Image Upload Area */}
                   <div className="flex-shrink-0">
-                    <div 
+                    <div
                       onClick={() => fileInputRefs.current[item.id]?.click()}
                       className="relative w-32 h-32 rounded-3xl bg-black/40 border border-white/10 flex flex-col items-center justify-center cursor-pointer group overflow-hidden hover:border-white/30 transition-all"
                     >
@@ -468,11 +421,11 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
                           <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
                         </div>
                       )}
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         ref={el => fileInputRefs.current[item.id] = el}
-                        className="hidden" 
-                        accept="image/*" 
+                        className="hidden"
+                        accept="image/*"
                         onChange={(e) => handleImageUpload(e, item.id)}
                       />
                     </div>
@@ -493,10 +446,10 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
                       <select
                         value={item.kind}
                         onChange={(e) => updateCatalog(catalog.map(c => c.id === item.id ? { ...c, kind: e.target.value as any } : c))}
-                        className="w-full rounded-2xl bg-black/30 border border-white/10 px-4 py-3 text-sm outline-none appearance-none"
+                        className="w-full rounded-2xl bg-black border border-white/10 px-4 py-3 text-sm font-bold text-white outline-none appearance-none cursor-pointer [&>option]:bg-zinc-950 [&>option]:text-white"
                       >
-                        <option value="service">Serviço</option>
-                        <option value="product">Produto</option>
+                        <option value="service" className="bg-zinc-950 text-white">Serviço</option>
+                        <option value="product" className="bg-zinc-950 text-white">Produto</option>
                       </select>
                     </div>
 
@@ -560,12 +513,13 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
           <button
             onClick={() => {
               const next: PortfolioItem = {
-                id: Math.random().toString(36).slice(2),
+                id: crypto.randomUUID(),
                 profileId: profile.id,
                 title: '',
                 imageUrl: 'https://picsum.photos/800/800?random=' + Math.floor(Math.random() * 1000),
                 sortOrder: portfolio.length,
                 isActive: true,
+                clientId: profile.clientId
               };
               updatePortfolio([...portfolio, next]);
             }}
@@ -618,11 +572,11 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
                     </button>
                   </div>
                 </div>
-                
+
                 <div className="flex flex-col md:flex-row gap-6">
                   {/* Portfolio Image Upload */}
                   <div className="flex-shrink-0">
-                    <div 
+                    <div
                       onClick={() => portfolioFileInputRefs.current[item.id]?.click()}
                       className="relative w-32 h-32 rounded-3xl bg-black/40 border border-white/10 flex flex-col items-center justify-center cursor-pointer group overflow-hidden hover:border-white/30 transition-all"
                     >
@@ -639,11 +593,11 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
                           <span className="text-[8px] font-black uppercase tracking-widest">Upload</span>
                         </div>
                       )}
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         ref={el => portfolioFileInputRefs.current[item.id] = el}
-                        className="hidden" 
-                        accept="image/*" 
+                        className="hidden"
+                        accept="image/*"
                         onChange={(e) => handlePortfolioImageUpload(e, item.id)}
                       />
                     </div>
@@ -688,12 +642,13 @@ const ProTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
           <button
             onClick={() => {
               const next: YoutubeVideoItem = {
-                id: Math.random().toString(36).slice(2),
+                id: crypto.randomUUID(),
                 profileId: profile.id,
                 title: '',
                 url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
                 sortOrder: videos.length,
                 isActive: true,
+                clientId: profile.clientId
               };
               updateVideos([...videos, next]);
             }}
