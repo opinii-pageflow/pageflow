@@ -556,32 +556,15 @@ const AdminDashboard: React.FC = () => {
 
       {/* ─── Modal: Criar Nova Company ─── */}
       {isCreateCompanyOpen && (
-<<<<<<< HEAD
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/95 backdrop-blur-3xl animate-in fade-in duration-300">
-          <div className="bg-zinc-900 border border-white/10 w-full max-w-xl rounded-3xl overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300">
-            <button
-              onClick={() => setIsCreateCompanyOpen(false)}
-              className="absolute top-8 right-8 p-2 text-zinc-500 hover:text-white transition-all bg-white/5 rounded-full"
-=======
         <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6 bg-black/95 backdrop-blur-3xl animate-in fade-in duration-300">
           <div className="bg-zinc-900 border border-white/10 w-full max-w-xl rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300">
             <button
               onClick={() => setIsCreateCompanyOpen(false)}
               className="absolute top-6 right-6 sm:top-8 sm:right-8 p-2 text-zinc-500 hover:text-white transition-all bg-white/5 rounded-full"
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
             >
               <X size={20} />
             </button>
 
-<<<<<<< HEAD
-            <form onSubmit={handleCreateCompany} className="p-12 space-y-8">
-              <div className="space-y-3">
-                <div className="inline-flex bg-blue-500/10 text-blue-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-blue-500/20">
-                  Client Provisioning
-                </div>
-                <h2 className="text-3xl font-black tracking-tighter">Nova Company</h2>
-                <p className="text-zinc-500 text-sm">Defina credenciais de rede e limites operacionais.</p>
-=======
             <form onSubmit={handleCreateCompany} className="p-6 sm:p-12 space-y-6 sm:space-y-8">
               <div className="space-y-2 sm:space-y-3">
                 <div className="inline-flex bg-blue-500/10 text-blue-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-blue-500/20">
@@ -589,7 +572,6 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-black tracking-tighter">Nova Company</h2>
                 <p className="text-zinc-500 text-xs sm:text-sm">Defina credenciais de rede e limites operacionais.</p>
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
               </div>
 
               <div className="space-y-6">

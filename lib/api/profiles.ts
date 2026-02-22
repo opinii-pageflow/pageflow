@@ -152,11 +152,7 @@ function mapButton(b: any): ProfileButton {
 export const profilesApi = {
     listAll: async (): Promise<Profile[]> => {
         const { data, error } = await (supabase.from('profiles') as any)
-<<<<<<< HEAD
-            .select('*')
-=======
             .select('id, client_id, display_name, slug, avatar_url, updated_at, layout_template, featured, show_on_landing')
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -169,12 +165,6 @@ export const profilesApi = {
 
     listCommunity: async (): Promise<Profile[]> => {
         const { data: profiles, error } = await (supabase.from('profiles') as any)
-<<<<<<< HEAD
-            .select('*')
-            .eq('show_in_community', true)
-            .eq('visibility_mode', 'public')
-            .order('created_at', { ascending: false });
-=======
             .select(`
                 id, client_id, slug, profile_type, display_name, headline, bio_short, avatar_url, cover_url, 
                 layout_template, visibility_mode, theme, fonts, module_themes, created_at, updated_at,
@@ -195,42 +185,12 @@ export const profilesApi = {
             .order('sort_order', { foreignTable: 'catalog_items', ascending: true })
             .order('sort_order', { foreignTable: 'portfolio_items', ascending: true })
             .order('sort_order', { foreignTable: 'youtube_videos', ascending: true });
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
 
         if (error) {
             console.error('Error fetching community profiles:', error);
             return [];
         }
 
-<<<<<<< HEAD
-        const result: Profile[] = [];
-        for (const p of (profiles || [])) {
-            const profile = mapProfile(p);
-
-            // Parallel fetch for this profile's sub-collections to avoid one-by-one waterfall if possible, 
-            // but for simplicity and small lists, this is reliable.
-            const [
-                { data: buttons },
-                { data: catalog },
-                { data: portfolio },
-                { data: videos }
-            ] = await Promise.all([
-                (supabase.from('profile_buttons') as any).select('*').eq('profile_id', p.id).order('sort_order', { ascending: true }),
-                (supabase.from('catalog_items') as any).select('*').eq('profile_id', p.id).order('sort_order', { ascending: true }),
-                (supabase.from('portfolio_items') as any).select('*').eq('profile_id', p.id).order('sort_order', { ascending: true }),
-                (supabase.from('youtube_videos') as any).select('*').eq('profile_id', p.id).order('sort_order', { ascending: true })
-            ]);
-
-            profile.buttons = (buttons || []).map(mapButton);
-            profile.catalogItems = (catalog || []).map(mapCatalogItem);
-            profile.portfolioItems = (portfolio || []).map(mapPortfolioItem);
-            profile.youtubeVideos = (videos || []).map(mapVideoItem);
-
-            result.push(profile);
-        }
-
-        return result;
-=======
         return (profiles || []).map(p => {
             const profile = mapProfile(p);
             profile.buttons = (p.profile_buttons || []).map(mapButton);
@@ -239,17 +199,10 @@ export const profilesApi = {
             profile.youtubeVideos = (p.youtube_videos || []).map(mapVideoItem);
             return profile;
         });
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
     },
 
     listLandingProfiles: async (): Promise<Profile[]> => {
         const { data: profiles, error } = await (supabase.from('profiles') as any)
-<<<<<<< HEAD
-            .select('*')
-            .eq('show_on_landing', true)
-            .eq('visibility_mode', 'public')
-            .order('created_at', { ascending: false });
-=======
             .select(`
                 id, client_id, slug, profile_type, display_name, headline, bio_short, avatar_url, cover_url, 
                 layout_template, visibility_mode, theme, fonts, module_themes, created_at, updated_at,
@@ -270,36 +223,12 @@ export const profilesApi = {
             .order('sort_order', { foreignTable: 'catalog_items', ascending: true })
             .order('sort_order', { foreignTable: 'portfolio_items', ascending: true })
             .order('sort_order', { foreignTable: 'youtube_videos', ascending: true });
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
 
         if (error) {
             console.error('Error fetching landing profiles:', error);
             return [];
         }
 
-<<<<<<< HEAD
-        const result: Profile[] = [];
-        for (const p of (profiles || [])) {
-            const profile = mapProfile(p);
-            const [
-                { data: buttons },
-                { data: catalog },
-                { data: portfolio },
-                { data: videos }
-            ] = await Promise.all([
-                (supabase.from('profile_buttons') as any).select('*').eq('profile_id', p.id).order('sort_order', { ascending: true }),
-                (supabase.from('catalog_items') as any).select('*').eq('profile_id', p.id).order('sort_order', { ascending: true }),
-                (supabase.from('portfolio_items') as any).select('*').eq('profile_id', p.id).order('sort_order', { ascending: true }),
-                (supabase.from('youtube_videos') as any).select('*').eq('profile_id', p.id).order('sort_order', { ascending: true })
-            ]);
-            profile.buttons = (buttons || []).map(mapButton);
-            profile.catalogItems = (catalog || []).map(mapCatalogItem);
-            profile.portfolioItems = (portfolio || []).map(mapPortfolioItem);
-            profile.youtubeVideos = (videos || []).map(mapVideoItem);
-            result.push(profile);
-        }
-        return result;
-=======
         return (profiles || []).map(p => {
             const profile = mapProfile(p);
             profile.buttons = (p.profile_buttons || []).map(mapButton);
@@ -308,7 +237,6 @@ export const profilesApi = {
             profile.youtubeVideos = (p.youtube_videos || []).map(mapVideoItem);
             return profile;
         });
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
     },
 
     listFeaturedProfiles: async (): Promise<Profile[]> => {
@@ -328,11 +256,6 @@ export const profilesApi = {
 
     listByClient: async (clientId: string): Promise<Profile[]> => {
         const { data: profiles, error } = await (supabase.from('profiles') as any)
-<<<<<<< HEAD
-            .select('*')
-            .eq('client_id', clientId)
-            .order('created_at', { ascending: true });
-=======
             .select(`
                 id, client_id, display_name, slug, avatar_url, updated_at, layout_template, 
                 theme, fonts,
@@ -341,34 +264,17 @@ export const profilesApi = {
             .eq('client_id', clientId)
             .order('created_at', { ascending: true })
             .order('sort_order', { foreignTable: 'profile_buttons', ascending: true });
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
 
         if (error) {
             console.error('Error fetching profiles:', error);
             return [];
         }
 
-<<<<<<< HEAD
-        const result: Profile[] = [];
-        for (const p of (profiles || [])) {
-            const profile = mapProfile(p);
-            const { data: buttons } = await (supabase.from('profile_buttons') as any)
-                .select('*')
-                .eq('profile_id', p.id)
-                .order('sort_order', { ascending: true });
-
-            profile.buttons = (buttons || []).map(mapButton);
-            result.push(profile);
-        }
-
-        return result;
-=======
         return (profiles || []).map(p => {
             const profile = mapProfile(p);
             profile.buttons = (p.profile_buttons || []).map(mapButton);
             return profile;
         });
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
     },
 
     getBySlug: async (slug: string) => {

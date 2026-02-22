@@ -646,16 +646,6 @@ const ClientsListPage: React.FC = () => {
 
       {/* ─── Modal: Criar / Editar (100% preservado) ─── */}
       {(isCreateModalOpen || isEditModalOpen) && (
-<<<<<<< HEAD
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/95 backdrop-blur-3xl animate-in fade-in duration-500">
-          <div className="bg-zinc-900 border border-white/10 w-full max-w-xl rounded-[4rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)] relative animate-in zoom-in-95 duration-500">
-            <button onClick={() => { setIsCreateModalOpen(false); setIsEditModalOpen(false); }} className="absolute top-12 right-12 p-3 text-zinc-500 hover:text-white transition-all bg-white/5 rounded-full"><X size={24} /></button>
-            <form onSubmit={isEditModalOpen ? handleEditSubmit : handleCreateSubmit} className="p-16 space-y-10">
-              <header className="space-y-4">
-                <div className="inline-flex bg-blue-500/10 text-blue-500 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-blue-500/20">Client Provisioning</div>
-                <h2 className="text-5xl font-black tracking-tighter">{isEditModalOpen ? 'Master Edit' : 'Nova Company'}</h2>
-                <p className="text-zinc-500 text-lg">Defina credenciais de rede e limites operacionais.</p>
-=======
         <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6 bg-black/95 backdrop-blur-3xl animate-in fade-in duration-500">
           <div className="bg-zinc-900 border border-white/10 w-full max-w-xl rounded-2xl sm:rounded-[4rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)] relative animate-in zoom-in-95 duration-500">
             <button onClick={() => { setIsCreateModalOpen(false); setIsEditModalOpen(false); }} className="absolute top-6 right-6 sm:top-12 sm:right-12 p-3 text-zinc-500 hover:text-white transition-all bg-white/5 rounded-full"><X size={20} className="sm:w-6 sm:h-6" /></button>
@@ -664,7 +654,6 @@ const ClientsListPage: React.FC = () => {
                 <div className="inline-flex bg-blue-500/10 text-blue-500 px-3 py-1 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-blue-500/20">Client Provisioning</div>
                 <h2 className="text-3xl sm:text-5xl font-black tracking-tighter">{isEditModalOpen ? 'Master Edit' : 'Nova Company'}</h2>
                 <p className="text-zinc-500 text-sm sm:text-lg">Defina credenciais de rede e limites operacionais.</p>
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
               </header>
               <div className="space-y-6">
                 <div className="space-y-2">
@@ -675,11 +664,7 @@ const ClientsListPage: React.FC = () => {
                     placeholder="Ex: Agência Premium"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-<<<<<<< HEAD
-                    className="w-full bg-black/40 border border-white/10 rounded-[1.5rem] px-6 py-5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
-=======
                     className="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-[1.5rem] px-5 sm:px-6 py-4 sm:py-5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -691,11 +676,7 @@ const ClientsListPage: React.FC = () => {
                       placeholder="email@empresa.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-<<<<<<< HEAD
-                      className="w-full bg-black/40 border border-white/10 rounded-[1.5rem] px-6 py-5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
-=======
                       className="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-[1.5rem] px-5 sm:px-6 py-4 sm:py-5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
                     />
                   </div>
                   <div className="space-y-2">
@@ -706,11 +687,7 @@ const ClientsListPage: React.FC = () => {
                       placeholder="Crie uma senha forte"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-<<<<<<< HEAD
-                      className="w-full bg-black/40 border border-white/10 rounded-[1.5rem] px-6 py-5 text-sm font-mono focus:border-blue-500 outline-none transition-all"
-=======
                       className="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-[1.5rem] px-5 sm:px-6 py-4 sm:py-5 text-sm font-mono focus:border-blue-500 outline-none transition-all"
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
                     />
                   </div>
                 </div>
@@ -725,11 +702,7 @@ const ClientsListPage: React.FC = () => {
                           const newPlan = PLANS[newPlanId];
                           setFormData({ ...formData, plan: newPlanId, maxProfiles: newPlan.maxProfiles });
                         }}
-<<<<<<< HEAD
-                        className="w-full bg-black/40 border border-white/10 rounded-[1.5rem] px-6 py-5 text-sm font-bold outline-none appearance-none cursor-pointer"
-=======
                         className="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-[1.5rem] px-5 sm:px-6 py-4 sm:py-5 text-sm font-bold outline-none appearance-none cursor-pointer"
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
                       >
                         {PLAN_TYPES.map(planId => (
                           <option key={planId} value={planId}>{PLANS[planId].name}</option>
@@ -754,27 +727,6 @@ const ClientsListPage: React.FC = () => {
 
       {/* ─── Modal: Bônus de Slots (100% preservado) ─── */}
       {isBonusModalOpen && selectedClient && (
-<<<<<<< HEAD
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/95 backdrop-blur-3xl animate-in fade-in duration-500">
-          <div className="bg-zinc-900 border border-white/10 w-full max-w-md rounded-[4rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-500">
-            <button onClick={() => setIsBonusModalOpen(false)} className="absolute top-12 right-12 text-zinc-500 hover:text-white bg-white/5 p-3 rounded-full transition-all"><X size={24} /></button>
-            <div className="p-16 text-center space-y-12">
-              <div className="w-24 h-24 bg-amber-500/10 text-amber-500 rounded-[2.5rem] flex items-center justify-center mx-auto border border-amber-500/20 shadow-2xl shadow-amber-500/10">
-                <Award size={48} />
-              </div>
-              <div className="space-y-3">
-                <h2 className="text-4xl font-black tracking-tighter">Bônus de Capacidade</h2>
-                <p className="text-zinc-500 text-sm font-medium">Adicionando slots extras para <span className="text-white">{selectedClient.name}</span>.</p>
-              </div>
-
-              <div className="flex items-center justify-center gap-8 bg-black/40 p-10 rounded-[2.5rem] border border-white/5 relative shadow-inner">
-                <button onClick={() => setBonusAmount(Math.max(1, bonusAmount - 1))} className="w-16 h-16 rounded-2xl border border-white/10 text-3xl font-bold hover:bg-white/10 transition-all active:scale-90">-</button>
-                <div className="flex flex-col items-center">
-                  <span className="text-7xl font-black text-amber-500 tabular-nums leading-none mb-2">{bonusAmount}</span>
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">Extra Slots</span>
-                </div>
-                <button onClick={() => setBonusAmount(bonusAmount + 1)} className="w-16 h-16 rounded-2xl border border-white/10 text-3xl font-bold hover:bg-white/10 transition-all active:scale-90">+</button>
-=======
         <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6 bg-black/95 backdrop-blur-3xl animate-in fade-in duration-500">
           <div className="bg-zinc-900 border border-white/10 w-full max-w-md rounded-2xl sm:rounded-[4rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-500">
             <button onClick={() => setIsBonusModalOpen(false)} className="absolute top-6 right-6 sm:top-12 sm:right-12 text-zinc-500 hover:text-white bg-white/5 p-3 rounded-full transition-all"><X size={20} className="sm:w-6 sm:h-6" /></button>
@@ -794,16 +746,11 @@ const ClientsListPage: React.FC = () => {
                   <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600 font-mono">Extra Slots</span>
                 </div>
                 <button onClick={() => setBonusAmount(bonusAmount + 1)} className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border border-white/10 text-2xl sm:text-3xl font-bold hover:bg-white/10 transition-all active:scale-90">+</button>
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
               </div>
 
               <button
                 onClick={handleAddBonus}
-<<<<<<< HEAD
-                className="w-full bg-amber-500 text-black py-6 rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-amber-400 transition-all active:scale-95 shadow-2xl shadow-amber-500/20 flex items-center justify-center gap-3"
-=======
                 className="w-full bg-amber-500 text-black py-4 sm:py-6 rounded-xl sm:rounded-[2rem] font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-amber-400 transition-all active:scale-95 shadow-2xl shadow-amber-500/20 flex items-center justify-center gap-3"
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
               >
                 Aplicar Recursos
               </button>

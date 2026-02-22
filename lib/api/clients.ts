@@ -41,11 +41,7 @@ export const clientsApi = {
     listAll: async (): Promise<Client[]> => {
         const { data, error } = await supabase
             .from('clients')
-<<<<<<< HEAD
-            .select('*')
-=======
             .select('id, name, slug, email, password, plan, user_type, max_profiles, is_active, created_at, scheduling_scope, enable_scheduling')
->>>>>>> a4f8f01 (feat: improve mobile responsiveness and optimize data fetching)
             .order('created_at', { ascending: false });
 
         if (error) {
