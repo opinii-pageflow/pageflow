@@ -197,7 +197,7 @@ export const normalizeEvent = (
     return {
         assetType,
         assetLabel,
-        assetId: assetType === 'pix' && !assetId ? 'pix' : assetId,
+        assetId: assetType === 'pix' ? 'pix' : assetId,
         profileId: event.profileId,
         clientId: event.clientId,
         type: event.type,

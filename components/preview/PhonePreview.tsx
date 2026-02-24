@@ -9,7 +9,7 @@ interface Props {
   client?: any;
 }
 
-const PhonePreview: React.FC<Props> = ({ profile, clientPlan, client }) => {
+const PhonePreview = React.memo<Props>(({ profile, clientPlan, client }) => {
   if (!profile) return null;
 
   return (
@@ -29,6 +29,6 @@ const PhonePreview: React.FC<Props> = ({ profile, clientPlan, client }) => {
       </div>
     </div>
   );
-};
+});
 
 export default PhonePreview;

@@ -18,7 +18,7 @@ function mapProfile(p: any): Profile {
         coverUrl: p.cover_url,
         layoutTemplate: p.layout_template,
         visibilityMode: p.visibility_mode,
-        password: p.password,
+        // password intentionally removed for security
         theme: p.theme || {},
         fonts: p.fonts || {},
         createdAt: p.created_at,
@@ -41,7 +41,7 @@ function mapProfile(p: any): Profile {
         showInCommunity: p.show_in_community,
         communitySegment: p.community_segment,
         communityCity: p.community_city,
-        communityState: p.community_state,
+        // communityState removed (not in DB)
         communityServiceMode: p.community_service_mode,
         communityPunchline: p.community_punchline,
         communityPrimaryCta: p.community_primary_cta,
@@ -141,7 +141,7 @@ function mapButton(b: any): ProfileButton {
         label: b.label,
         value: b.value,
         enabled: b.enabled,
-        visibility: b.visibility as any,
+        visibility: b.visibility as ProfileButton['visibility'],
         pinned: b.pinned,
         sortOrder: b.sort_order,
         style: b.style || {},
@@ -163,20 +163,34 @@ export const profilesApi = {
         return (data || []).map(mapProfile);
     },
 
+    getByIds: async (ids: string[]): Promise<Profile[]> => {
+        if (!ids.length) return [];
+        const { data, error } = await (supabase.from('profiles') as any)
+            .select('id, client_id, slug, display_name, headline, bio_short, avatar_url, updated_at')
+            .in('id', ids);
+
+        if (error) {
+            console.error('Error fetching profiles by ids:', error);
+            return [];
+        }
+
+        return (data || []).map(mapProfile);
+    },
+
     listCommunity: async (): Promise<Profile[]> => {
         const { data: profiles, error } = await (supabase.from('profiles') as any)
             .select(`
                 id, client_id, slug, profile_type, display_name, headline, bio_short, avatar_url, cover_url, 
                 layout_template, visibility_mode, theme, fonts, module_themes, created_at, updated_at,
-                show_in_community, community_segment, community_city, community_state, 
+                show_in_community, community_segment, community_city, 
                 community_punchline, sponsored_enabled, sponsored_until, sponsored_segment,
                 promotion_enabled, promotion_title, promotion_description, promotion_discount_percentage,
                 promotion_current_price, promotion_image_url, promotion_whatsapp, booking_whatsapp, featured,
                 pix_key, enable_lead_capture, enable_nps, hide_branding,
-                profile_buttons(*),
-                catalog_items(*),
-                portfolio_items(*),
-                youtube_videos(*)
+                profile_buttons(id, type, label, value, enabled, visibility, sort_order),
+                catalog_items(id, title, description, price_text, image_url, cta_label, cta_link, sort_order, is_active),
+                portfolio_items(id, title, image_url, sort_order, is_active),
+                youtube_videos(id, title, url, sort_order, is_active)
             `)
             .eq('show_in_community', true)
             .eq('visibility_mode', 'public')
@@ -206,15 +220,15 @@ export const profilesApi = {
             .select(`
                 id, client_id, slug, profile_type, display_name, headline, bio_short, avatar_url, cover_url, 
                 layout_template, visibility_mode, theme, fonts, module_themes, created_at, updated_at,
-                show_on_landing, community_segment, community_city, community_state,
+                show_on_landing, community_segment, community_city,
                 community_punchline, sponsored_enabled, sponsored_until, sponsored_segment,
                 promotion_enabled, promotion_title, promotion_description, promotion_discount_percentage,
                 promotion_current_price, promotion_image_url, promotion_whatsapp, booking_whatsapp, featured,
                 pix_key, enable_lead_capture, enable_nps, hide_branding,
-                profile_buttons(*),
-                catalog_items(*),
-                portfolio_items(*),
-                youtube_videos(*)
+                profile_buttons(id, type, label, value, enabled, visibility, sort_order),
+                catalog_items(id, title, description, price_text, image_url, cta_label, cta_link, sort_order, is_active),
+                portfolio_items(id, title, image_url, sort_order, is_active),
+                youtube_videos(id, title, url, sort_order, is_active)
             `)
             .eq('show_on_landing', true)
             .eq('visibility_mode', 'public')
@@ -241,7 +255,7 @@ export const profilesApi = {
 
     listFeaturedProfiles: async (): Promise<Profile[]> => {
         const { data: profiles, error } = await (supabase.from('profiles') as any)
-            .select('*')
+            .select('id, client_id, slug, profile_type, display_name, headline, bio_short, avatar_url, cover_url, layout_template, theme, fonts, module_themes, featured, updated_at')
             .eq('featured', true)
             .eq('visibility_mode', 'public')
             .order('created_at', { ascending: false });
@@ -279,7 +293,18 @@ export const profilesApi = {
 
     getBySlug: async (slug: string) => {
         const { data, error } = await (supabase.from('profiles') as any)
-            .select('*')
+            .select(`
+                id, client_id, slug, profile_type, display_name, headline, bio_short, bio_long, avatar_url, cover_url, 
+                layout_template, visibility_mode, theme, fonts, created_at, updated_at,
+                pix_key, enable_lead_capture, enable_nps, nps_redirect_url, hide_branding,
+                enable_scheduling, scheduling_mode, external_booking_url, booking_whatsapp,
+                show_in_community, community_segment, community_city, community_service_mode, 
+                community_punchline, community_primary_cta, community_gmb_link,
+                promotion_enabled, promotion_title, promotion_description, promotion_discount_percentage,
+                promotion_current_price, promotion_image_url, promotion_whatsapp,
+                sponsored_enabled, sponsored_until, sponsored_segment,
+                featured, show_on_landing, module_themes, general_module_theme
+            `)
             .eq('slug', slug)
             .maybeSingle();
 
@@ -295,11 +320,11 @@ export const profilesApi = {
             { data: videos },
             { data: slots }
         ] = await Promise.all([
-            (supabase.from('profile_buttons') as any).select('*').eq('profile_id', id).order('sort_order', { ascending: true }),
-            (supabase.from('catalog_items') as any).select('*').eq('profile_id', id).order('sort_order', { ascending: true }),
-            (supabase.from('portfolio_items') as any).select('*').eq('profile_id', id).order('sort_order', { ascending: true }),
-            (supabase.from('youtube_videos') as any).select('*').eq('profile_id', id).order('sort_order', { ascending: true }),
-            (supabase.from('scheduling_slots') as any).select('*').eq('profile_id', id).order('day_of_week', { ascending: true })
+            (supabase.from('profile_buttons') as any).select('id, profile_id, type, label, value, enabled, visibility, pinned, sort_order, style, client_id').eq('profile_id', id).order('sort_order', { ascending: true }),
+            (supabase.from('catalog_items') as any).select('id, profile_id, kind, title, description, price_text, image_url, cta_label, cta_link, sort_order, is_active, client_id').eq('profile_id', id).order('sort_order', { ascending: true }),
+            (supabase.from('portfolio_items') as any).select('id, profile_id, title, image_url, sort_order, is_active, client_id').eq('profile_id', id).order('sort_order', { ascending: true }),
+            (supabase.from('youtube_videos') as any).select('id, profile_id, title, url, sort_order, is_active, client_id').eq('profile_id', id).order('sort_order', { ascending: true }),
+            (supabase.from('scheduling_slots') as any).select('id, day_of_week, start_time, end_time, is_active, status, booked_by, booked_at, client_id').eq('profile_id', id).order('day_of_week', { ascending: true })
         ]);
 
         profile.buttons = (buttons || []).map(mapButton);
@@ -314,7 +339,18 @@ export const profilesApi = {
     getById: async (id: string): Promise<Profile | null> => {
         console.log(`[profilesApi] Fetching full profile for ${id}...`);
         const { data, error } = await (supabase.from('profiles') as any)
-            .select('*')
+            .select(`
+                id, client_id, slug, profile_type, display_name, headline, bio_short, bio_long, avatar_url, cover_url, 
+                layout_template, visibility_mode, theme, fonts, created_at, updated_at,
+                pix_key, enable_lead_capture, enable_nps, nps_redirect_url, hide_branding,
+                enable_scheduling, scheduling_mode, external_booking_url, booking_whatsapp,
+                show_in_community, community_segment, community_city, community_service_mode, 
+                community_punchline, community_primary_cta, community_gmb_link,
+                promotion_enabled, promotion_title, promotion_description, promotion_discount_percentage,
+                promotion_current_price, promotion_image_url, promotion_whatsapp,
+                sponsored_enabled, sponsored_until, sponsored_segment,
+                featured, show_on_landing, module_themes, general_module_theme
+            `)
             .eq('id', id)
             .maybeSingle();
 
@@ -420,7 +456,6 @@ export const profilesApi = {
         if (updates.showInCommunity !== undefined) dbUpdates.show_in_community = updates.showInCommunity;
         if (updates.communitySegment !== undefined) dbUpdates.community_segment = updates.communitySegment;
         if (updates.communityCity !== undefined) dbUpdates.community_city = updates.communityCity;
-        if (updates.communityState !== undefined) dbUpdates.community_state = updates.communityState;
         if (updates.communityPunchline !== undefined) dbUpdates.community_punchline = updates.communityPunchline;
         if (updates.communityServiceMode !== undefined) dbUpdates.community_service_mode = updates.communityServiceMode;
         if (updates.communityPrimaryCta !== undefined) dbUpdates.community_primary_cta = updates.communityPrimaryCta;

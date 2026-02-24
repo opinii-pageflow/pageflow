@@ -81,18 +81,18 @@ const AdminDashboard: React.FC = () => {
 
         setClients(allClients || []);
         setTotalProfiles(allProfiles?.length || 0);
-        if (mounted) setAllProfiles((allProfiles || []).map((p: any) => ({
+        if (mounted) setAllProfiles((allProfiles || []).map((p: Profile) => ({
           ...p,
           featured: p.featured || false,
-          showOnLanding: p.show_on_landing || false,
-          displayName: p.display_name || p.displayName || '',
-          avatarUrl: p.avatar_url || p.avatarUrl || '',
+          showOnLanding: p.showOnLanding || false,
+          displayName: p.displayName || '',
+          avatarUrl: p.avatarUrl || '',
           slug: p.slug || ''
         })));
 
         // Analytics com tratamento de erro
         try {
-          const { count: eCount } = await (supabase.from('analytics_events') as any)
+          const { count: eCount } = await supabase.from('analytics_events')
             .select('*', { count: 'exact', head: true });
           if (mounted) setTotalEvents(eCount || 0);
         } catch (e) {
@@ -100,17 +100,18 @@ const AdminDashboard: React.FC = () => {
         }
 
         try {
-          const { count: lCount } = await (supabase.from('leads') as any)
+          const { count: lCount } = await supabase.from('leads')
             .select('*', { count: 'exact', head: true });
           if (mounted) setTotalLeads(lCount || 0);
         } catch (e) {
           console.warn("Leads fetch error", e);
         }
 
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as Error & { name?: string; message?: string };
         console.error("Failed to load admin data", err);
         // Se for erro de rede/abort e tivermos poucas tentativas, tenta de novo
-        if (mounted && retryCount < 2 && (err.name === 'AbortError' || err.message?.includes('fetch'))) {
+        if (mounted && retryCount < 2 && (error.name === 'AbortError' || error.message?.includes('fetch'))) {
           console.log("Retrying admin load...");
           setTimeout(() => loadAdminData(retryCount + 1), 1000);
           return;
@@ -144,13 +145,21 @@ const AdminDashboard: React.FC = () => {
 
   const stats = [
     { icon: Users, label: 'Companies', value: clients.length, subValue: `${activeClients} ativos`, accent: 'blue' },
-    { icon: Layout, label: 'Perfis', value: totalProfiles, subValue: `em ${clients.length} contas`, accent: 'indigo' },
+    { icon: Layout, label: 'Perfis', value: totalProfiles, subValue: `em ${clients.length} contas`, accent: 'sky' },
     { icon: Activity, label: 'Eventos', value: totalEvents, subValue: 'analytics total', accent: 'emerald' },
-    { icon: ShieldCheck, label: 'Sistema', value: '99.9%', subValue: 'uptime', accent: 'purple' },
+    { icon: ShieldCheck, label: 'Sistema', value: '99.9%', subValue: 'uptime', accent: 'emerald' },
   ];
 
   const recentClients = clients.slice(0, 5);
-  const profileCounts: Record<string, number> = {}; // Placeholder por enquanto
+  const topProfiles = useMemo(() => {
+    // Agrupar perfis por volume de eventos (placeholder para lógica real se necessário)
+    // Por enquanto, mostraremos os perfis com featured: true primeiro
+    return [...allProfiles].sort((a, b) => {
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      return 0;
+    }).slice(0, 10);
+  }, [allProfiles]);
 
   const handleToggleProfile = async (profileId: string, field: 'featured' | 'showOnLanding', value: boolean) => {
     setTogglingId(profileId);
@@ -201,9 +210,9 @@ const AdminDashboard: React.FC = () => {
           className="absolute inset-0 opacity-30"
           style={{
             background: `
-              radial-gradient(circle at ${mousePos.x}px ${mousePos.y}px, rgba(37, 99, 235, 0.06), transparent 40%),
-              radial-gradient(circle at 20% 80%, rgba(168, 85, 247, 0.03), transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.04), transparent 50%)
+              radial-gradient(circle at ${mousePos.x}px ${mousePos.y}px, rgba(14, 165, 233, 0.06), transparent 40%),
+              radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.03), transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.04), transparent 50%)
             `
           }}
         />
@@ -238,7 +247,7 @@ const AdminDashboard: React.FC = () => {
                 setCompanyFormData({ name: '', slug: '', email: '', password: '', plan: 'pro', maxProfiles: 3, isActive: true });
                 setIsCreateCompanyOpen(true);
               }}
-              className="flex-1 sm:flex-none px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-lg hover:shadow-blue-600/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2.5 group active:scale-95"
+              className="flex-1 sm:flex-none px-5 py-3 bg-gradient-to-r from-blue-600 to-emerald-600 hover:shadow-lg hover:shadow-blue-600/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2.5 group active:scale-95"
             >
               <UserPlus size={14} />
               Criar nova Company
@@ -291,7 +300,7 @@ const AdminDashboard: React.FC = () => {
                 {recentClients.map((client) => (
                   <div key={client.id} className="flex items-center justify-between gap-3 px-6 py-3.5 hover:bg-white/[0.02] transition-colors group">
                     <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border border-blue-500/20 flex items-center justify-center font-black text-sm text-blue-400 flex-shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600/20 to-emerald-600/20 border border-blue-500/20 flex items-center justify-center font-black text-sm text-blue-400 flex-shrink-0">
                         {client.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
@@ -299,7 +308,7 @@ const AdminDashboard: React.FC = () => {
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className={clsx(
                             "text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border",
-                            client.plan === 'enterprise' && "bg-purple-500/10 text-purple-400 border-purple-500/20",
+                            client.plan === 'enterprise' && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
                             client.plan === 'business' && "bg-amber-500/10 text-amber-400 border-amber-500/20",
                             client.plan === 'pro' && "bg-blue-500/10 text-blue-400 border-blue-500/20",
                             client.plan === 'starter' && "bg-zinc-800/50 text-zinc-500 border-zinc-700/50",
@@ -359,7 +368,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="p-6">
                   <div className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-2">Conversion Rate</div>
                   <div className="text-2xl font-black tracking-tight mb-1">24.8%</div>
-                  <div className="text-[10px] text-purple-500 font-black uppercase tracking-widest">+2.1%</div>
+                  <div className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">+2.1%</div>
                 </div>
               </div>
             </div>
@@ -381,7 +390,7 @@ const AdminDashboard: React.FC = () => {
                 {allProfiles.length === 0 && (
                   <div className="px-6 py-8 text-center text-zinc-600 text-xs">Nenhum perfil encontrado.</div>
                 )}
-                {allProfiles.map((profile: any) => (
+                {topProfiles.map((profile: Profile) => (
                   <div key={profile.id} className="flex items-center justify-between gap-3 px-6 py-3.5 hover:bg-white/[0.02] transition-colors group">
                     <div className="flex items-center gap-3.5 min-w-0">
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center font-black text-sm text-zinc-400 flex-shrink-0 overflow-hidden">
@@ -464,7 +473,7 @@ const AdminDashboard: React.FC = () => {
                       <span className="font-black text-white">24.8%</span>
                     </div>
                     <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                      <div className="h-full w-[65%] bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" />
+                      <div className="h-full w-[65%] bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full" />
                     </div>
                   </div>
                   <div>
@@ -487,7 +496,7 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             {/* Health System */}
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 shadow-lg shadow-blue-600/10 relative overflow-hidden group">
+            <div className="bg-gradient-to-br from-blue-600 to-emerald-700 rounded-2xl p-6 shadow-lg shadow-blue-600/10 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:rotate-12 transition-transform duration-1000 pointer-events-none">
                 <Server size={100} />
               </div>

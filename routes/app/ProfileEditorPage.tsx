@@ -355,7 +355,7 @@ const ProfileEditorPage: React.FC = () => {
           showMobilePreview ? "translate-x-0 z-50" : "translate-x-full lg:translate-x-0 opacity-0 lg:opacity-100"
         )}>
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[180px] pointer-events-none opacity-40"></div>
-          <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[180px] pointer-events-none opacity-40"></div>
+          <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[180px] pointer-events-none opacity-40"></div>
 
           <button
             onClick={() => setShowMobilePreview(false)}

@@ -9,7 +9,7 @@ function mapClient(data: any): Client {
         name: data.name,
         slug: data.slug,
         email: data.email,
-        password: data.password, // Added mapping
+        // password intentionally removed for security
         plan: data.plan,
         userType: data.user_type || 'client',
         maxProfiles: data.max_profiles,
@@ -41,7 +41,7 @@ export const clientsApi = {
     listAll: async (): Promise<Client[]> => {
         const { data, error } = await supabase
             .from('clients')
-            .select('id, name, slug, email, password, plan, user_type, max_profiles, is_active, created_at, scheduling_scope, enable_scheduling')
+            .select('id, name, slug, email, plan, user_type, max_profiles, is_active, created_at, scheduling_scope, enable_scheduling')
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -56,7 +56,7 @@ export const clientsApi = {
     getById: async (id: string): Promise<Client | null> => {
         const { data, error } = await supabase
             .from('clients')
-            .select('*')
+            .select('id, name, slug, email, plan, user_type, max_profiles, is_active, created_at, scheduling_scope, enable_scheduling')
             .eq('id', id)
             .maybeSingle();
 
@@ -69,7 +69,7 @@ export const clientsApi = {
             const client = mapClient(data);
             const { data: slots } = await supabase
                 .from('scheduling_slots')
-                .select('*')
+                .select('id, day_of_week, start_time, end_time, is_active, status, booked_by, booked_at, client_id')
                 .eq('client_id', id)
                 .order('day_of_week', { ascending: true });
 
@@ -83,7 +83,7 @@ export const clientsApi = {
     getBySlug: async (slug: string): Promise<Client | null> => {
         const { data, error } = await supabase
             .from('clients')
-            .select('*')
+            .select('id, name, slug, email, plan, user_type, max_profiles, is_active, created_at, scheduling_scope, enable_scheduling')
             .eq('slug', slug)
             .single();
 
@@ -92,7 +92,7 @@ export const clientsApi = {
     },
 
     // Criar novo cliente (agora cria também no Supabase Auth)
-    create: async (client: Omit<Client, 'id' | 'createdAt'>): Promise<Client | null> => {
+    create: async (client: Omit<Client, 'id' | 'createdAt'> & { password?: string }): Promise<Client | null> => {
         // Para criar um usuário sem deslogar o admin atual, usamos um cliente secundário temporário
         const authClient = createClient(
             import.meta.env.VITE_SUPABASE_URL,
@@ -115,8 +115,7 @@ export const clientsApi = {
                     slug: client.slug,
                     plan: client.plan,
                     max_profiles: client.maxProfiles,
-                    user_type: client.userType || 'client',
-                    password: client.password
+                    user_type: client.userType || 'client'
                 }
             }
         });
@@ -136,7 +135,7 @@ export const clientsApi = {
         while (retry < 5) {
             const { data: dbClient, error: dbError } = await supabase
                 .from('clients')
-                .select('*')
+                .select('id, name, slug, email, plan, user_type, max_profiles, is_active, created_at, scheduling_scope, enable_scheduling')
                 .eq('email', client.email)
                 .maybeSingle();
 
@@ -157,7 +156,6 @@ export const clientsApi = {
         if (updates.slug) dbUpdates.slug = updates.slug;
         if (updates.plan) dbUpdates.plan = updates.plan;
         if (updates.email) dbUpdates.email = updates.email; // Added email update
-        if (updates.password) dbUpdates.password = updates.password; // Added password update
         if (updates.maxProfiles !== undefined) dbUpdates.max_profiles = updates.maxProfiles;
         if (updates.isActive !== undefined) dbUpdates.is_active = updates.isActive;
         if (updates.schedulingScope) dbUpdates.scheduling_scope = updates.schedulingScope;

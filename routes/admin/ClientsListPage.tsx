@@ -180,7 +180,7 @@ const ClientsListPage: React.FC = () => {
       name: client.name,
       slug: client.slug,
       email: client.email || '',
-      password: client.password || '',
+      password: '', // Iniciar vazio para edição segura
       plan: client.plan,
       maxProfiles: client.maxProfiles,
       isActive: client.isActive
@@ -257,7 +257,7 @@ const ClientsListPage: React.FC = () => {
           </div>
           <button
             onClick={() => {
-              setFormData({ name: '', slug: '', email: '', password: '', plan: 'pro', maxProfiles: 3, isActive: true });
+              setFormData({ name: '', slug: '', email: '', password: '', plan: 'pro', maxProfiles: PLANS_CONFIG.pro.maxProfiles, isActive: true });
               setIsCreateModalOpen(true);
             }}
             className="w-full sm:w-auto bg-white text-black px-8 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 shadow-lg shadow-white/5"
@@ -683,8 +683,8 @@ const ClientsListPage: React.FC = () => {
                     <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Senha (Access Token)</label>
                     <input
                       type="text"
-                      required
-                      placeholder="Crie uma senha forte"
+                      required={!isEditModalOpen}
+                      placeholder={isEditModalOpen ? "Preencha apenas para alterar" : "Crie uma senha forte"}
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-[1.5rem] px-5 sm:px-6 py-4 sm:py-5 text-sm font-mono focus:border-blue-500 outline-none transition-all"

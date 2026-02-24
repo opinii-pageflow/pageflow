@@ -113,18 +113,22 @@ const CommunityPage: React.FC = () => {
 
     // Perfis em Destaque (Topo)
     const featuredProfiles = useMemo(() => {
-        return publicProfiles.filter(p => isSponsored(p))
+        return publicProfiles.filter(p => isSponsored(p) || p.featured)
             .sort((a, b) => {
-                // Se houver segmento selecionado, priorizar patrocinados desse segmento
-                if (selectedSegment !== 'all') {
-                    const aMatch = a.communitySegment === selectedSegment || a.sponsored_segment === selectedSegment;
-                    const bMatch = b.communitySegment === selectedSegment || b.sponsored_segment === selectedSegment;
-                    if (aMatch && !bMatch) return -1;
-                    if (!aMatch && bMatch) return 1;
-                }
-                const aViews = profileViews[a.id] || 0;
-                const bViews = profileViews[b.id] || 0;
-                return bViews - aViews;
+                // Prioridade 1: Patrocinados (Sponsorship pago)
+                const aSpon = isSponsored(a);
+                const bSpon = isSponsored(b);
+                if (aSpon && !bSpon) return -1;
+                if (!aSpon && bSpon) return 1;
+
+                // Prioridade 2: Featured (Curadoria Admin)
+                if (a.featured && !b.featured) return -1;
+                if (!a.featured && b.featured) return 1;
+
+                // Resto da lógica (visualizações)
+                const aV = profileViews[a.id] || 0;
+                const bV = profileViews[b.id] || 0;
+                return bV - aV;
             })
             .slice(0, 6);
     }, [publicProfiles, selectedSegment, profileViews]);

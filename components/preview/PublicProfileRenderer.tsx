@@ -106,7 +106,7 @@ const getBrandColor = (type: string): string | null => {
   }
 };
 
-const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan, client, source = 'direct', utm }) => {
+const PublicProfileRenderer = React.memo<Props>(({ profile, isPreview, clientPlan, client, source = 'direct', utm }) => {
   const DEFAULT_THEME = {
     primary: '#3b82f6',
     text: '#ffffff',
@@ -392,6 +392,17 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                       });
 
                       setBookingSuccess(true);
+
+                      // Track Analytics Event for Conversion
+                      trackEvent({
+                        clientId: profile.clientId,
+                        profileId: profile.id,
+                        type: 'appointment_requested' as any,
+                        assetType: 'scheduling' as any,
+                        assetId: 'booking_modal',
+                        source,
+                        utm
+                      });
 
                       // Optional: Open WhatsApp after a short delay
                       if (profile.bookingWhatsapp) {
@@ -998,6 +1009,17 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
         captureType: 'form'
       });
       setLeadSent(true);
+
+      // Track Analytics Event
+      trackEvent({
+        clientId: profile.clientId,
+        profileId: profile.id,
+        type: 'lead_sent' as any,
+        assetType: 'lead' as any,
+        assetId: 'lead_form',
+        source,
+        utm
+      });
     } catch (err) {
       console.error("Lead submission error:", err);
       alert("Erro ao enviar. Tente novamente.");
@@ -1624,10 +1646,13 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                           clientId: profile.clientId,
                           profileId: profile.id,
                           type: 'pix_copied',
-                          linkId: 'pix_key',
+                          assetId: 'pix',
+                          assetType: 'pix',
+                          assetLabel: 'Chave Pix',
                           source,
                           utm
                         });
+
                         alert('Chave Pix copiada!');
                       }}
                       className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest button-font shadow-lg transition-all hover:scale-[1.02] active:scale-95"
@@ -1833,7 +1858,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                                 type: 'portfolio_click',
                                 assetId: item.id,
                                 assetType: 'portfolio',
-                                assetLabel: item.title,
+                                assetLabel: item.title && item.title.trim() ? item.title : `Foto #${idx + 1}`,
                                 source,
                                 utm
                               });
@@ -1918,10 +1943,11 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                                     type: 'video_view',
                                     assetId: v.id,
                                     assetType: 'video',
-                                    assetLabel: v.title,
+                                    assetLabel: v.title && v.title.trim() ? v.title : `Vídeo ${idx + 1}`,
                                     source,
                                     utm
                                   });
+
                                 }
                               }}
                               className="w-full h-full"
@@ -2129,7 +2155,14 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                   "w-full flex justify-center pb-8 pt-4",
                   isStack ? "p-6 rounded-[2rem] shadow-xl backdrop-blur-md" : ""
                 )} style={isStack ? { background: theme.cardBg, border: `${borderWidth} solid ${theme.border}` } : {}}>
-                  <img src="/logo.png" alt="PageFlow" className="h-12 opacity-40" />
+                  <a
+                    href="/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transition-transform hover:scale-105 active:scale-95 opacity-100"
+                  >
+                    <img src="/logo.png" alt="PageFlow" className="h-10 opacity-100" />
+                  </a>
                 </div>
               )}
             </div>
@@ -2227,6 +2260,19 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                       href={isPreview ? '#' : ctaHref}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => {
+                        if (isPreview) return;
+                        trackEvent({
+                          clientId: profile.clientId,
+                          profileId: profile.id,
+                          type: 'catalog_cta_click',
+                          assetId: selectedCatalogItem.id,
+                          assetType: 'catalog',
+                          assetLabel: `CTA: ${selectedCatalogItem.title}`,
+                          source,
+                          utm
+                        });
+                      }}
                       className="group w-full py-5 px-8 bg-white text-black text-[11px] font-black uppercase tracking-[0.3em] flex items-center justify-between hover:bg-zinc-200 transition-all active:scale-95"
                     >
                       {selectedCatalogItem.ctaLabel || 'Acquire Now'}
@@ -2259,6 +2305,6 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
       }
     </div >
   );
-};
+});
 
 export default PublicProfileRenderer;

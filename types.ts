@@ -118,7 +118,6 @@ export interface Client {
   maxTemplates?: number;
   createdAt: string;
   isActive: boolean;
-  password?: string;
   email?: string;
   schedulingScope?: 'global' | 'per_profile'; // Configuração de escopo
   enableScheduling?: boolean; // Master Switch
@@ -181,7 +180,6 @@ export interface Profile {
   layoutTemplate: string;
   fonts: Fonts;
   visibilityMode: VisibilityMode;
-  password?: string;
   createdAt: string;
   updatedAt: string;
 
@@ -204,7 +202,6 @@ export interface Profile {
   // Community
   showInCommunity?: boolean;
   communitySegment?: string;
-  communityState?: string;
   communityCity?: string;
   communityServiceMode?: 'online' | 'presencial' | 'hibrido';
   communityPunchline?: string;
@@ -305,6 +302,7 @@ export interface AnalyticsSummary {
     zeroInteractionItems: { label: string; type: string }[];
     pixCopies: number;
   };
+  leadsCount: number;
   npsScore?: number;
   npsBreakdown?: {
     promoters: number;

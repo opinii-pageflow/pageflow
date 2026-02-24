@@ -177,22 +177,6 @@ const AdvancedCrm: React.FC<Props> = ({ leads: initialLeads, clientPlan, onRefre
           />
         </div>
 
-        {/* Origem Select */}
-        <div className="relative group w-full lg:w-auto">
-          <div className="absolute inset-0 bg-neon-blue blur-2xl opacity-0 group-hover:opacity-10 transition-opacity rounded-full" />
-          <select
-            value={originFilter}
-            onChange={(e) => setOriginFilter(e.target.value as any)}
-            className="w-full lg:w-[220px] appearance-none h-12 bg-black/60 text-white pl-11 pr-11 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-white/5 outline-none cursor-pointer hover:bg-white/10 hover:text-white transition-all relative z-10 [&>option]:bg-zinc-950 [&>option]:text-white"
-          >
-            <option value="all" className="bg-zinc-950 text-white">Todas as Origens</option>
-            <option value="form" className="bg-zinc-950 text-white">Formulários</option>
-            <option value="nps" className="bg-zinc-950 text-white">Avaliações NPS</option>
-          </select>
-          <Filter size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none group-hover:text-neon-blue transition-colors z-10" />
-          <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-700 pointer-events-none z-10" />
-        </div>
-
         {/* Botão Exportar */}
         <button
           onClick={exportToCsv}

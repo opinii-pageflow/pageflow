@@ -36,6 +36,9 @@ import {
   Smartphone,
   Monitor,
   Link as LinkIcon,
+  Film,
+  ShoppingBag,
+  Image as ImageIcon,
   X
 } from 'lucide-react';
 import { getProfileSummary, getFilteredEvents } from '@/lib/analytics';
@@ -509,21 +512,49 @@ const ClientDashboard: React.FC = () => {
   const ms = days * 24 * 60 * 60 * 1000;
   const now = Date.now();
 
-  const leadsRecent = useMemo(() =>
-    (leads || [])
-      .filter(l => now - new Date(l.createdAt).getTime() <= ms)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [leads, days, now]);
+  const leadsRecent = useMemo(() => {
+    const dbLeads = (leads || []).filter(l => now - new Date(l.createdAt).getTime() <= ms);
+    const eventLeads = normalizedEvents.filter(e => e.type === 'lead_sent' || e.type === 'lead_capture');
 
-  const npsRecent = useMemo(() =>
-    (nps || [])
-      .filter(n => now - new Date(n.createdAt).getTime() <= ms)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [nps, days, now]);
+    // Unificar por contato se possível, ou apenas somar
+    return [...dbLeads, ...eventLeads].sort((a, b) => {
+      const dateA = new Date((a as any).createdAt || (a as any).ts).getTime();
+      const dateB = new Date((b as any).createdAt || (b as any).ts).getTime();
+      return dateB - dateA;
+    });
+  }, [leads, normalizedEvents, ms, now]);
 
-  const npsScore = npsRecent.length
-    ? ((npsRecent.filter(n => n.score >= 9).length / npsRecent.length) * 100) - ((npsRecent.filter(n => n.score <= 6).length / npsRecent.length) * 100)
-    : 0;
+  const npsRecent = useMemo(() => {
+    const dbNps = (nps || []).filter(n => now - new Date(n.createdAt).getTime() <= ms);
+    const eventNps = normalizedEvents.filter(e => e.assetType === 'nps');
+
+    return [...dbNps, ...eventNps].sort((a, b) => {
+      const dateA = new Date((a as any).createdAt || (a as any).ts).getTime();
+      const dateB = new Date((b as any).createdAt || (b as any).ts).getTime();
+      return dateB - dateA;
+    });
+  }, [nps, normalizedEvents, ms, now]);
+
+  const npsScore = useMemo(() => {
+    if (npsRecent.length === 0) return 0;
+    const promoters = npsRecent.filter(n => (n.score || 0) >= 9).length;
+    const detractors = npsRecent.filter(n => (n.score || 0) <= 6).length;
+    return Math.round(((promoters - detractors) / npsRecent.length) * 100);
+  }, [npsRecent]);
+
+  const planConfig = PLANS_CONFIG[client?.plan || 'starter'];
+  const usagePercentage = Math.min((clientProfiles.length / (planConfig.maxProfiles || 1)) * 100, 100);
+
+  const kpis = useMemo(() => [
+    { label: 'Alcance', value: summary?.totalViews || 0, icon: Globe, color: 'blue' },
+    { label: 'Engajamento', value: summary?.totalClicks || 0, icon: MousePointer2, color: 'emerald' },
+    { label: 'Taxa CTR', value: `${(summary?.ctr || 0).toFixed(1)}% `, icon: BarChart3, color: 'amber' },
+    { label: 'PIX Sync', value: summary?.contentPerformance?.pixCopies || 0, icon: Zap, color: 'yellow' },
+    { label: 'Catálogo', value: (summary?.contentPerformance?.byCategory || []).find(c => c.category === 'catalog')?.count || 0, icon: ShoppingBag, color: 'orange' },
+    { label: 'Vídeos', value: (summary?.contentPerformance?.byCategory || []).find(c => c.category === 'video')?.count || 0, icon: Film, color: 'rose' },
+    { label: 'Leads (CRM)', value: hasCrmAccess ? (summary?.leadsCount || 0) : <Lock size={14} />, icon: MessageSquare, locked: !hasCrmAccess, color: 'purple' },
+    { label: 'NPS Global', value: hasNpsAccess ? npsScore : <Lock size={14} />, icon: Smile, locked: !hasNpsAccess, color: 'rose' }
+  ], [summary, npsScore, hasCrmAccess, hasNpsAccess]);
 
   // Se estiver carregando, mostrar loading state simples (MOVIDO PARA CÁ)
   if (loading) {
@@ -536,16 +567,6 @@ const ClientDashboard: React.FC = () => {
       </div>
     );
   }
-
-  const planConfig = PLANS_CONFIG[client?.plan || 'starter'];
-  const usagePercentage = Math.min((clientProfiles.length / (planConfig.maxProfiles || 1)) * 100, 100);
-  const kpis = [
-    { label: 'Alcance', value: summary?.totalViews || 0, icon: Globe, trend: '+12%', color: 'blue' },
-    { label: 'Engajamento', value: summary?.totalClicks || 0, icon: MousePointer2, trend: '+5%', color: 'emerald' },
-    { label: 'Taxa CTR', value: `${(summary?.ctr || 0).toFixed(1)}% `, icon: BarChart3, trend: '+2.1%', color: 'amber' },
-    { label: 'Leads (CRM)', value: hasCrmAccess ? leadsRecent.length : <Lock size={14} />, icon: MessageSquare, locked: !hasCrmAccess, color: 'purple' },
-    { label: 'NPS Global', value: hasNpsAccess ? Math.round(npsScore) : <Lock size={14} />, icon: Smile, locked: !hasNpsAccess, color: 'rose' }
-  ];
 
   return (
     <div className="min-h-screen bg-[#050505] text-white overflow-x-hidden pb-32">
@@ -586,24 +607,6 @@ const ClientDashboard: React.FC = () => {
                   {d}D
                 </button>
               ))}
-              <div className="flex items-center gap-2 px-3 border-l border-white/5">
-                <Target size={14} className="text-zinc-600" />
-                <select
-                  value={selectedSource}
-                  onChange={e => setSelectedSource(e.target.value)}
-                  className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest text-zinc-400 outline-none cursor-pointer hover:text-white transition-colors"
-                >
-                  <option value="all">Origens</option>
-                  <option value="instagram">Instagram</option>
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="facebook">Facebook</option>
-                  <option value="linkedin">LinkedIn</option>
-                  <option value="twitter">X / Twitter</option>
-                  <option value="direct">Direto</option>
-                  <option value="community">Comunidade</option>
-                  <option value="qr">QR Code</option>
-                </select>
-              </div>
               <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-transparent text-white text-[10px] outline-none w-24 px-2" />
             </div>
 
@@ -644,14 +647,24 @@ const ClientDashboard: React.FC = () => {
         ) : (
           <div className="space-y-8 animate-in fade-in duration-1000">
             {/* Overview Content */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-5">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-4">
               {kpis.map((kpi, i) => (
-                <div key={i} className={clsx("p-6 rounded-[2rem] border border-white/5 glass-neon-blue", kpi.locked && "opacity-50")}>
-                  <div className="flex justify-between items-center mb-6">
-                    <div className="p-3 rounded-2xl bg-white/5"><kpi.icon size={22} color={kpi.color === 'emerald' ? '#10b981' : kpi.color === 'rose' ? '#f43f5e' : '#00f2ff'} /></div>
+                <div key={i} className={clsx("p-5 rounded-[1.5rem] border border-white/5 glass-neon-blue transition-all hover:scale-[1.02]", kpi.locked && "opacity-50")}>
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="p-2.5 rounded-xl bg-white/5">
+                      <kpi.icon size={18} className={clsx(
+                        kpi.color === 'blue' && "text-neon-blue",
+                        kpi.color === 'emerald' && "text-emerald-400",
+                        kpi.color === 'amber' && "text-amber-400",
+                        kpi.color === 'yellow' && "text-yellow-400",
+                        kpi.color === 'orange' && "text-orange-400",
+                        kpi.color === 'rose' && "text-rose-400",
+                        kpi.color === 'purple' && "text-purple-400"
+                      )} />
+                    </div>
                   </div>
-                  <div className="text-[10px] font-black uppercase text-zinc-500 mb-1">{kpi.label}</div>
-                  <div className="text-3xl font-black text-white">{kpi.value}</div>
+                  <div className="text-[9px] font-black uppercase text-zinc-500 mb-0.5 tracking-tight">{kpi.label}</div>
+                  <div className="text-xl font-black text-white">{kpi.value}</div>
                 </div>
               ))}
             </div>
