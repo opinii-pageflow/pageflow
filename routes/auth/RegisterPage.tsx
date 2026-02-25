@@ -118,7 +118,6 @@ const RegisterPage: React.FC = () => {
         name: safeClientProfile?.name || companyName,
         slug: safeClientProfile?.slug || safeSlug(companyName),
         email,
-        password: '',
         plan: safeClientProfile?.plan || starterPlan.id,
         userType: safeClientProfile?.user_type || 'client',
         maxProfiles: typeof safeClientProfile?.max_profiles === 'number' ? safeClientProfile.max_profiles : starterPlan.maxProfiles,

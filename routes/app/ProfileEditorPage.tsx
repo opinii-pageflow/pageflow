@@ -18,7 +18,8 @@ import {
   ClipboardPaste,
   Zap,
   ChevronDown,
-  Users
+  Users,
+  Store
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { profilesApi } from '@/lib/api/profiles';
@@ -26,6 +27,7 @@ import { clientsApi } from '@/lib/api/clients';
 import { supabase } from '@/lib/supabase';
 import { copyStyleToClipboard, getStyleFromClipboard, StyleConfig } from '@/lib/storage';
 import { Profile, PlanType } from '../../types';
+import { formatPublicProfileUrl } from '@/lib/linkHelpers';
 import PhonePreview from '../../components/preview/PhonePreview';
 
 // Tabs Components
@@ -37,6 +39,7 @@ import FontsTab from '../../components/editor/FontsTab';
 import ShareTab from '../../components/editor/ShareTab';
 import ProTab from '../../components/editor/ProTab';
 import CommunityTab from '../../components/editor/CommunityTab';
+import ShowcaseTab from '../../components/editor/ShowcaseTab';
 import clsx from 'clsx';
 
 const ProfileEditorPage: React.FC = () => {
@@ -54,6 +57,7 @@ const ProfileEditorPage: React.FC = () => {
   const [justCopied, setJustCopied] = useState(false);
   const [client, setClient] = useState<any>(null);
   const [showScrollArrow, setShowScrollArrow] = useState(false);
+  const [showcasePreviewData, setShowcasePreviewData] = useState<any>(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -118,8 +122,8 @@ const ProfileEditorPage: React.FC = () => {
     try {
       console.log("[handleSave] Starting save sequence...");
 
-      // 1. Atualizar metadados do perfil
-      await profilesApi.update(profile.id, profile);
+      // 1. Atualizar metadados do perfil (e upload de imagens se necessário)
+      const updatedProfile = await profilesApi.update(profile.id, profile);
 
       // 2. Sincronizar módulos (Sequencial para evitar timeouts e deadlocks)
       console.log("[handleSave] Syncing modules...");
@@ -129,10 +133,17 @@ const ProfileEditorPage: React.FC = () => {
       await profilesApi.syncYoutubeVideos(profile.id, profile.youtubeVideos || [], profile.clientId);
       await profilesApi.syncSchedulingSlots(profile.id, profile.nativeSlots || [], profile.clientId);
 
-      // 3. Re-fichar perfil para sincronizar IDs locais com Banco
-      console.log("[handleSave] Refreshing local state...");
-      const updated = await profilesApi.getById(profile.id);
-      if (updated) setProfile(updated);
+      // 3. Atualizar estado local com o retorno do update (URLs permanentas)
+      if (updatedProfile) {
+        setProfile({
+          ...updatedProfile,
+          buttons: profile.buttons,
+          catalogItems: profile.catalogItems,
+          portfolioItems: profile.portfolioItems,
+          youtubeVideos: profile.youtubeVideos,
+          nativeSlots: profile.nativeSlots
+        });
+      }
 
       setHasUnsavedChanges(false);
       console.log("[handleSave] Save complete!");
@@ -198,6 +209,14 @@ const ProfileEditorPage: React.FC = () => {
     { id: 'pro', label: 'Pro', icon: <Zap size={14} /> },
   ];
 
+  const hasShowcaseAccess = client?.plan === 'business' || client?.plan === 'enterprise';
+
+  const finalTabs = [...editorTabs];
+  if (hasShowcaseAccess) {
+    const proIdx = finalTabs.findIndex(t => t.id === 'pro');
+    finalTabs.splice(proIdx, 0, { id: 'showcase', label: 'Vitrine', icon: <Store size={14} /> });
+  }
+
   return (
     <div className="h-screen bg-black text-white flex flex-col overflow-hidden">
       {/* Editor Header */}
@@ -214,8 +233,8 @@ const ProfileEditorPage: React.FC = () => {
 
           <div className="min-w-0">
             <h1 className="font-black text-sm md:text-base tracking-tight truncate">{profile.displayName}</h1>
-            <a href={`#/u/${profile.slug}`} target="_blank" className="text-[10px] text-zinc-500 hover:text-blue-400 flex items-center gap-1 transition-colors font-mono">
-              pageflow.me/u/{profile.slug}
+            <a href={formatPublicProfileUrl(profile.slug)} target="_blank" className="text-[10px] text-zinc-500 hover:text-blue-400 flex items-center gap-1 transition-colors font-mono">
+              {formatPublicProfileUrl(profile.slug).replace(/^https?:\/\//, '')}
               <ExternalLink size={10} />
             </a>
           </div>
@@ -271,7 +290,7 @@ const ProfileEditorPage: React.FC = () => {
             </button>
 
             <a
-              href={`#/u/${profile.slug}`}
+              href={formatPublicProfileUrl(profile.slug)}
               target="_blank"
               rel="noopener noreferrer"
               className="hidden sm:flex items-center gap-2 px-5 py-3 rounded-2xl bg-zinc-900 border border-white/5 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-all active:scale-95 shadow-xl font-black text-[10px] uppercase tracking-widest"
@@ -305,7 +324,7 @@ const ProfileEditorPage: React.FC = () => {
           {/* Aba de Menus Ajustada para visibilidade total */}
           <div className="bg-black/40 backdrop-blur-xl sticky top-0 z-20 border-b border-white/5 p-2">
             <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-1.5">
-              {editorTabs.map((tab) => (
+              {finalTabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
@@ -336,6 +355,14 @@ const ProfileEditorPage: React.FC = () => {
               {activeTab === 'share' && <ShareTab profile={profile} />}
               {activeTab === 'community' && <CommunityTab profile={profile} clientPlan={client?.plan} onUpdate={handleUpdateProfile} />}
               {activeTab === 'pro' && <ProTab profile={profile} client={client} clientPlan={client?.plan} onUpdate={handleUpdateProfile} />}
+              {activeTab === 'showcase' && (
+                <ShowcaseTab
+                  profile={profile}
+                  clientPlan={client?.plan}
+                  onUpdate={handleUpdateProfile}
+                  onSync={setShowcasePreviewData}
+                />
+              )}
             </div>
 
             {showScrollArrow && (
@@ -355,7 +382,7 @@ const ProfileEditorPage: React.FC = () => {
           showMobilePreview ? "translate-x-0 z-50" : "translate-x-full lg:translate-x-0 opacity-0 lg:opacity-100"
         )}>
           <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-[180px] pointer-events-none opacity-40"></div>
-          <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-purple-600/10 rounded-full blur-[180px] pointer-events-none opacity-40"></div>
+          <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[180px] pointer-events-none opacity-40"></div>
 
           <button
             onClick={() => setShowMobilePreview(false)}
@@ -373,7 +400,13 @@ const ProfileEditorPage: React.FC = () => {
             </div>
 
             <div className="w-full h-full flex items-center justify-center overflow-hidden">
-              <PhonePreview profile={profile} client={client} clientPlan={client?.plan} />
+              <PhonePreview
+                profile={profile}
+                showcase={showcasePreviewData}
+                client={client}
+                clientPlan={client?.plan}
+                viewMode={activeTab === 'showcase' ? 'vitrine' : 'profile'}
+              />
             </div>
           </div>
         </div>

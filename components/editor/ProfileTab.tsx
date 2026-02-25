@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { Camera, Image as ImageIcon, Sparkles, Upload, Link as LinkIcon, X, User, Building2, Lock, Zap } from 'lucide-react';
 import { Profile, PlanType } from '../../types';
+import { formatPublicProfileUrl } from '@/lib/linkHelpers';
 import clsx from 'clsx';
 
 interface Props {
@@ -229,7 +230,7 @@ const ProfileTab: React.FC<Props> = ({ profile, clientPlan, onUpdate }) => {
                 : "border-white/5 opacity-50 bg-zinc-950/50 cursor-not-allowed"
             )}>
               <div className="bg-zinc-900/80 px-5 flex items-center text-zinc-500 text-[11px] font-black uppercase tracking-widest border-r border-white/5 italic">
-                pageflow.me/u/
+                {formatPublicProfileUrl('').replace(/\/$/, '')}
               </div>
               <input
                 type="text"

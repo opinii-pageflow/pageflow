@@ -5,7 +5,7 @@ export const npsApi = {
     // Listar entradas de NPS de um cliente
     listByClient: async (clientId: string): Promise<NpsEntry[]> => {
         const { data, error } = await (supabase.from('nps_entries') as any)
-            .select('*')
+            .select('id, client_id, profile_id, score, comment, created_at, source, utm_source, utm_medium, utm_campaign, utm_content, utm_term')
             .eq('client_id', clientId)
             .order('created_at', { ascending: false });
 

@@ -3,7 +3,34 @@ import { Profile, PlanType } from '@/types';
 import PhoneFrame from '../landing/PhoneFrame';
 import PublicProfileRenderer from './PublicProfileRenderer';
 import clsx from 'clsx';
-import { Zap, MapPin, Tag, Sparkles } from 'lucide-react';
+import { Zap, MapPin, Tag, Sparkles, ShoppingBag } from 'lucide-react';
+
+const hexToRgb = (hex: string) => {
+    if (!hex || typeof hex !== 'string') return null;
+    const h = hex.replace('#', '').trim();
+    if (![3, 6].includes(h.length)) return null;
+    const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    const n = parseInt(full, 16);
+    if (Number.isNaN(n)) return null;
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+};
+
+const relativeLuminance = (hex: string) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return null;
+    const srgb = [rgb.r, rgb.g, rgb.b].map(v => {
+        const c = v / 255;
+        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
+};
+
+const pickReadableOn = (hexBg: string, light = '#F8FAFC', dark = '#0B1220') => {
+    if (!hexBg || typeof hexBg !== 'string') return light;
+    const lum = relativeLuminance(hexBg);
+    if (lum === null) return light;
+    return lum > 0.62 ? dark : light;
+};
 
 interface CommunityCardProps {
     profile: Profile;
@@ -130,6 +157,34 @@ const CommunityCard: React.FC<CommunityCardProps> = ({ profile, onClick, onPromo
                         {profile.communityCity}{profile.communityState ? `, ${profile.communityState}` : ''}
                     </span>
                 </div>
+
+                {profile.hasShowcase && (
+                    <div className="mt-4 flex justify-center">
+                        <div
+                            className="px-4 py-2 text-[9px] font-black uppercase tracking-widest flex items-center gap-2 transition-all shadow-lg"
+                            style={{
+                                backgroundColor: profile.theme.buttonStyle === 'solid'
+                                    ? (profile.theme.primary || '#3b82f6')
+                                    : profile.theme.buttonStyle === 'outline'
+                                        ? 'transparent'
+                                        : 'rgba(255,255,255,0.08)',
+                                color: profile.theme.buttonStyle === 'solid'
+                                    ? pickReadableOn(profile.theme.primary || '#3b82f6')
+                                    : (profile.theme.text || '#ffffff'),
+                                borderRadius: profile.theme.radius || '12px',
+                                border: profile.theme.buttonStyle === 'outline'
+                                    ? `1.5px solid ${profile.theme.primary || '#3b82f6'}`
+                                    : profile.theme.buttonStyle === 'glass'
+                                        ? `1px solid ${profile.theme.border || 'rgba(255,255,255,0.1)'}`
+                                        : `1px solid rgba(255,255,255,0.12)`,
+                                boxShadow: profile.theme.buttonStyle === 'solid' ? '0 4px 12px rgba(0,0,0,0.2)' : 'none'
+                            }}
+                        >
+                            <ShoppingBag size={12} className="opacity-80" />
+                            Ver Vitrine
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

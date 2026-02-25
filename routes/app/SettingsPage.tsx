@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getCurrentUser } from '@/lib/storage';
 import TopBar from '@/components/common/TopBar';
+import { formatPublicProfileUrl } from '@/lib/linkHelpers';
 import { Shield, Zap, Trash2, Mail, Copy, Check, Code, FileText, LayoutTemplate, Settings, ChevronRight, User, Upload, X as XIcon, Lock } from 'lucide-react';
 import { PLANS, PLAN_TYPES } from '@/lib/plans';
 import { PLANS_CONFIG } from '@/lib/plansConfig';
@@ -131,7 +132,7 @@ const SettingsPage: React.FC = () => {
 
     const themeColor = config.primaryColor || '#3B82F6';
     const avatar = profile.avatarUrl || 'https://via.placeholder.com/120';
-    const profileUrl = `${window.location.origin}/#/u/${profile.slug}`;
+    const profileUrl = formatPublicProfileUrl(profile.slug);
     const displayName = profile.displayName || 'Seu Nome';
     const headline = profile.headline || 'Cargo / Título';
     const avatarSize = config.avatarSize || 80;
@@ -257,7 +258,7 @@ const SettingsPage: React.FC = () => {
                 </div>` : ''}
                 
                 <div style="margin-top: 10px;">
-                  <a href="${profileUrl}" style="display: inline-block; font-size: 11px; color: #999999; text-decoration: none;">pageflow.me/u/${profile.slug}</a>
+                  <a href="${profileUrl}" style="display: inline-block; font-size: 11px; color: #999999; text-decoration: none;">${profileUrl.replace(/^https?:\/\//, '')}</a>
                 </div>
               </td>
             </tr>
@@ -280,7 +281,7 @@ const SettingsPage: React.FC = () => {
 
   const handleCopyText = async () => {
     if (!selectedProfile) return;
-    const text = `${selectedProfile.displayName}\n${selectedProfile.headline}\n\nAcesse meu perfil: ${window.location.origin}/#/u/${selectedProfile.slug}`;
+    const text = `${selectedProfile.displayName}\n${selectedProfile.headline}\n\nAcesse meu perfil: ${formatPublicProfileUrl(selectedProfile.slug)}`;
     try {
       await navigator.clipboard.writeText(text);
       setCopyFeedback('text');

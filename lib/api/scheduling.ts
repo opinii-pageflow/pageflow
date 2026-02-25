@@ -24,7 +24,7 @@ export const schedulingApi = {
     // Buscar slots por perfil
     listByProfile: async (profileId: string): Promise<SchedulingSlot[]> => {
         const { data, error } = await (supabase.from('scheduling_slots') as any)
-            .select('*')
+            .select('id, day_of_week, start_time, end_time, is_active, status, booked_by, booked_at, client_id, profile_id')
             .eq('profile_id', profileId)
             .order('day_of_week', { ascending: true })
             .order('start_time', { ascending: true });
@@ -36,7 +36,7 @@ export const schedulingApi = {
     // Buscar slots globais por cliente
     listByClient: async (clientId: string): Promise<SchedulingSlot[]> => {
         const { data, error } = await (supabase.from('scheduling_slots') as any)
-            .select('*')
+            .select('id, day_of_week, start_time, end_time, is_active, status, booked_by, booked_at, client_id, profile_id')
             .eq('client_id', clientId)
             .is('profile_id', null)
             .order('day_of_week', { ascending: true })
