@@ -50,7 +50,12 @@ import {
     Send,
     AtSign,
     Link,
-    Tv
+    Tv,
+    User,
+    PanelLeft,
+    Crown,
+    AlignLeft,
+    Diamond
 } from 'lucide-react';
 import clsx from 'clsx';
 import ColorPickerButton from '../common/ColorPickerButton';
@@ -91,9 +96,6 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
     const navigate = useNavigate();
     const [showcase, setShowcase] = useState<(Showcase & { items: (ShowcaseItem & { images: ShowcaseImage[], options: ShowcaseOption[], testimonials: ShowcaseTestimonial[] })[] }) | null>(null);
 
-    useEffect(() => {
-        if (onSync) onSync(showcase);
-    }, [showcase, onSync]);
 
     const [loading, setLoading] = useState(true);
     const [editingItem, setEditingItem] = useState<string | null>(null);
@@ -324,6 +326,7 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                     buttonSecondaryColor: nextShowcase.buttonSecondaryColor,
                     buttonGradientEnabled: nextShowcase.buttonGradientEnabled,
                     itemTemplate: nextShowcase.itemTemplate,
+                    headerTemplate: nextShowcase.headerTemplate,
                     headerButtonIds: nextShowcase.headerButtonIds,
                     communityClickDestination: nextShowcase.communityClickDestination
                 });
@@ -575,6 +578,7 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                                 )}
                             </div>
 
+                            {/* 
                             <div className="pt-6 border-t border-white/5">
                                 <ColorPickerButton
                                     label="Cor da Descrição"
@@ -585,38 +589,102 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                                     Define a cor da fonte das descrições.
                                 </p>
                             </div>
+                            */}
                         </div>
                     </div>
 
                     <div className="space-y-6">
                         <div className="flex items-center gap-2 mb-2">
                             <LayoutIcon size={14} className="text-blue-500" />
-                            <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Template de Itens</h4>
+                            <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Conteúdo & Layout do Cabeçalho</h4>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            {[
-                                { id: 'modern', label: 'Grade Moderna', icon: LayoutIcon },
-                                { id: 'list', label: 'Lista Focada', icon: GripVertical },
-                                { id: '3d', label: 'Estilo 3D', icon: Box },
-                                { id: 'glassy', label: 'Efeito Vidro', icon: Sparkles },
-                                { id: 'neon', label: 'Estilo Neon', icon: Zap },
-                                { id: 'transparent', label: 'Minimalista', icon: Square }
-                            ].map((tpl) => (
-                                <button
-                                    key={tpl.id}
-                                    onClick={() => handleSaveGlobalSettings({ itemTemplate: tpl.id })}
-                                    className={clsx(
-                                        "p-6 rounded-3xl border flex flex-col items-center gap-4 transition-all duration-300",
-                                        showcase?.itemTemplate === tpl.id
-                                            ? "bg-blue-600/10 border-blue-500 text-white scale-[1.02] shadow-2xl"
-                                            : "bg-black/20 border-white/5 text-zinc-500 hover:border-white/10"
-                                    )}
-                                >
-                                    <tpl.icon size={24} className={showcase?.itemTemplate === tpl.id ? "text-blue-400" : "text-zinc-700"} />
-                                    <span className="text-[10px] font-black uppercase tracking-widest text-center">{tpl.label}</span>
-                                </button>
-                            ))}
+                        <div className="space-y-4 mb-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">Nome de Exibição</label>
+                                    <input
+                                        type="text"
+                                        value={profile.displayName}
+                                        onChange={(e) => onUpdate({ displayName: e.target.value })}
+                                        placeholder="Seu Nome"
+                                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm font-bold focus:border-blue-500 outline-none transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">Frase de Efeito (Headline)</label>
+                                    <input
+                                        type="text"
+                                        value={profile.headline || ''}
+                                        onChange={(e) => onUpdate({ headline: e.target.value })}
+                                        placeholder="Ex: Especialista em Vendas"
+                                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-4 py-3 text-sm font-bold focus:border-blue-500 outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h5 className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">Estilo do Cabeçalho</h5>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                {[
+                                    { id: 'standard', label: 'Padrão', icon: User },
+                                    { id: 'minimal', label: 'Minimal', icon: LayoutIcon },
+                                    { id: 'premium-split', label: 'Split Premium', icon: PanelLeft },
+                                    { id: 'glass-hero', label: 'Glass Hero', icon: Sparkles },
+                                    { id: 'hero-centered', label: 'Impacto Central', icon: Crown },
+                                    { id: 'side-profile', label: 'Perfil Lateral', icon: AlignLeft },
+                                    { id: 'modern-glass', label: 'Glass Moderno', icon: Diamond },
+                                    { id: 'influencer-banner', label: 'Influencer', icon: ImageIcon }
+                                ].map((tpl) => (
+                                    <button
+                                        key={tpl.id}
+                                        onClick={() => handleSaveGlobalSettings({ headerTemplate: tpl.id as any })}
+                                        className={clsx(
+                                            "p-6 rounded-3xl border flex flex-col items-center gap-4 transition-all duration-300",
+                                            (showcase?.headerTemplate || 'standard') === tpl.id
+                                                ? "bg-blue-600/10 border-blue-500 text-white scale-[1.02] shadow-2xl"
+                                                : "bg-black/20 border-white/5 text-zinc-500 hover:border-white/10"
+                                        )}
+                                    >
+                                        <tpl.icon size={24} className={(showcase?.headerTemplate || 'standard') === tpl.id ? "text-blue-400" : "text-zinc-700"} />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-center">{tpl.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-2 mb-2">
+                                <LayoutIcon size={14} className="text-blue-500" />
+                                <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Template de Itens</h4>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                {[
+                                    { id: 'modern', label: 'Grade Moderna', icon: LayoutIcon },
+                                    { id: 'list', label: 'Lista Focada', icon: GripVertical },
+                                    { id: '3d', label: 'Estilo 3D', icon: Box },
+                                    { id: 'glassy', label: 'Efeito Vidro', icon: Sparkles },
+                                    { id: 'neon', label: 'Estilo Neon', icon: Zap },
+                                    { id: 'transparent', label: 'Minimalista', icon: Square }
+                                ].map((tpl) => (
+                                    <button
+                                        key={tpl.id}
+                                        onClick={() => handleSaveGlobalSettings({ itemTemplate: tpl.id })}
+                                        className={clsx(
+                                            "p-6 rounded-3xl border flex flex-col items-center gap-4 transition-all duration-300",
+                                            showcase?.itemTemplate === tpl.id
+                                                ? "bg-blue-600/10 border-blue-500 text-white scale-[1.02] shadow-2xl"
+                                                : "bg-black/20 border-white/5 text-zinc-500 hover:border-white/10"
+                                        )}
+                                    >
+                                        <tpl.icon size={24} className={showcase?.itemTemplate === tpl.id ? "text-blue-400" : "text-zinc-700"} />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-center">{tpl.label}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>

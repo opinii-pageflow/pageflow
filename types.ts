@@ -59,6 +59,7 @@ export interface Showcase {
   buttonGradientEnabled?: boolean;
   itemTemplate?: string;
   descriptionColor?: string;
+  headerTemplate?: 'standard' | 'minimal' | 'premium-split' | 'glass-hero';
   headerButtonIds?: string[];
   communityClickDestination?: 'profile' | 'showcase';
   items?: ShowcaseItem[];
@@ -127,6 +128,7 @@ export interface SchedulingSlot {
   bookedAt?: string; // ISO Date
   clientId?: string;
   profileId?: string;
+  leadId?: string; // ID do Lead estruturado vinculado
 }
 
 export type LeadStatus = 'novo' | 'contatado' | 'negociando' | 'fechado' | 'perdido' | 'respondido' | 'arquivado';

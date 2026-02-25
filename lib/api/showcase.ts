@@ -15,6 +15,8 @@ function mapShowcase(s: any): Showcase {
         buttonSecondaryColor: s.button_secondary_color,
         buttonGradientEnabled: s.button_gradient_enabled,
         itemTemplate: s.item_template,
+        headerTemplate: s.header_template || 'standard',
+        descriptionColor: s.description_color,
         headerButtonIds: s.header_button_ids || [],
         communityClickDestination: s.community_click_destination || 'profile',
         items: (s.items || []).map(mapShowcaseItem)
@@ -295,6 +297,8 @@ export const showcaseApi = {
         if (updates.buttonSecondaryColor !== undefined) dbUpdates.button_secondary_color = updates.buttonSecondaryColor;
         if (updates.buttonGradientEnabled !== undefined) dbUpdates.button_gradient_enabled = updates.buttonGradientEnabled;
         if (updates.itemTemplate !== undefined) dbUpdates.item_template = updates.itemTemplate;
+        if (updates.headerTemplate !== undefined) dbUpdates.header_template = updates.headerTemplate;
+        if (updates.descriptionColor !== undefined) dbUpdates.description_color = updates.descriptionColor;
         if (updates.headerButtonIds !== undefined) dbUpdates.header_button_ids = updates.headerButtonIds;
         if (updates.communityClickDestination !== undefined) dbUpdates.community_click_destination = updates.communityClickDestination;
 

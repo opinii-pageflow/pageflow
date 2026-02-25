@@ -1452,7 +1452,7 @@ const PublicProfileRenderer = React.memo<Props>(({ profile, isPreview, clientPla
               {showBookingModal && selectedSlotId && (
                 <div className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                   <div className="w-full max-w-sm border rounded-3xl p-6 space-y-5 shadow-2xl animate-in slide-in-from-bottom-5 duration-300"
-                    style={{ background: theme.cardBg, borderColor: theme.border }}
+                    style={{ background: '#1a1a1a', borderColor: theme.border }}
                     onClick={e => e.stopPropagation()}>
                     <div className="flex items-center justify-between">
                       <div>
@@ -1481,7 +1481,7 @@ const PublicProfileRenderer = React.memo<Props>(({ profile, isPreview, clientPla
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Seu Nome <span className="text-zinc-700 font-normal normal-case">(Opcional)</span></label>
+                        <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: theme.muted || '#a1a1aa' }}>Seu Nome <span className="font-normal normal-case" style={{ color: theme.muted || '#71717a' }}>(Opcional)</span></label>
                         <input
                           value={bookingName}
                           onChange={e => setBookingName(e.target.value)}
@@ -1491,7 +1491,7 @@ const PublicProfileRenderer = React.memo<Props>(({ profile, isPreview, clientPla
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">WhatsApp <span className="text-zinc-700 font-normal normal-case">(Opcional para confirmação)</span></label>
+                        <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: theme.muted || '#a1a1aa' }}>WhatsApp <span className="font-normal normal-case" style={{ color: theme.muted || '#71717a' }}>(Opcional para confirmação)</span></label>
                         <input
                           value={bookingContact}
                           onChange={e => setBookingContact(e.target.value)}
@@ -1526,7 +1526,7 @@ const PublicProfileRenderer = React.memo<Props>(({ profile, isPreview, clientPla
 
                         try {
                           // 1. Create Lead
-                          await leadsApi.create({
+                          const newLead = await leadsApi.create({
                             clientId: profile.clientId,
                             profileId: profile.id,
                             name: bookingName || 'Cliente Via WhatsApp',
@@ -1540,8 +1540,9 @@ const PublicProfileRenderer = React.memo<Props>(({ profile, isPreview, clientPla
                           // 2. Update Slot
                           await schedulingApi.updateSlotStatus(selectedSlotId, 'pending', {
                             bookedBy: bookingDetails,
-                            bookedAt: ts
-                          });
+                            bookedAt: ts,
+                            leadId: newLead?.id // Vínculo estruturado
+                          } as any);
 
                           setBookingSuccess(true);
                           setShowBookingModal(false);

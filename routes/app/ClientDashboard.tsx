@@ -39,7 +39,8 @@ import {
   Film,
   ShoppingBag,
   Image as ImageIcon,
-  X
+  X,
+  ExternalLink
 } from 'lucide-react';
 import { getProfileSummary, getFilteredEvents } from '@/lib/analytics';
 import { PLANS } from '@/lib/plans';
@@ -207,11 +208,11 @@ const AgendaTab: React.FC<{ client: any, profiles: any[], onUpdate: () => void }
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-6">
           {DAYS.map((day, idx) => {
             const daySlots = slots.filter(s => s.dayOfWeek === idx).sort((a, b) => a.startTime.localeCompare(b.startTime));
             return (
-              <div key={idx} className="space-y-4 group/day">
+              <div key={idx} className="space-y-4 group/day w-full">
                 <div className="flex items-center justify-between border-b border-white/10 pb-4">
                   <div className="flex flex-col">
                     <span className="text-xs font-black text-white italic tracking-widest uppercase">{day}</span>
@@ -236,12 +237,14 @@ const AgendaTab: React.FC<{ client: any, profiles: any[], onUpdate: () => void }
                   {daySlots.map(slot => (
                     <div
                       key={slot.id}
+                      onClick={() => (slot.status === 'booked' || slot.status === 'pending') && setViewSlot(slot)}
                       className={clsx(
                         "p-5 rounded-[1.5rem] border transition-all relative group overflow-hidden",
+                        (slot.status === 'booked' || slot.status === 'pending') && "cursor-pointer",
                         slot.status === 'booked'
-                          ? "bg-purple-500/10 border-purple-500/30"
+                          ? "bg-purple-500/10 border-purple-500/30 hover:bg-purple-500/20"
                           : slot.status === 'pending'
-                            ? "bg-amber-500/10 border-amber-500/30"
+                            ? "bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20"
                             : "bg-white/5 border-white/10 hover:border-neon-blue/40 hover:bg-white/[0.08]"
                       )}
                     >
@@ -273,12 +276,13 @@ const AgendaTab: React.FC<{ client: any, profiles: any[], onUpdate: () => void }
 
                       {slot.status === 'booked' ? (
                         <div className="mt-2 pt-2 border-t border-purple-500/20 relative z-10 flex flex-col gap-2">
-                          <div className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-2 rounded-lg transition-colors" onClick={() => setViewSlot(slot)} title="Ver dados completos">
+                          <div className="flex items-center gap-2">
                             <div className="w-1 h-1 rounded-full bg-purple-500" />
-                            <span className="text-[9px] font-black text-purple-300 truncate uppercase hover:underline">{slot.bookedBy?.split(' (')[0]}</span>
+                            <span className="text-[9px] font-black text-purple-300 truncate uppercase">{slot.bookedBy?.split(' (')[0]}</span>
                           </div>
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               if (window.confirm('Liberar este horário? O agendamento será cancelado no sistema.')) {
                                 persistSlots(slots.map(s => s.id === slot.id ? { ...s, status: 'available', bookedBy: undefined } : s));
                               }
@@ -294,9 +298,10 @@ const AgendaTab: React.FC<{ client: any, profiles: any[], onUpdate: () => void }
                             <div className="w-1 h-1 rounded-full bg-amber-500" />
                             <span className="text-[9px] font-black text-amber-300 truncate uppercase">{slot.bookedBy?.split(' (')[0]}</span>
                           </div>
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-2 gap-2" onClick={e => e.stopPropagation()}>
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 persistSlots(slots.map(s => s.id === slot.id ? { ...s, status: 'booked' as const } : s));
                               }}
                               className="bg-amber-500 text-black text-[8px] font-black uppercase tracking-widest py-1.5 rounded-lg hover:bg-white transition-all outline-none"
@@ -304,7 +309,8 @@ const AgendaTab: React.FC<{ client: any, profiles: any[], onUpdate: () => void }
                               Confirmar
                             </button>
                             <button
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 if (window.confirm('Recusar este agendamento?')) {
                                   persistSlots(slots.map(s => s.id === slot.id ? { ...s, status: 'available', bookedBy: undefined } : s));
                                 }
@@ -348,69 +354,116 @@ const AgendaTab: React.FC<{ client: any, profiles: any[], onUpdate: () => void }
         </div>
       </div>
 
-      {/* Client Info Modal */}
-      {viewSlot && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setViewSlot(null)}>
-          <div
-            className="bg-zinc-900 border border-white/10 p-6 rounded-3xl max-w-sm w-full shadow-2xl space-y-4 relative animate-in zoom-in-95 duration-200"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-start">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-purple-500/10 text-purple-400 rounded-xl">
-                  <User size={20} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Cliente</h3>
-                  <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
-                    {DAYS[viewSlot.dayOfWeek]} • {viewSlot.startTime} - {viewSlot.endTime}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setViewSlot(null)}
-                className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
+      {/* Client Detail structural Modal */}
+      <LeadDetailModal
+        slot={viewSlot}
+        onClose={() => setViewSlot(null)}
+        onCancel={() => {
+          if (window.confirm('Liberar este horário? O agendamento será cancelado no sistema.')) {
+            persistSlots(slots.map(s => s.id === viewSlot?.id ? { ...s, status: 'available', bookedBy: undefined, leadId: undefined } : s));
+            setViewSlot(null);
+          }
+        }}
+      />
+    </div>
+  );
+};
 
-            <div className="p-4 bg-black/40 rounded-2xl border border-white/5 space-y-1 max-h-[60vh] overflow-y-auto custom-scrollbar">
-              {viewSlot.bookedBy ? (
-                <div className="space-y-3 text-xs text-zinc-300 font-medium">
-                  {viewSlot.bookedBy.split(/(?=[A-Z][a-z]+:)/).map((line, i) => (
-                    <div key={i} className="break-words">{line.trim()}</div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-zinc-500 italic">Sem dados registrados.</p>
-              )}
-            </div>
+// --- NEW STRUCTURAL MODAL FOR LEADS ---
+const LeadDetailModal: React.FC<{ slot: SchedulingSlot | null, onClose: () => void, onCancel: () => void }> = ({ slot, onClose, onCancel }) => {
+  if (!slot) return null;
 
-            <div className="flex flex-col gap-3 pt-4">
-              <button
-                onClick={() => setViewSlot(null)}
-                className="w-full py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-colors"
-              >
-                Entendido
-              </button>
-              {viewSlot.status !== 'available' && (
-                <button
-                  onClick={() => {
-                    if (window.confirm('Liberar este horário? O agendamento será cancelado no sistema.')) {
-                      persistSlots(slots.map(s => s.id === viewSlot.id ? { ...s, status: 'available', bookedBy: undefined } : s));
-                      setViewSlot(null);
-                    }
-                  }}
-                  className="w-full py-4 text-rose-500 text-[9px] font-black uppercase tracking-widest hover:underline"
-                >
-                  Cancelar e Liberar Horário
-                </button>
-              )}
+  const bookedParts = slot.bookedBy?.split(' (');
+  const name = bookedParts?.[0] || 'Cliente';
+  const contact = bookedParts?.[1]?.replace(')', '') || '';
+
+  const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={onClose}>
+      <div
+        className="bg-zinc-900 border border-white/10 p-8 rounded-[2.5rem] max-w-sm w-full shadow-2xl space-y-6 relative animate-in zoom-in-95 duration-200"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-4">
+            <div className="p-4 bg-purple-500/10 text-purple-400 rounded-2xl border border-purple-500/20">
+              <User size={24} />
+            </div>
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-widest text-white">Detalhes do Agendamento</h3>
+              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">
+                {DAYS[slot.dayOfWeek]} • {slot.startTime} - {slot.endTime}
+              </p>
             </div>
           </div>
+          <button
+            onClick={onClose}
+            className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-zinc-400 hover:text-white transition-colors"
+          >
+            <X size={18} />
+          </button>
         </div>
-      )}
+
+        <div className="space-y-4">
+          <div className="p-5 bg-black/40 rounded-3xl border border-white/5 space-y-4">
+            <div>
+              <div className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Solicitante</div>
+              <div className="text-sm font-black text-white">{name}</div>
+            </div>
+
+            {contact && (
+              <div>
+                <div className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Canal de Contato</div>
+                <div className="text-sm font-bold text-zinc-300">{contact}</div>
+              </div>
+            )}
+
+            {slot.bookedAt && (
+              <div>
+                <div className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Data da Solicitação</div>
+                <div className="text-[11px] font-medium text-zinc-400">
+                  {new Date(slot.bookedAt).toLocaleDateString('pt-BR')} às {new Date(slot.bookedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            )}
+
+            {slot.leadId && (
+              <div className="pt-2">
+                <span className="px-2 py-1 bg-emerald-500/10 text-emerald-400 text-[8px] font-black uppercase tracking-widest rounded-lg border border-emerald-500/20">
+                  Vínculo com Lead Estruturado
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {contact && (
+            <a
+              href={`https://wa.me/${contact.replace(/\D/g, '')}`}
+              target="_blank"
+              className="w-full py-4 bg-emerald-500 text-black rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-emerald-400 transition-all shadow-[0_10px_30px_rgba(16,185,129,0.2)]"
+            >
+              <ExternalLink size={14} /> Chamar no WhatsApp
+            </a>
+          )}
+
+          <button
+            onClick={onClose}
+            className="w-full py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-zinc-200 transition-colors"
+          >
+            Fechar
+          </button>
+
+          <button
+            onClick={onCancel}
+            className="w-full py-3 text-rose-500 text-[9px] font-black uppercase tracking-widest hover:underline opacity-60 hover:opacity-100"
+          >
+            Cancelar e Liberar Horário
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

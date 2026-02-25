@@ -225,6 +225,15 @@ const ProfileEditorPage: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <button onClick={() => setShowMobilePreview(!showMobilePreview)} className={clsx("lg:hidden p-3 rounded-2xl transition-all active:scale-90", showMobilePreview ? "bg-blue-600 text-white" : "bg-white/10 text-zinc-400")}><Smartphone size={22} /></button>
+            <a
+              href={formatPublicProfileUrl(profile.slug)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:flex bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest items-center justify-center gap-2 transition-all active:scale-95 border border-white/5"
+            >
+              <ExternalLink size={16} />
+              <span>Ver Perfil</span>
+            </a>
             <button
               onClick={handleSave}
               disabled={!hasUnsavedChanges || isSaving}

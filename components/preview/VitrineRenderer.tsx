@@ -180,52 +180,249 @@ const VitrineRenderer: React.FC<Props> = ({ profile, showcase, isPreview }) => {
             style={{ fontFamily: bodyFontStack }}
         >
             {/* Cabeçalho do Perfil na Vitrine - Sempre presente */}
-            <header className="max-w-7xl mx-auto px-4 pt-12 pb-8 flex flex-col items-center text-center">
-                <div className="relative mb-6">
-                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2.5rem] overflow-hidden ring-4 ring-white/5 shadow-2xl">
-                        <img
-                            src={profile.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop'}
-                            alt={profile.displayName}
-                            className="w-full h-full object-cover"
-                        />
+            {/* Cabeçalho Dinâmico da Vitrine */}
+            {(() => {
+                const headerTemplate = showcase.headerTemplate || 'standard';
+
+                // Renderizador de Botões Sociais reutilizável
+                const renderSocialButtons = (isCentered = true) => (
+                    <div className={clsx("flex flex-wrap gap-3", isCentered ? "justify-center" : "justify-start")}>
+                        {showcase.headerButtonIds && showcase.headerButtonIds.length > 0 ? (
+                            showcase.headerButtonIds.map(btnId => {
+                                const btn = profile.buttons?.find(b => b.id === btnId);
+                                if (!btn || !btn.enabled) return null;
+                                const Icon = getIconForType(btn.type);
+                                const brandColor = getIconColor(btn.type);
+                                return (
+                                    <a
+                                        key={btn.id}
+                                        href={formatLink(btn.type, btn.value)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ color: brandColor }}
+                                        className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white/10 hover:border-white/10 transition-all active:scale-90 shadow-lg shadow-black/20"
+                                    >
+                                        <Icon size={18} />
+                                    </a>
+                                );
+                            })
+                        ) : (
+                            profile.buttons?.filter(b => b.enabled && b.visibility === 'public').slice(0, 5).map((btn) => {
+                                const Icon = getIconForType(btn.type);
+                                const brandColor = getIconColor(btn.type);
+                                return (
+                                    <a
+                                        key={btn.id}
+                                        href={formatLink(btn.type, btn.value)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ color: brandColor }}
+                                        className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white/10 hover:border-white/10 transition-all active:scale-90 shadow-lg shadow-black/20"
+                                    >
+                                        <Icon size={18} />
+                                    </a>
+                                );
+                            })
+                        )}
                     </div>
-                </div>
+                );
 
-                <h1 className="text-2xl md:text-4xl font-black tracking-tight mb-2 italic uppercase" style={{ fontFamily: headingFontStack }}>
-                    {profile.displayName}
-                </h1>
-                <p className="text-blue-500 text-xs md:text-sm font-black uppercase tracking-[0.3em] mb-4">
-                    {profile.headline || 'Profissional'}
-                </p>
+                if (headerTemplate === 'minimal') {
+                    return (
+                        <header className="max-w-7xl mx-auto px-6 py-10 md:py-16 flex flex-col md:flex-row md:items-center justify-between gap-8 border-b border-white/5">
+                            <div className="flex items-center gap-6">
+                                <div className="w-20 h-20 rounded-3xl overflow-hidden ring-2 ring-white/5">
+                                    <img src={profile.avatarUrl} alt={profile.displayName} className="w-full h-full object-cover" />
+                                </div>
+                                <div className="text-left">
+                                    <h1 className="text-xl md:text-2xl font-black uppercase italic" style={{ fontFamily: headingFontStack }}>{profile.displayName}</h1>
+                                    <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: showcase.buttonColor || '#3b82f6' }}>{profile.headline || 'Catálogo Oficial'}</p>
+                                </div>
+                            </div>
+                            {renderSocialButtons(false)}
+                        </header>
+                    );
+                }
 
-                {profile.bioShort && (
-                    <p className="max-w-lg text-zinc-500 text-xs md:text-sm leading-relaxed mb-8 font-medium">
-                        {profile.bioShort}
-                    </p>
-                )}
+                if (headerTemplate === 'premium-split') {
+                    return (
+                        <header className="max-w-7xl mx-auto px-6 pt-16 pb-12 grid grid-cols-1 md:grid-cols-12 gap-12 border-b border-white/5">
+                            <div className="md:col-span-4 lg:col-span-3 flex justify-center md:justify-start">
+                                <div className="w-48 h-48 md:w-full aspect-square rounded-[3rem] overflow-hidden ring-4 ring-white/5 shadow-2xl">
+                                    <img src={profile.avatarUrl} alt={profile.displayName} className="w-full h-full object-cover" />
+                                </div>
+                            </div>
+                            <div className="md:col-span-8 lg:col-span-9 flex flex-col justify-center text-center md:text-left">
+                                <span className="text-xs font-black uppercase tracking-[0.4em] mb-4" style={{ color: showcase.buttonColor || '#3b82f6' }}>{profile.headline || 'EXCLUSIVO'}</span>
+                                <h1 className="text-4xl md:text-6xl font-black italic uppercase leading-tight mb-6" style={{ fontFamily: headingFontStack }}>{profile.displayName}</h1>
+                                {profile.bioShort && <p className="text-zinc-500 text-sm md:text-base max-w-2xl mb-8 font-medium leading-relaxed">{profile.bioShort}</p>}
+                                <div className="flex flex-col md:flex-row items-center gap-8">
+                                    {renderSocialButtons(false)}
+                                    <div className="hidden md:block w-px h-8 bg-white/10" />
+                                    <div className="flex items-center gap-2 text-zinc-500 text-[10px] font-black uppercase tracking-widest">
+                                        <ShoppingBag size={14} /> Seleção Premium
+                                    </div>
+                                </div>
+                            </div>
+                        </header>
+                    );
+                }
 
-                {/* Redes Sociais Rápidas */}
-                <div className="flex flex-wrap justify-center gap-3">
-                    {profile.buttons?.filter(b => b.enabled && b.visibility === 'public').slice(0, 6).map((btn) => {
-                        const Icon = getIconForType(btn.type);
-                        const brandColor = getIconColor(btn.type);
-                        return (
-                            <a
-                                key={btn.id}
-                                href={formatLink(btn.type, btn.value)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ color: brandColor }}
-                                className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center hover:bg-white/10 hover:border-white/10 transition-all active:scale-90 shadow-lg shadow-black/20"
-                            >
-                                <Icon size={18} />
-                            </a>
-                        );
-                    })}
-                </div>
+                if (headerTemplate === 'glass-hero') {
+                    return (
+                        <header className="relative w-full h-[50vh] md:h-[60vh] flex items-end justify-center overflow-hidden mb-12">
+                            {/* Background Cover */}
+                            <div className="absolute inset-0 z-0">
+                                <img src={profile.coverUrl || profile.avatarUrl} className="w-full h-full object-cover scale-110 blur-sm brightness-50" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent" />
+                            </div>
 
-                {/* Filtros de Categoria */}
-                <div className="mt-12 flex items-center justify-center p-1.5 bg-zinc-950/50 border border-white/5 rounded-2xl gap-1">
+                            {/* Glass Content */}
+                            <div className="relative z-10 w-full max-w-5xl px-4 pb-12">
+                                <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[4rem] p-8 md:p-12 shadow-2xl flex flex-col md:flex-row items-center gap-8 md:gap-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+                                    <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2.5rem] overflow-hidden ring-4 ring-white/10 shadow-2xl flex-shrink-0">
+                                        <img src={profile.avatarUrl} alt={profile.displayName} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="flex-1 text-center md:text-left min-w-0">
+                                        <h1 className="text-3xl md:text-5xl font-black italic uppercase truncate mb-2" style={{ fontFamily: headingFontStack }}>{profile.displayName}</h1>
+                                        <p className="text-xs font-black uppercase tracking-widest mb-6" style={{ color: showcase.buttonColor || '#3b82f6' }}>{profile.headline}</p>
+                                        <div className="flex flex-col md:flex-row items-center gap-6">
+                                            {renderSocialButtons(false)}
+                                            {profile.bioShort && (
+                                                <div className="hidden lg:block h-10 w-px bg-white/10" />
+                                            )}
+                                            {profile.bioShort && (
+                                                <p className="hidden lg:block text-zinc-400 text-sm italic line-clamp-2 max-w-xs">{profile.bioShort}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </header>
+                    );
+                }
+
+                if (headerTemplate === 'hero-centered') {
+                    return (
+                        <header className="max-w-7xl mx-auto px-4 pt-20 pb-16 flex flex-col items-center text-center">
+                            <div className="relative mb-10 group">
+                                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-1000" style={{ background: `linear-gradient(135deg, ${showcase.buttonColor || '#3b82f6'}, ${showcase.buttonSecondaryColor || '#1d4ed8'})` }} />
+                                <div className="relative w-40 h-40 md:w-56 md:h-56 rounded-full overflow-hidden p-1 bg-gradient-to-b from-white/20 to-transparent shadow-2xl">
+                                    <img src={profile.avatarUrl} alt={profile.displayName} className="w-full h-full object-cover rounded-full" />
+                                </div>
+                            </div>
+                            <h1 className="text-4xl md:text-7xl font-black italic uppercase tracking-tighter mb-4 leading-none" style={{ fontFamily: headingFontStack }}>{profile.displayName}</h1>
+                            <p className="text-sm md:text-lg font-bold uppercase tracking-[0.5em] mb-10" style={{ color: showcase.buttonColor || '#3b82f6' }}>{profile.headline || 'Exclusive Collection'}</p>
+                            {renderSocialButtons(true)}
+                            <div className="mt-16 w-32 h-1 bg-white/10 rounded-full" />
+                        </header>
+                    );
+                }
+
+                if (headerTemplate === 'side-profile') {
+                    return (
+                        <header className="max-w-7xl mx-auto px-6 py-16 md:py-24 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                            <div className="relative aspect-square max-w-sm mx-auto lg:mx-0">
+                                <div className="absolute -inset-4 border-2 border-dashed border-white/5 rounded-[4rem] animate-pulse" />
+                                <div className="relative w-full h-full rounded-[3.5rem] overflow-hidden rotate-3 hover:rotate-0 transition-transform duration-700 shadow-2xl">
+                                    <img src={profile.avatarUrl} alt={profile.displayName} className="w-full h-full object-cover scale-110 hover:scale-100 transition-transform duration-700" />
+                                </div>
+                            </div>
+                            <div className="flex flex-col gap-6 text-center lg:text-left">
+                                <h1 className="text-5xl md:text-8xl font-black uppercase italic leading-[0.85] tracking-tighter" style={{ fontFamily: headingFontStack }}>{profile.displayName}</h1>
+                                <div className="flex flex-col lg:flex-row lg:items-center gap-6 mt-4">
+                                    <p className="text-xs font-black uppercase tracking-[0.3em] px-4 py-2 bg-white/5 rounded-full border border-white/10 whitespace-nowrap" style={{ color: showcase.buttonColor || '#3b82f6' }}>{profile.headline}</p>
+                                    <div className="hidden lg:block w-12 h-px bg-white/20" />
+                                    {renderSocialButtons(false)}
+                                </div>
+                                {profile.bioShort && <p className="text-zinc-500 text-sm md:text-base font-medium max-w-xl leading-relaxed mt-4">{profile.bioShort}</p>}
+                            </div>
+                        </header>
+                    );
+                }
+
+                if (headerTemplate === 'modern-glass') {
+                    return (
+                        <header className="relative max-w-7xl mx-auto px-4 py-16 md:py-24 flex justify-center">
+                            <div className="relative w-full max-w-4xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-3xl rounded-[4rem] p-8 md:p-16 border border-white/10 shadow-2xl flex flex-col md:flex-row items-center gap-12 overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[100px]" style={{ backgroundColor: `${showcase.buttonColor}15` || '#3b82f615' }} />
+                                <div className="relative w-48 h-48 rounded-full overflow-hidden ring-8 ring-black/40 shadow-2xl flex-shrink-0">
+                                    <img src={profile.avatarUrl} alt={profile.displayName} className="w-full h-full object-cover" />
+                                </div>
+                                <div className="flex-1 text-center md:text-left space-y-6">
+                                    <div>
+                                        <h1 className="text-4xl md:text-6xl font-black italic uppercase leading-tight" style={{ fontFamily: headingFontStack }}>{profile.displayName}</h1>
+                                        <p className="text-xs md:text-sm font-black uppercase tracking-[0.4em] mt-2 opacity-70">{profile.headline}</p>
+                                    </div>
+                                    <div className="h-px w-24 bg-white/20 mx-auto md:mx-0" />
+                                    {renderSocialButtons(false)}
+                                    {profile.bioShort && <p className="text-zinc-400 text-sm italic line-clamp-2 max-w-md">{profile.bioShort}</p>}
+                                </div>
+                            </div>
+                        </header>
+                    );
+                }
+
+                if (headerTemplate === 'influencer-banner') {
+                    return (
+                        <header className="relative w-full mb-20">
+                            <div className="h-64 md:h-96 w-full relative overflow-hidden">
+                                <img src={profile.coverUrl || profile.avatarUrl} className="w-full h-full object-cover blur-sm md:blur-none" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent" />
+                            </div>
+                            <div className="max-w-7xl mx-auto px-6 -mt-24 md:-mt-32 relative z-10 flex flex-col md:flex-row items-end gap-6 md:gap-10">
+                                <div className="w-40 h-40 md:w-56 md:h-56 rounded-[3rem] overflow-hidden ring-8 ring-[#050505] shadow-2xl flex-shrink-0">
+                                    <img src={profile.avatarUrl} alt={profile.displayName} className="w-full h-full object-cover" />
+                                </div>
+                                <div className="flex-1 pb-4 md:pb-8 text-center md:text-left w-full md:w-auto">
+                                    <h1 className="text-4xl md:text-7xl font-black italic uppercase tracking-tighter" style={{ fontFamily: headingFontStack }}>{profile.displayName}</h1>
+                                    <div className="flex flex-col md:flex-row items-center gap-6 mt-4">
+                                        <p className="text-xs md:text-sm font-black uppercase tracking-widest px-5 py-2 rounded-2xl bg-white/5 border border-white/10" style={{ color: showcase.buttonColor || '#3b82f6' }}>{profile.headline}</p>
+                                        <div className="flex-1" />
+                                        {renderSocialButtons(false)}
+                                    </div>
+                                </div>
+                            </div>
+                        </header>
+                    );
+                }
+
+                // Standard Template (Default)
+                return (
+                    <header className="max-w-7xl mx-auto px-4 pt-12 pb-8 flex flex-col items-center text-center">
+                        <div className="relative mb-6">
+                            <div className="w-24 h-24 md:w-32 md:h-32 rounded-[2.5rem] overflow-hidden ring-4 ring-white/5 shadow-2xl">
+                                <img
+                                    src={profile.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop'}
+                                    alt={profile.displayName}
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                        </div>
+
+                        <h1 className="text-2xl md:text-4xl font-black tracking-tight mb-2 italic uppercase" style={{ fontFamily: headingFontStack }}>
+                            {profile.displayName}
+                        </h1>
+                        <p className="text-xs md:text-sm font-black uppercase tracking-[0.3em] mb-4" style={{ color: showcase.buttonColor || '#3b82f6' }}>
+                            {profile.headline || 'Profissional'}
+                        </p>
+
+                        {profile.bioShort && (
+                            <p className="max-w-lg text-zinc-500 text-xs md:text-sm leading-relaxed mb-8 font-medium">
+                                {profile.bioShort}
+                            </p>
+                        )}
+
+                        {renderSocialButtons(true)}
+
+                        <div className="w-full max-w-xs h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mt-12" />
+                    </header>
+                );
+            })()}
+
+            {/* Seção Global de Filtros - Agora fora do header para ser consistente em todos os templates */}
+            <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col items-center">
+                <div className="flex items-center justify-center p-1.5 bg-zinc-950/50 border border-white/5 rounded-2xl gap-1">
                     {[
                         { id: 'all', label: 'Todos', icon: ShoppingBag },
                         { id: 'physical', label: 'Físicos', icon: Box },
@@ -237,18 +434,17 @@ const VitrineRenderer: React.FC<Props> = ({ profile, showcase, isPreview }) => {
                             className={clsx(
                                 "flex items-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
                                 filterKind === f.id
-                                    ? "bg-white text-black shadow-xl scale-105"
+                                    ? "text-black shadow-xl scale-105"
                                     : "text-zinc-500 hover:text-white hover:bg-white/5"
                             )}
+                            style={filterKind === f.id ? { backgroundColor: showcase.buttonColor || '#FFFFFF' } : {}}
                         >
                             <f.icon size={12} />
                             {f.label}
                         </button>
                     ))}
                 </div>
-
-                <div className="w-full max-w-xs h-px bg-gradient-to-r from-transparent via-white/5 to-transparent mt-12" />
-            </header>
+            </div>
 
             <main className={clsx("max-w-7xl mx-auto px-4 relative z-10", isPreview ? "py-4" : "py-8")}>
                 {/* Se houver apenas um item no preview, centralizamos e destacamos */}
@@ -372,7 +568,7 @@ const VitrineRenderer: React.FC<Props> = ({ profile, showcase, isPreview }) => {
                                             )}>R${item.basePrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                                         </div>
                                         {itemTemplate !== 'list' && (
-                                            <p className="text-xs italic line-clamp-3 whitespace-pre-wrap opacity-80" style={{ color: showcase.descriptionColor || '#71717a' }}>
+                                            <p className="text-xs italic line-clamp-3 whitespace-pre-wrap" style={{ color: showcase.descriptionColor || '#71717a' }}>
                                                 {item.description}
                                             </p>
                                         )}
@@ -565,7 +761,7 @@ const VitrineRenderer: React.FC<Props> = ({ profile, showcase, isPreview }) => {
                                             <div className="space-y-6">
                                                 <div>
                                                     <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-3">Descrição</h4>
-                                                    <p className="leading-relaxed text-sm md:text-base whitespace-pre-wrap opacity-90" style={{ color: showcase.descriptionColor || '#9ca3af' }}>
+                                                    <p className="leading-relaxed text-sm md:text-base whitespace-pre-wrap font-medium" style={{ color: showcase.descriptionColor || '#9ca3af' }}>
                                                         {selectedItem.description}
                                                     </p>
                                                 </div>
