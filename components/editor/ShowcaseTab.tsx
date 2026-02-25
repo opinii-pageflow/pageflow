@@ -55,7 +55,7 @@ import ColorPickerButton from '../common/ColorPickerButton';
 import { Profile, PlanType, Showcase, ShowcaseItem, ShowcaseImage, ShowcaseOption, ShowcaseTestimonial } from '../../types';
 import { showcaseApi } from '../../lib/api/showcase';
 import { QRCodeSVG } from 'qrcode.react';
-import { getIconColor, detectLinkType } from '../../lib/linkHelpers';
+import { getIconColor, formatLink } from '../../lib/linkHelpers';
 
 type Props = {
     profile: Profile;
@@ -103,11 +103,14 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
 
     const hasAccess = clientPlan === 'business' || clientPlan === 'enterprise';
 
-    // URL da Vitrine (Memoized para consistência)
+    // URL da Vitrine (Memoized para consistência e correção de bug de produção)
     const showcaseUrl = useMemo(() => {
         if (typeof window === 'undefined') return '';
-        // Garante a construção correta da URL com HashRouter
-        return `${window.location.origin}/#/u/${profile.slug}/vitrine`;
+        // Utiliza window.location.origin para garantir URL absoluta correta
+        const baseUrl = window.location.origin;
+        // Fallback seguro se o slug estiver vazio (evita links quebrados durante criação)
+        const safeSlug = profile.slug || 'perfil';
+        return `${baseUrl}/#/u/${safeSlug}/vitrine`;
     }, [profile.slug]);
 
     const formatCurrency = (val: number) => {
