@@ -96,7 +96,9 @@ const AdminDashboard: React.FC = () => {
         if (!mounted) return;
 
         setClients(allClients || []);
+        // COMBINING BOTH STATES HERE
         setUpgradeRequests((allRequests || []) as UpgradeRequest[]);
+        setTotalProfiles(allProfiles?.length || 0);
 
         if (mounted) setAllProfiles((allProfiles || []).map((p: Profile) => ({
           ...p,
@@ -280,10 +282,10 @@ const AdminDashboard: React.FC = () => {
           className="absolute inset-0 opacity-30"
           style={{
             background: `
-radial - gradient(circle at ${mousePos.x}px ${mousePos.y}px, rgba(14, 165, 233, 0.06), transparent 40 %),
-  radial - gradient(circle at 20 % 80 %, rgba(16, 185, 129, 0.03), transparent 50 %),
-  radial - gradient(circle at 80 % 20 %, rgba(56, 189, 248, 0.04), transparent 50 %)
-    `
+              radial-gradient(circle at ${mousePos.x}px ${mousePos.y}px, rgba(14, 165, 233, 0.06), transparent 40%),
+              radial-gradient(circle at 20% 80%, rgba(16, 185, 129, 0.03), transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.04), transparent 50%)
+            `
           }}
         />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:60px_60px]" />

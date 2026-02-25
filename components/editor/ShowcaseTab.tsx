@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import {
@@ -55,7 +55,7 @@ import ColorPickerButton from '../common/ColorPickerButton';
 import { Profile, PlanType, Showcase, ShowcaseItem, ShowcaseImage, ShowcaseOption, ShowcaseTestimonial } from '../../types';
 import { showcaseApi } from '../../lib/api/showcase';
 import { QRCodeSVG } from 'qrcode.react';
-import { getIconColor, detectLinkType, formatLink, formatPublicShowcaseUrl } from '../../lib/linkHelpers';
+import { getIconColor, detectLinkType, formatLink } from '../../lib/linkHelpers';
 
 type Props = {
     profile: Profile;
@@ -102,6 +102,16 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
     const [shortcutInputValue, setShortcutInputValue] = useState('');
 
     const hasAccess = clientPlan === 'business' || clientPlan === 'enterprise';
+
+    // URL da Vitrine (Memoized para consistência e correção de bug de produção)
+    const showcaseUrl = useMemo(() => {
+        if (typeof window === 'undefined') return '';
+        // Utiliza window.location.origin para garantir URL absoluta correta
+        const baseUrl = window.location.origin;
+        // Fallback seguro se o slug estiver vazio (evita links quebrados durante criação)
+        const safeSlug = profile.slug || 'perfil';
+        return `${baseUrl}/#/u/${safeSlug}/vitrine`;
+    }, [profile.slug]);
 
     const formatCurrency = (val: number) => {
         return new Intl.NumberFormat('pt-BR', {
@@ -457,7 +467,7 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                     </div>
 
                     <a
-                        href={formatPublicShowcaseUrl(profile.slug)}
+                        href={showcaseUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 transition-all flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em]"
@@ -509,49 +519,6 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                         </div>
                     </div>
 
-                    {/* Community Click Destination - Hidden as it is now automated
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-2 mb-2">
-                            <MousePointer2 size={14} className="text-emerald-500" />
-                            <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Destino do Clique na Comunidade</h4>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-3">
-                            {[
-                                { id: 'profile', label: 'Ver Perfil', description: 'Leva para o seu perfil e botões.' },
-                                { id: 'showcase', label: 'Ver Vitrine', description: 'Leva direto para os seus produtos.' }
-                            ].map((dest) => (
-                                <button
-                                    key={dest.id}
-                                    onClick={() => handleSaveGlobalSettings({ communityClickDestination: dest.id as any })}
-                                    className={clsx(
-                                        "group flex flex-col p-5 rounded-3xl border transition-all text-left",
-                                        (showcase?.communityClickDestination || 'profile') === dest.id
-                                            ? "bg-emerald-600/10 border-emerald-500 shadow-xl shadow-emerald-500/5"
-                                            : "bg-black/20 border-white/5 hover:border-white/10 hover:bg-black/40"
-                                    )}
-                                >
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className={clsx(
-                                            "text-[10px] font-black uppercase tracking-widest",
-                                            (showcase?.communityClickDestination || 'profile') === dest.id ? "text-white" : "text-zinc-400"
-                                        )}>
-                                            {dest.label}
-                                        </span>
-                                        {(showcase?.communityClickDestination || 'profile') === dest.id && (
-                                            <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-                                                <Check size={12} className="text-white" strokeWidth={4} />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest group-hover:text-zinc-400 transition-colors">
-                                        {dest.description}
-                                    </p>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    */}
                 </div>
 
                 {/* Seção de Atalhos de Botões */}
@@ -766,13 +733,12 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                             <div className="flex gap-2">
                                 <input
                                     readOnly
-                                    value={`${window.location.origin}/#/u/${profile.slug}/vitrine`}
+                                    value={showcaseUrl}
                                     className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-zinc-400 outline-none"
                                 />
                                 <button
                                     onClick={() => {
-                                        const url = `${window.location.origin}/#/u/${profile.slug}/vitrine`;
-                                        navigator.clipboard.writeText(url);
+                                        navigator.clipboard.writeText(showcaseUrl);
                                         alert('Link copiado!');
                                     }}
                                     className="p-3 bg-white text-black rounded-xl hover:bg-zinc-200 transition-all active:scale-95"
@@ -793,7 +759,7 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                     <div className="flex flex-col items-center justify-center gap-4 bg-white/5 p-8 rounded-[2rem] border border-white/10">
                         <div className="p-4 bg-white rounded-3xl shadow-2xl">
                             <QRCodeSVG
-                                value={`${window.location.origin}/#/u/${profile.slug}/vitrine`}
+                                value={showcaseUrl}
                                 size={140}
                                 level="H"
                                 includeMargin={false}

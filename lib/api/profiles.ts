@@ -87,7 +87,7 @@ function mapCatalogItem(i: any): CatalogItem {
         title: i.title,
         description: i.description,
         priceText: i.price_text,
-        imageUrl: i.image_url,
+        image_url: i.image_url,
         ctaLabel: i.cta_label,
         ctaLink: i.cta_link,
         sortOrder: i.sort_order,

@@ -620,7 +620,7 @@ const ClientsListPage: React.FC = () => {
                               .map(p => (
                                 <a
                                   key={p.id}
-                                  href={`#/u/${p.slug}`}
+                                  href={formatPublicProfileUrl(p.slug)}
                                   target="_blank"
                                   rel="noreferrer"
                                   className="text-[10px] font-bold px-3 py-1.5 bg-zinc-800 text-zinc-500 rounded-lg border border-white/5"
