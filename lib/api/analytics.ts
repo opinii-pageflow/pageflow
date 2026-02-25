@@ -27,7 +27,7 @@ export interface TrackEventParams {
 
     // Asset information
     assetId?: string;
-    assetType?: 'button' | 'portfolio' | 'catalog' | 'video' | 'pix' | 'nps';
+    assetType?: 'button' | 'portfolio' | 'catalog' | 'video' | 'pix' | 'nps' | 'form' | 'showcase' | 'showcase_item';
     assetLabel?: string;
     assetUrl?: string;
 
@@ -58,7 +58,7 @@ export function trackEvent(params: TrackEventParams): void {
         type: params.type,
 
         // Asset
-        asset_type: params.assetType || null,
+        asset_type: (params.assetType || null) as any,
         asset_id: params.assetId || null,
         asset_label: params.assetLabel || null,
         asset_url: params.assetUrl || null,
@@ -142,7 +142,17 @@ export async function flushEvents(): Promise<void> {
     } catch (error) {
         console.error('❌ Falha ao enviar eventos:', error);
 
-        // Erro: retornar ao queue para retry
+        // Se for erro de constraint ou permissão, vambos descartar o lote para não travar a fila
+        const apiError = error as ApiError;
+        const criticalErrors = ['23514', '42501', '23502', '23505']; // Constraint, Permission, Not Null, Unique
+
+        if (criticalErrors.includes(apiError.code)) {
+            console.warn('⚠️ Descartando lote inválido para evitar bloqueio da fila:', apiError.code);
+            clearLocalStorageBackup(batch);
+            return;
+        }
+
+        // Erro temporário (rede, etc): retornar ao queue para retry
         eventQueue = [...batch, ...eventQueue];
 
         // Manter no localStorage para não perder dados
@@ -153,25 +163,8 @@ export async function flushEvents(): Promise<void> {
 /**
  * Flush ao sair da página (usando sendBeacon para garantir envio)
  */
-if (typeof window !== 'undefined') {
-    window.addEventListener('beforeunload', () => {
-        if (eventQueue.length > 0) {
-            // Tentar enviar via sendBeacon (mais confiável em beforeunload)
-            const blob = new Blob([JSON.stringify(eventQueue)], { type: 'application/json' });
-            const sent = navigator.sendBeacon(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/analytics_events`, blob);
-
-            if (!sent) {
-                // Fallback: salvar em localStorage para enviar na próxima sessão
-                saveToLocalStorage(eventQueue);
-            }
-        }
-    });
-
-    // Tentar enviar eventos pendentes do localStorage ao carregar
-    window.addEventListener('load', () => {
-        retryPendingEvents();
-    });
-}
+// O sendBeacon sem autenticação falha silenciosamente no Supabase REST.
+// O fallback de LocalStorage (retryPendingEvents) garante que eventos não sejam perdidos ao recarregar a página.
 
 // ============================================
 // LOCAL STORAGE BACKUP
@@ -305,7 +298,7 @@ export async function getAnalyticsEvents(
 ): Promise<AnalyticsEvent[]> {
     let query = supabase
         .from('analytics_events')
-        .select('id, client_id, profile_id, type, asset_id, asset_type, asset_label, source, utm_source, utm_medium, utm_campaign, ts, device');
+        .select('id, client_id, profile_id, type, asset_id, asset_type, asset_label, source, utm_source, utm_medium, utm_campaign, utm_content, utm_term, ts, device, link_id, category, score, comment');
 
     if (profileId !== 'all') {
         query = query.eq('profile_id', profileId);
@@ -313,11 +306,11 @@ export async function getAnalyticsEvents(
         query = query.eq('client_id', clientId);
     }
 
-    if (source && source !== 'all') {
+    if (source && source !== 'all' && source !== 'Origens') {
         query = query.eq('source', source);
     }
 
-    query = query.order('ts', { ascending: false }).limit(1000);
+    query = query.order('ts', { ascending: false }).limit(20000);
 
 
     if (startDate) {
@@ -371,7 +364,7 @@ export async function getAnalyticsSummaryRPC(
     source: string = 'all'
 ): Promise<any> {
     const { data, error } = await (supabase.rpc as any)('get_analytics_summary_v1', {
-        p_profile_id: profileId,
+        p_profile_id: profileId === 'all' ? null : profileId,
         p_client_id: clientId,
         p_start_date: startDate.toISOString(),
         p_end_date: endDate.toISOString(),
@@ -384,4 +377,12 @@ export async function getAnalyticsSummaryRPC(
     }
 
     return data;
+}
+// ============================================
+// INITIALIZATION
+// ============================================
+
+// Tenta reenviar eventos que ficaram salvos no localStorage em sessões anteriores
+if (typeof window !== 'undefined') {
+    retryPendingEvents();
 }

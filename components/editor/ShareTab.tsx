@@ -1,14 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { Profile } from '../../types';
-import { 
-  Share2, 
-  Copy, 
-  Download, 
-  ExternalLink, 
-  MessageCircle, 
-  Twitter, 
-  Linkedin, 
-  Send, 
+import {
+  Share2,
+  Copy,
+  Download,
+  ExternalLink,
+  MessageCircle,
+  Twitter,
+  Linkedin,
+  Send,
   Check,
   ChevronRight,
   QrCode,
@@ -19,6 +19,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
+import { formatLink, formatPublicProfileUrl } from '@/lib/linkHelpers';
+import { supabase } from '@/lib/supabase';
 
 interface Props {
   profile: Profile;
@@ -29,9 +31,9 @@ const ShareTab: React.FC<Props> = ({ profile }) => {
   const highResQrRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  
+
   // URL pública formatada para o HashRouter
-  const shareUrl = `${window.location.origin}/#/u/${profile.slug}`;
+  const shareUrl = formatPublicProfileUrl(profile.slug);
   const shareText = `Confira meu perfil profissional no PageFlow: ${profile.displayName} 🚀`;
 
   const copyToClipboard = () => {
@@ -138,18 +140,17 @@ const ShareTab: React.FC<Props> = ({ profile }) => {
           <QrCode size={14} className="text-blue-500" />
           <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Seu Link Pessoal</h3>
         </div>
-        
+
         <div className="bg-zinc-900/60 border border-white/5 p-2 rounded-[1.8rem] flex items-center gap-3 group transition-all hover:border-blue-500/30">
           <div className="flex-1 min-w-0 pl-4 py-2 text-xs font-mono font-bold text-blue-400 truncate select-all">
             {shareUrl}
           </div>
-          <button 
+          <button
             onClick={copyToClipboard}
-            className={`p-4 rounded-2xl transition-all flex items-center gap-2 shadow-lg ${
-              copied 
-                ? 'bg-emerald-500 text-white' 
-                : 'bg-zinc-800 text-white hover:bg-white hover:text-black'
-            }`}
+            className={`p-4 rounded-2xl transition-all flex items-center gap-2 shadow-lg ${copied
+              ? 'bg-emerald-500 text-white'
+              : 'bg-zinc-800 text-white hover:bg-white hover:text-black'
+              }`}
           >
             {copied ? <Check size={18} /> : <Copy size={18} />}
             <span className="text-[10px] font-black uppercase tracking-widest">{copied ? 'Copiado' : 'Copiar'}</span>
@@ -167,7 +168,7 @@ const ShareTab: React.FC<Props> = ({ profile }) => {
           {socialSharing.map((social) => (
             <a
               key={social.name}
-              href={social.url}
+              href={formatPublicProfileUrl(profile.slug)}
               target="_blank"
               rel="noopener noreferrer"
               className={`${social.color} py-4 px-6 rounded-2xl flex items-center justify-between text-white font-bold transition-all hover:-translate-y-1 active:scale-[0.98] shadow-xl group`}
@@ -182,7 +183,7 @@ const ShareTab: React.FC<Props> = ({ profile }) => {
             </a>
           ))}
         </div>
-        <button 
+        <button
           onClick={handleNativeShare}
           className="w-full bg-white/5 hover:bg-white/10 text-zinc-300 py-4 rounded-2xl font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all border border-white/5 active:scale-[0.98]"
         >
@@ -194,7 +195,7 @@ const ShareTab: React.FC<Props> = ({ profile }) => {
       {/* QR Code Section Premium */}
       <section className="bg-zinc-900/40 p-10 rounded-[2.5rem] border border-white/5 text-center relative overflow-hidden group">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-        
+
         {/* Hidden High-Res Canvas for Downloads - Rendered at 1024px */}
         <div ref={highResQrRef} className="hidden" aria-hidden="true">
           <QRCodeCanvas
@@ -213,8 +214,8 @@ const ShareTab: React.FC<Props> = ({ profile }) => {
           />
         </div>
 
-        <div 
-          ref={qrRef} 
+        <div
+          ref={qrRef}
           className="relative z-10 w-56 h-56 bg-white p-5 rounded-[2.5rem] mx-auto mb-8 shadow-2xl shadow-black flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-[1.02] group-hover:rotate-1"
         >
           <QRCodeCanvas
@@ -234,13 +235,13 @@ const ShareTab: React.FC<Props> = ({ profile }) => {
         </div>
 
         <div className="relative z-10 space-y-2 mb-8 px-4">
-           <h3 className="text-lg font-bold">QR Code de Perfil</h3>
-           <p className="text-xs text-zinc-500 leading-relaxed">
-             Ideal para cartões de visita físicos ou assinaturas de e-mail. 
-           </p>
+          <h3 className="text-lg font-bold">QR Code de Perfil</h3>
+          <p className="text-xs text-zinc-500 leading-relaxed">
+            Ideal para cartões de visita físicos ou assinaturas de e-mail.
+          </p>
         </div>
-        
-        <button 
+
+        <button
           onClick={downloadQRCode}
           disabled={isDownloading}
           className="relative z-10 w-full bg-white text-black py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 transition-all hover:bg-gray-200 active:scale-95 shadow-xl shadow-white/5 disabled:opacity-50"
@@ -257,7 +258,7 @@ const ShareTab: React.FC<Props> = ({ profile }) => {
       {/* NFC Teaser Card */}
       <section className="relative p-8 rounded-[2.5rem] bg-gradient-to-br from-zinc-900 to-black border border-white/5 overflow-hidden group">
         <div className="absolute top-0 right-0 w-64 h-64 bg-purple-600/10 rounded-full blur-[80px] group-hover:bg-purple-600/20 transition-all duration-1000"></div>
-        
+
         <div className="relative z-10 flex items-start justify-between mb-6">
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 bg-purple-500 text-white text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest shadow-lg shadow-purple-500/20">
@@ -275,7 +276,7 @@ const ShareTab: React.FC<Props> = ({ profile }) => {
         </p>
 
         <button className="relative z-10 w-full py-4 bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-purple-600/10 flex items-center justify-center gap-2 active:scale-95">
-          Ver Modelos de Cartão 
+          Ver Modelos de Cartão
           <ChevronRight size={14} />
         </button>
       </section>

@@ -105,7 +105,7 @@ const ColorPickerButton: React.FC<Props> = ({ label, value, onChange }) => {
       {isOpen && (
         <div
           ref={popoverRef}
-          className="absolute bottom-full left-0 mb-4 z-[150] w-64 bg-zinc-900 border border-white/10 rounded-3xl p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+          className="absolute top-full left-0 mt-4 z-[150] w-64 bg-zinc-900 border border-white/10 rounded-3xl p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">

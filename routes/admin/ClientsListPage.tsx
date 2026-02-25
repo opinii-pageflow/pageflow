@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { clientsApi } from '../../lib/api/clients';
 import { profilesApi } from '../../lib/api/profiles';
+import CompanyModal from '../../components/admin/CompanyModal';
 import {
   UserPlus,
   CheckCircle2,
@@ -30,6 +31,7 @@ import TopBar from '../../components/common/TopBar';
 import { Client, PlanType, Profile } from '../../types';
 import { PLANS, PLAN_TYPES } from '../../lib/plans';
 import { PLANS_CONFIG } from '../../lib/plansConfig';
+import { formatPublicProfileUrl } from '../../lib/linkHelpers';
 import clsx from 'clsx';
 
 // ─── Tipos de ordenação ───
@@ -62,9 +64,6 @@ const ClientsListPage: React.FC = () => {
   // Mobile expand
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
-    name: '', slug: '', email: '', password: '', plan: 'pro' as PlanType, maxProfiles: PLANS_CONFIG.pro.maxProfiles, isActive: true
-  });
   const [bonusAmount, setBonusAmount] = useState(1);
 
   useEffect(() => {
@@ -176,20 +175,10 @@ const ClientsListPage: React.FC = () => {
 
   const openEditModal = (client: Client) => {
     setSelectedClient(client);
-    setFormData({
-      name: client.name,
-      slug: client.slug,
-      email: client.email || '',
-      password: client.password || '',
-      plan: client.plan,
-      maxProfiles: client.maxProfiles,
-      isActive: client.isActive
-    });
     setIsEditModalOpen(true);
   };
 
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleEditSubmit = async (formData: any) => {
     if (!selectedClient) return;
     const finalSlug = formData.slug || formData.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
     try {
@@ -214,8 +203,7 @@ const ClientsListPage: React.FC = () => {
     }
   };
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCreateSubmit = async (formData: any) => {
     const finalSlug = formData.slug || formData.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
     try {
       await clientsApi.create({
@@ -257,7 +245,7 @@ const ClientsListPage: React.FC = () => {
           </div>
           <button
             onClick={() => {
-              setFormData({ name: '', slug: '', email: '', password: '', plan: 'pro', maxProfiles: 3, isActive: true });
+              setSelectedClient(null);
               setIsCreateModalOpen(true);
             }}
             className="w-full sm:w-auto bg-white text-black px-8 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 shadow-lg shadow-white/5"
@@ -355,7 +343,7 @@ const ClientsListPage: React.FC = () => {
             ) : (
               <button
                 onClick={() => {
-                  setFormData({ name: '', slug: '', email: '', password: '', plan: 'pro', maxProfiles: 3, isActive: true });
+                  setSelectedClient(null);
                   setIsCreateModalOpen(true);
                 }}
                 className="px-8 py-3.5 rounded-2xl bg-white text-black font-black text-[11px] uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95"
@@ -452,13 +440,34 @@ const ClientsListPage: React.FC = () => {
                       </div>
 
                       {/* Perfis em uso */}
-                      <div className="text-sm font-bold tabular-nums">
-                        <span className={clsx(
-                          (profileCounts[client.id] || 0) >= client.maxProfiles ? "text-amber-400" : "text-zinc-500"
-                        )}>
-                          {profileCounts[client.id] || 0}
-                        </span>
-                        <span className="text-zinc-700">/{client.maxProfiles}</span>
+                      <div className="min-w-0 pr-4">
+                        <div className="text-sm font-bold tabular-nums">
+                          <span className={clsx(
+                            (profileCounts[client.id] || 0) >= client.maxProfiles ? "text-amber-400" : "text-zinc-500"
+                          )}>
+                            {profileCounts[client.id] || 0}
+                          </span>
+                          <span className="text-zinc-700">/{client.maxProfiles}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {profiles
+                            .filter(p => p.clientId === client.id)
+                            .slice(0, 2)
+                            .map(p => (
+                              <a
+                                key={p.id}
+                                href={formatPublicProfileUrl(p.slug)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[8px] px-1 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-zinc-600 hover:text-white transition-all"
+                              >
+                                /{p.slug}
+                              </a>
+                            ))}
+                          {(profileCounts[client.id] || 0) > 2 && (
+                            <span className="text-[8px] text-zinc-800">...</span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Data */}
@@ -588,6 +597,29 @@ const ClientsListPage: React.FC = () => {
                             <Trash2 size={16} />
                           </button>
                         </div>
+
+                        {/* Profiles List (Mobile) */}
+                        <div className="pt-2 border-t border-white/[0.03]">
+                          <div className="text-[9px] font-black uppercase text-zinc-700 mb-2">Perfis Associados</div>
+                          <div className="flex flex-wrap gap-2">
+                            {profiles
+                              .filter(p => p.clientId === client.id)
+                              .map(p => (
+                                <a
+                                  key={p.id}
+                                  href={`#/u/${p.slug}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[10px] font-bold px-3 py-1.5 bg-zinc-800 text-zinc-500 rounded-lg border border-white/5"
+                                >
+                                  /{p.slug}
+                                </a>
+                              ))}
+                            {profiles.filter(p => p.clientId === client.id).length === 0 && (
+                              <span className="text-[10px] text-zinc-800 italic">Nenhum perfil criado</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -645,85 +677,13 @@ const ClientsListPage: React.FC = () => {
       </main>
 
       {/* ─── Modal: Criar / Editar (100% preservado) ─── */}
-      {(isCreateModalOpen || isEditModalOpen) && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6 bg-black/95 backdrop-blur-3xl animate-in fade-in duration-500">
-          <div className="bg-zinc-900 border border-white/10 w-full max-w-xl rounded-2xl sm:rounded-[4rem] overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.8)] relative animate-in zoom-in-95 duration-500">
-            <button onClick={() => { setIsCreateModalOpen(false); setIsEditModalOpen(false); }} className="absolute top-6 right-6 sm:top-12 sm:right-12 p-3 text-zinc-500 hover:text-white transition-all bg-white/5 rounded-full"><X size={20} className="sm:w-6 sm:h-6" /></button>
-            <form onSubmit={isEditModalOpen ? handleEditSubmit : handleCreateSubmit} className="p-6 sm:p-16 space-y-6 sm:space-y-10">
-              <header className="space-y-3 sm:space-y-4">
-                <div className="inline-flex bg-blue-500/10 text-blue-500 px-3 py-1 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-blue-500/20">Client Provisioning</div>
-                <h2 className="text-3xl sm:text-5xl font-black tracking-tighter">{isEditModalOpen ? 'Master Edit' : 'Nova Company'}</h2>
-                <p className="text-zinc-500 text-sm sm:text-lg">Defina credenciais de rede e limites operacionais.</p>
-              </header>
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Nome da Organização</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Agência Premium"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-[1.5rem] px-5 sm:px-6 py-4 sm:py-5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">E-mail de Login</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="email@empresa.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-[1.5rem] px-5 sm:px-6 py-4 sm:py-5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Senha (Access Token)</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Crie uma senha forte"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-[1.5rem] px-5 sm:px-6 py-4 sm:py-5 text-sm font-mono focus:border-blue-500 outline-none transition-all"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Nível de Serviço</label>
-                    <div className="relative">
-                      <select
-                        value={formData.plan}
-                        onChange={(e) => {
-                          const newPlanId = e.target.value as PlanType;
-                          const newPlan = PLANS[newPlanId];
-                          setFormData({ ...formData, plan: newPlanId, maxProfiles: newPlan.maxProfiles });
-                        }}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-[1.5rem] px-5 sm:px-6 py-4 sm:py-5 text-sm font-bold outline-none appearance-none cursor-pointer"
-                      >
-                        {PLAN_TYPES.map(planId => (
-                          <option key={planId} value={planId}>{PLANS[planId].name}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500" size={16} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Limite de Perfis (Slots)</label>
-                    <input type="number" required min="1" value={formData.maxProfiles} onChange={(e) => setFormData({ ...formData, maxProfiles: parseInt(e.target.value) })} className="w-full bg-black/40 border border-white/10 rounded-[1.5rem] px-6 py-5 text-sm font-bold outline-none transition-all" />
-                  </div>
-                </div>
-              </div>
-              <button type="submit" className="w-full bg-white text-black py-4 sm:py-6 rounded-xl sm:rounded-[1.8rem] font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-2xl">
-                {isEditModalOpen ? 'Atualizar Infraestrutura' : 'Finalizar Provisionamento'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      <CompanyModal
+        isOpen={isCreateModalOpen || isEditModalOpen}
+        onClose={() => { setIsCreateModalOpen(false); setIsEditModalOpen(false); }}
+        onSubmit={isEditModalOpen ? handleEditSubmit : handleCreateSubmit}
+        initialData={selectedClient}
+        isEditing={isEditModalOpen}
+      />
 
       {/* ─── Modal: Bônus de Slots (100% preservado) ─── */}
       {isBonusModalOpen && selectedClient && (

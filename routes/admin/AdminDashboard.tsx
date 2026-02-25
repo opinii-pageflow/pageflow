@@ -17,7 +17,14 @@ import {
   X,
   ChevronDown,
   Star,
-  Eye
+  Eye,
+  Mail,
+  MessageCircle,
+  Trash2,
+  Gift,
+  Plus,
+  ArrowRight,
+  CheckCircle2
 } from 'lucide-react';
 import TopBar from '../../components/common/TopBar';
 import { PLANS, PLAN_TYPES } from '../../lib/plans';
@@ -31,6 +38,8 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 import { clientsApi } from '../../lib/api/clients';
 import { profilesApi } from '../../lib/api/profiles';
+import { upgradeRequestsApi, UpgradeRequest } from '../../lib/api/upgradeRequests';
+import CompanyModal from '../../components/admin/CompanyModal';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -46,15 +55,15 @@ const AdminDashboard: React.FC = () => {
 
   // ===== Criar Company (modal) =====
   const [isCreateCompanyOpen, setIsCreateCompanyOpen] = useState(false);
-  const [companyFormData, setCompanyFormData] = useState({
-    name: '', slug: '', email: '', password: '', plan: 'pro' as PlanType, maxProfiles: PLANS_CONFIG.pro.maxProfiles, isActive: true
-  });
-
   const [savedToast, setSavedToast] = useState('');
 
   // ===== Curadoria de Perfis =====
   const [allProfiles, setAllProfiles] = useState<Profile[]>([]);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  // ===== Upgrade Requests =====
+  const [upgradeRequests, setUpgradeRequests] = useState<UpgradeRequest[]>([]);
+  const [updatingRequestId, setUpdatingRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -66,7 +75,7 @@ const AdminDashboard: React.FC = () => {
         if (retryCount === 0) setLoading(true);
 
         // Fetchs em paralelo com tratamento individual
-        const [allClients, allProfiles] = await Promise.all([
+        const [allClients, allProfiles, allRequests] = await Promise.all([
           clientsApi.listAll().catch(err => {
             console.warn("Clients fetch warning:", err);
             return [];
@@ -74,25 +83,30 @@ const AdminDashboard: React.FC = () => {
           profilesApi.listAll().catch(err => {
             console.warn("Profiles fetch warning:", err);
             return [];
+          }),
+          upgradeRequestsApi.listAll().catch(err => {
+            console.warn("Upgrade requests fetch warning:", err);
+            return [];
           })
         ]);
 
         if (!mounted) return;
 
         setClients(allClients || []);
-        setTotalProfiles(allProfiles?.length || 0);
-        if (mounted) setAllProfiles((allProfiles || []).map((p: any) => ({
+        setUpgradeRequests((allRequests || []) as UpgradeRequest[]);
+
+        if (mounted) setAllProfiles((allProfiles || []).map((p: Profile) => ({
           ...p,
           featured: p.featured || false,
-          showOnLanding: p.show_on_landing || false,
-          displayName: p.display_name || p.displayName || '',
-          avatarUrl: p.avatar_url || p.avatarUrl || '',
+          showOnLanding: p.showOnLanding || false,
+          displayName: p.displayName || '',
+          avatarUrl: p.avatarUrl || '',
           slug: p.slug || ''
         })));
 
         // Analytics com tratamento de erro
         try {
-          const { count: eCount } = await (supabase.from('analytics_events') as any)
+          const { count: eCount } = await supabase.from('analytics_events')
             .select('*', { count: 'exact', head: true });
           if (mounted) setTotalEvents(eCount || 0);
         } catch (e) {
@@ -100,17 +114,18 @@ const AdminDashboard: React.FC = () => {
         }
 
         try {
-          const { count: lCount } = await (supabase.from('leads') as any)
+          const { count: lCount } = await supabase.from('leads')
             .select('*', { count: 'exact', head: true });
           if (mounted) setTotalLeads(lCount || 0);
         } catch (e) {
           console.warn("Leads fetch error", e);
         }
 
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const error = err as Error & { name?: string; message?: string };
         console.error("Failed to load admin data", err);
         // Se for erro de rede/abort e tivermos poucas tentativas, tenta de novo
-        if (mounted && retryCount < 2 && (err.name === 'AbortError' || err.message?.includes('fetch'))) {
+        if (mounted && retryCount < 2 && (error.name === 'AbortError' || error.message?.includes('fetch'))) {
           console.log("Retrying admin load...");
           setTimeout(() => loadAdminData(retryCount + 1), 1000);
           return;
@@ -144,13 +159,21 @@ const AdminDashboard: React.FC = () => {
 
   const stats = [
     { icon: Users, label: 'Companies', value: clients.length, subValue: `${activeClients} ativos`, accent: 'blue' },
-    { icon: Layout, label: 'Perfis', value: totalProfiles, subValue: `em ${clients.length} contas`, accent: 'indigo' },
+    { icon: Layout, label: 'Perfis', value: totalProfiles, subValue: `em ${clients.length} contas`, accent: 'sky' },
     { icon: Activity, label: 'Eventos', value: totalEvents, subValue: 'analytics total', accent: 'emerald' },
-    { icon: ShieldCheck, label: 'Sistema', value: '99.9%', subValue: 'uptime', accent: 'purple' },
+    { icon: ShieldCheck, label: 'Sistema', value: '99.9%', subValue: 'uptime', accent: 'emerald' },
   ];
 
   const recentClients = clients.slice(0, 5);
-  const profileCounts: Record<string, number> = {}; // Placeholder por enquanto
+  const topProfiles = useMemo(() => {
+    // Agrupar perfis por volume de eventos (placeholder para lógica real se necessário)
+    // Por enquanto, mostraremos os perfis com featured: true primeiro
+    return [...allProfiles].sort((a, b) => {
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      return 0;
+    }).slice(0, 10);
+  }, [allProfiles]);
 
   const handleToggleProfile = async (profileId: string, field: 'featured' | 'showOnLanding', value: boolean) => {
     setTogglingId(profileId);
@@ -167,13 +190,65 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleCreateCompany = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateStatus = async (id: string, status: UpgradeRequest['status']) => {
+    setUpdatingRequestId(id);
     try {
-      const finalSlug = companyFormData.slug || companyFormData.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
+      await upgradeRequestsApi.updateStatus(id, status);
+      setUpgradeRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+      setSavedToast(`Status atualizado para ${status}`);
+      setTimeout(() => setSavedToast(''), 2000);
+    } catch (err) {
+      console.error('Error updating request status:', err);
+      alert('Erro ao atualizar status.');
+    } finally {
+      setUpdatingRequestId(null);
+    }
+  };
+
+  const handleApplyUpgrade = async (request: UpgradeRequest) => {
+    if (request.requestSource === 'new_client' || request.clientId === 'landing_page_lead') {
+      alert('Este é um novo lead. Por favor, crie a Company primeiro.');
+      return;
+    }
+
+    if (!window.confirm(`Deseja ativar o plano ${PLANS[request.requestedPlan as keyof typeof PLANS]?.name || request.requestedPlan} para ${request.name}?`)) {
+      return;
+    }
+
+    setUpdatingRequestId(request.id);
+    try {
+      const planInfo = PLANS[request.requestedPlan as keyof typeof PLANS];
+      if (!planInfo) throw new Error("Configuração de plano não encontrada.");
+
+      // 1. Atualizar o cliente
+      await clientsApi.update(request.clientId, {
+        plan: request.requestedPlan as PlanType,
+        maxProfiles: planInfo.maxProfiles
+      });
+
+      // 2. Fechar a solicitação
+      await upgradeRequestsApi.updateStatus(request.id, 'closed');
+
+      // 3. Atualizar estados locais
+      setUpgradeRequests(prev => prev.map(r => r.id === request.id ? { ...r, status: 'closed' } : r));
+      setClients(prev => prev.map(c => c.id === request.clientId ? { ...c, plan: request.requestedPlan as PlanType, maxProfiles: planInfo.maxProfiles } : c));
+
+      setSavedToast(`Upgrade aplicado com sucesso!`);
+      setTimeout(() => setSavedToast(''), 3000);
+    } catch (err: any) {
+      console.error('Error applying upgrade:', err);
+      alert('Erro ao aplicar upgrade: ' + err.message);
+    } finally {
+      setUpdatingRequestId(null);
+    }
+  };
+
+  const handleCreateCompany = async (formData: any) => {
+    try {
+      const finalSlug = formData.slug || formData.name.toLowerCase().trim().replace(/[^a-z0-9]/g, '-');
 
       await clientsApi.create({
-        ...companyFormData,
+        ...formData,
         slug: finalSlug,
         userType: 'client'
       });
@@ -201,10 +276,10 @@ const AdminDashboard: React.FC = () => {
           className="absolute inset-0 opacity-30"
           style={{
             background: `
-              radial-gradient(circle at ${mousePos.x}px ${mousePos.y}px, rgba(37, 99, 235, 0.06), transparent 40%),
-              radial-gradient(circle at 20% 80%, rgba(168, 85, 247, 0.03), transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.04), transparent 50%)
-            `
+radial - gradient(circle at ${mousePos.x}px ${mousePos.y}px, rgba(14, 165, 233, 0.06), transparent 40 %),
+  radial - gradient(circle at 20 % 80 %, rgba(16, 185, 129, 0.03), transparent 50 %),
+  radial - gradient(circle at 80 % 20 %, rgba(56, 189, 248, 0.04), transparent 50 %)
+    `
           }}
         />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:60px_60px]" />
@@ -234,11 +309,8 @@ const AdminDashboard: React.FC = () => {
               <ArrowUpRight size={12} className="text-zinc-600 group-hover:text-white transition-all" />
             </Link>
             <button
-              onClick={() => {
-                setCompanyFormData({ name: '', slug: '', email: '', password: '', plan: 'pro', maxProfiles: 3, isActive: true });
-                setIsCreateCompanyOpen(true);
-              }}
-              className="flex-1 sm:flex-none px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:shadow-lg hover:shadow-blue-600/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2.5 group active:scale-95"
+              onClick={() => setIsCreateCompanyOpen(true)}
+              className="flex-1 sm:flex-none px-5 py-3 bg-gradient-to-r from-blue-600 to-emerald-600 hover:shadow-lg hover:shadow-blue-600/20 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2.5 group active:scale-95"
             >
               <UserPlus size={14} />
               Criar nova Company
@@ -291,15 +363,20 @@ const AdminDashboard: React.FC = () => {
                 {recentClients.map((client) => (
                   <div key={client.id} className="flex items-center justify-between gap-3 px-6 py-3.5 hover:bg-white/[0.02] transition-colors group">
                     <div className="flex items-center gap-3.5 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border border-blue-500/20 flex items-center justify-center font-black text-sm text-blue-400 flex-shrink-0">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600/20 to-emerald-600/20 border border-blue-500/20 flex items-center justify-center font-black text-sm text-blue-400 flex-shrink-0">
                         {client.name.charAt(0).toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <div className="font-bold text-white text-sm truncate">{client.name}</div>
+                        <Link
+                          to="/admin/clients"
+                          className="font-bold text-white text-sm truncate hover:text-blue-400 transition-colors"
+                        >
+                          {client.name}
+                        </Link>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className={clsx(
                             "text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border",
-                            client.plan === 'enterprise' && "bg-purple-500/10 text-purple-400 border-purple-500/20",
+                            client.plan === 'enterprise' && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
                             client.plan === 'business' && "bg-amber-500/10 text-amber-400 border-amber-500/20",
                             client.plan === 'pro' && "bg-blue-500/10 text-blue-400 border-blue-500/20",
                             client.plan === 'starter' && "bg-zinc-800/50 text-zinc-500 border-zinc-700/50",
@@ -307,7 +384,31 @@ const AdminDashboard: React.FC = () => {
                             {PLANS[client.plan]?.name || client.plan}
                           </span>
                           <span className="text-[10px] text-zinc-700">•</span>
-                          <span className="text-[10px] text-zinc-600 tabular-nums">perfis ativos</span>
+                          <span className="text-[10px] text-zinc-600 tabular-nums">
+                            {allProfiles.filter(p => p.clientId === client.id).length} perfis ativos
+                          </span>
+                        </div>
+                        {/* Perfis Rápidos */}
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {allProfiles
+                            .filter(p => p.clientId === client.id)
+                            .slice(0, 3)
+                            .map(p => (
+                              <a
+                                key={p.id}
+                                href={`#/u/${p.slug}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[9px] px-1.5 py-0.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-zinc-500 hover:text-white transition-all underline decoration-white/0 hover:decoration-white/20"
+                              >
+                                /{p.slug}
+                              </a>
+                            ))}
+                          {allProfiles.filter(p => p.clientId === client.id).length > 3 && (
+                            <span className="text-[9px] text-zinc-700 italic flex items-center">
+                              + {allProfiles.filter(p => p.clientId === client.id).length - 3} mais
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -359,7 +460,7 @@ const AdminDashboard: React.FC = () => {
                 <div className="p-6">
                   <div className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-2">Conversion Rate</div>
                   <div className="text-2xl font-black tracking-tight mb-1">24.8%</div>
-                  <div className="text-[10px] text-purple-500 font-black uppercase tracking-widest">+2.1%</div>
+                  <div className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">+2.1%</div>
                 </div>
               </div>
             </div>
@@ -381,7 +482,7 @@ const AdminDashboard: React.FC = () => {
                 {allProfiles.length === 0 && (
                   <div className="px-6 py-8 text-center text-zinc-600 text-xs">Nenhum perfil encontrado.</div>
                 )}
-                {allProfiles.map((profile: any) => (
+                {topProfiles.map((profile: Profile) => (
                   <div key={profile.id} className="flex items-center justify-between gap-3 px-6 py-3.5 hover:bg-white/[0.02] transition-colors group">
                     <div className="flex items-center gap-3.5 min-w-0">
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center font-black text-sm text-zinc-400 flex-shrink-0 overflow-hidden">
@@ -393,7 +494,14 @@ const AdminDashboard: React.FC = () => {
                       </div>
                       <div className="min-w-0">
                         <div className="font-bold text-white text-sm truncate">{profile.displayName || 'Sem nome'}</div>
-                        <div className="text-[10px] text-zinc-600 truncate">/{profile.slug}</div>
+                        <a
+                          href={`#/u/${profile.slug}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] text-zinc-600 truncate hover:text-white transition-colors"
+                        >
+                          /{profile.slug}
+                        </a>
                       </div>
                     </div>
 
@@ -440,6 +548,107 @@ const AdminDashboard: React.FC = () => {
                 ))}
               </div>
             </div>
+
+            {/* Solicitações de Upgrade */}
+            <div className="bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-2xl overflow-hidden">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-blue-500/5">
+                <div>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-blue-400">Upgrade Center</span>
+                  <h3 className="text-lg font-black tracking-tight mt-0.5">Interesses de Upgrade</h3>
+                </div>
+                <div className="bg-blue-500/10 text-blue-400 text-[10px] font-black px-3 py-1 rounded-full border border-blue-500/20">
+                  {upgradeRequests.filter(r => r.status === 'pending').length} Pendentes
+                </div>
+              </div>
+
+              <div className="divide-y divide-white/[0.03]">
+                {upgradeRequests.length === 0 && (
+                  <div className="px-6 py-12 text-center text-zinc-600 text-xs italic">
+                    Nenhuma solicitação de upgrade registrada.
+                  </div>
+                )}
+                {upgradeRequests.map((request) => (
+                  <div key={request.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-4 hover:bg-white/[0.02] transition-colors group">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className={clsx(
+                        "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xs flex-shrink-0 border",
+                        request.status === 'pending' ? "bg-blue-500/10 border-blue-500/20 text-blue-400" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                      )}>
+                        {PLANS[request.requestedPlan as keyof typeof PLANS]?.name?.charAt(0) || 'U'}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-bold text-white text-sm flex items-center gap-2">
+                          {request.name}
+                          <span className={clsx(
+                            "text-[8px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest border",
+                            request.requestSource === 'new_client'
+                              ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                              : "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                          )}>
+                            {request.requestSource === 'new_client' ? 'Novo Lead' : 'Cliente Atual'}
+                          </span>
+                          <span className="text-[10px] bg-white/5 border border-white/10 px-1.5 py-0.5 rounded uppercase font-black tracking-widest text-zinc-500">
+                            → {PLANS[request.requestedPlan as keyof typeof PLANS]?.name || request.requestedPlan}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                          <span className="text-[11px] text-zinc-500 flex items-center gap-1.5">
+                            <Mail size={10} /> {request.email}
+                          </span>
+                          <span className="text-[11px] text-emerald-500 flex items-center gap-1.5 font-bold">
+                            <MessageCircle size={10} /> {request.whatsapp}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] text-zinc-700 tabular-nums">
+                        {new Date(request.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+
+                      {request.status !== 'closed' && request.requestSource === 'existing_client' && (
+                        <button
+                          onClick={() => handleApplyUpgrade(request)}
+                          disabled={updatingRequestId === request.id}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white border border-emerald-500/20 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all"
+                          title="Ativar Upgrade Imediatamente"
+                        >
+                          <Zap size={10} />
+                          Ativar
+                        </button>
+                      )}
+
+                      <select
+                        value={request.status}
+                        disabled={updatingRequestId === request.id}
+                        onChange={(e) => handleUpdateStatus(request.id, e.target.value as any)}
+                        className={clsx(
+                          "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border outline-none cursor-pointer transition-all",
+                          request.status === 'pending' && "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                          request.status === 'contacted' && "bg-amber-500/10 text-amber-400 border-amber-500/20",
+                          request.status === 'closed' && "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+                        )}
+                      >
+                        <option value="pending">Pendente</option>
+                        <option value="contacted">Contatado</option>
+                        <option value="closed">Finalizado</option>
+                      </select>
+
+                      <a
+                        href={`https://wa.me/${request.whatsapp.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-500 hover:text-white border border-emerald-500/20 rounded-lg transition-all"
+                        title="Chamar no WhatsApp"
+                      >
+                        <MessageCircle size={14} />
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* ─── Coluna direita (sidebar) ─── */}
@@ -464,7 +673,7 @@ const AdminDashboard: React.FC = () => {
                       <span className="font-black text-white">24.8%</span>
                     </div>
                     <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                      <div className="h-full w-[65%] bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" />
+                      <div className="h-full w-[65%] bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full" />
                     </div>
                   </div>
                   <div>
@@ -484,10 +693,10 @@ const AdminDashboard: React.FC = () => {
                   </button>
                 </div>
               </div>
-            </div>
+            </div >
 
             {/* Health System */}
-            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 shadow-lg shadow-blue-600/10 relative overflow-hidden group">
+            <div className="bg-gradient-to-br from-blue-600 to-emerald-700 rounded-2xl p-6 shadow-lg shadow-blue-600/10 relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:rotate-12 transition-transform duration-1000 pointer-events-none">
                 <Server size={100} />
               </div>
@@ -511,7 +720,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
               </div>
-            </div>
+            </div >
 
             {/* Recursos do Host */}
             <div className="bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-2xl p-6">
@@ -547,116 +756,19 @@ const AdminDashboard: React.FC = () => {
               >
                 Master Reset
               </button>
-            </div>
-          </div>
-        </div>
+            </div >
+          </div >
+        </div >
 
 
-      </main>
+      </main >
 
-      {/* ─── Modal: Criar Nova Company ─── */}
-      {isCreateCompanyOpen && (
-        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6 bg-black/95 backdrop-blur-3xl animate-in fade-in duration-300">
-          <div className="bg-zinc-900 border border-white/10 w-full max-w-xl rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300">
-            <button
-              onClick={() => setIsCreateCompanyOpen(false)}
-              className="absolute top-6 right-6 sm:top-8 sm:right-8 p-2 text-zinc-500 hover:text-white transition-all bg-white/5 rounded-full"
-            >
-              <X size={20} />
-            </button>
-
-            <form onSubmit={handleCreateCompany} className="p-6 sm:p-12 space-y-6 sm:space-y-8">
-              <div className="space-y-2 sm:space-y-3">
-                <div className="inline-flex bg-blue-500/10 text-blue-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-blue-500/20">
-                  Client Provisioning
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-black tracking-tighter">Nova Company</h2>
-                <p className="text-zinc-500 text-xs sm:text-sm">Defina credenciais de rede e limites operacionais.</p>
-              </div>
-
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Nome da Organização</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Agência Premium"
-                    value={companyFormData.name}
-                    onChange={(e) => setCompanyFormData({ ...companyFormData, name: e.target.value })}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-4 text-sm font-bold focus:border-blue-500 outline-none transition-all"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">E-mail de Login</label>
-                    <input
-                      type="email"
-                      required
-                      placeholder="email@empresa.com"
-                      value={companyFormData.email}
-                      onChange={(e) => setCompanyFormData({ ...companyFormData, email: e.target.value })}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-4 text-sm font-bold focus:border-blue-500 outline-none transition-all"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Senha (Access Token)</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Crie uma senha forte"
-                      value={companyFormData.password}
-                      onChange={(e) => setCompanyFormData({ ...companyFormData, password: e.target.value })}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-4 text-sm font-mono focus:border-blue-500 outline-none transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Nível de Serviço</label>
-                    <div className="relative">
-                      <select
-                        value={companyFormData.plan}
-                        onChange={(e) => {
-                          const newPlanId = e.target.value as PlanType;
-                          const newPlan = PLANS[newPlanId];
-                          setCompanyFormData({ ...companyFormData, plan: newPlanId, maxProfiles: newPlan.maxProfiles });
-                        }}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-4 text-sm font-bold outline-none appearance-none cursor-pointer"
-                      >
-                        {PLAN_TYPES.map(planId => (
-                          <option key={planId} value={planId}>{PLANS[planId].name}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500" size={16} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Limite de Perfis (Slots)</label>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      value={companyFormData.maxProfiles}
-                      onChange={(e) => setCompanyFormData({ ...companyFormData, maxProfiles: parseInt(e.target.value) })}
-                      className="w-full bg-black/40 border border-white/10 rounded-xl px-5 py-4 text-sm font-bold outline-none transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full bg-white text-black py-5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-xl"
-              >
-                Finalizar Provisionamento
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+      <CompanyModal
+        isOpen={isCreateCompanyOpen}
+        onClose={() => setIsCreateCompanyOpen(false)}
+        onSubmit={handleCreateCompany}
+      />
+    </div >
   );
 };
 

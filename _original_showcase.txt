@@ -1,0 +1,10 @@
+﻿git : fatal: path 'components/editor/ShowcaseTab.tsx' exists 
+on disk, but not in 'HEAD'
+No linha:1 caractere:1
++ git show HEAD:components/editor/ShowcaseTab.tsx 2>&1 | 
+Out-File -Enco ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (fatal: path 'co. 
+   ..t not in 'HEAD':String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

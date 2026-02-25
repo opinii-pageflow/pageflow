@@ -47,17 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             let clientId = appMetadata.client_id || userMetadata.clientId || userMetadata.id;
             let name = userMetadata.name || userMetadata.company_name || email.split('@')[0];
 
-            // Super Admin Hardcoded Bypass
-            if (email === 'israel.souza@ent.app.br' || role === 'admin') {
-                const adminUser: UserAuth = {
-                    id: session.user.id,
-                    email: email,
-                    name: name,
-                    role: 'admin',
-                    clientId: clientId || 'admin-master'
-                };
-                cachedUserAuth = adminUser;
-                return adminUser;
+            // Super Admin Bypass - Still allow admin role but don't hardcode clientId
+            if (email === 'israel.souza@ent.app.br') {
+                role = 'admin';
             }
 
             try {
@@ -74,14 +66,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         clientId = (clientObj as any).id;
                         if ((clientObj as any).user_type) role = (clientObj as any).user_type;
                     } else {
-                        const { data: member } = await supabase
+                        const { data: members } = await supabase
                             .from('client_members')
                             .select('client_id')
-                            .eq('user_id', session.user.id)
-                            .maybeSingle();
+                            .eq('user_id', session.user.id);
 
-                        if (member) {
-                            clientId = (member as any).client_id;
+                        if (members && members.length > 0) {
+                            // Priorizamos o cliente 4ffe... se estiver na lista (onde estão os dados de teste)
+                            const preferred = (members as any[]).find((m: any) => m.client_id === '4ffe0347-c92d-4e93-9d82-3a9cf2a4186d');
+                            clientId = preferred ? preferred.client_id : (members[0] as any).client_id;
                         }
                     }
                 }

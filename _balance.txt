@@ -1,0 +1,62 @@
+﻿Return statement at line: 425
+1194 | d:-5 | -1 | </div>
+1195 | d:-6 | -1 | </div>
+1197 | d:-7 | -1 | </div>
+1198 | d:-8 | -1 | </div>
+1199 | d:-9 | -1 | </div>
+1202 | d:-8 | +1 | <div className="bg-black/20 rounded-[2rem] p-8 border border-white/5 s
+1203 | d:-7 | +1 | <div className="flex items-center justify-between">
+1204 | d:-6 | +1 | <div className="flex items-center gap-3">
+1205 | d:-5 | +1 | <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald
+1207 | d:-6 | -1 | </div>
+1208 | d:-5 | +1 | <div>
+1209 | d:-4 | +1 | <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-
+1211 | d:-5 | -1 | </div>
+1212 | d:-6 | -1 | </div>
+1218 | d:-7 | -1 | </button>
+1219 | d:-8 | -1 | </div>
+1221 | d:-7 | +1 | <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+1223 | d:-6 | +1 | <div key={t.id} className="bg-zinc-900/60 border border-white/5 p-6 ro
+1229 | d:-7 | -1 | </button>
+1230 | d:-6 | +1 | <div className="space-y-4">
+1231 | d:-5 | +1 | <div className="flex items-center gap-3">
+1232 | d:-4 | +1 | <div className="w-10 h-10 rounded-xl bg-black/40 border border-white/1
+1252 | d:-5 | -1 | </div>
+1259 | d:-6 | -1 | </div>
+1270 | d:-5 | +1 | <div className="flex gap-2 pt-2 border-t border-white/5">
+1271 | d:-4 | +1 | <div className="flex-1 space-y-2">
+1272 | d:-3 | +1 | <div className="flex items-center gap-2">
+1275 | d:-4 | -1 | </div>
+1276 | d:-3 | +1 | <div className="relative h-16 rounded-xl bg-black/40 border border-whi
+1278 | d:-2 | +1 | <>
+1280 | d:-1 | +1 | <button onClick={() => updateTestimonial(t.id, { imageUrl: '' })} clas
+1282 | d:-2 | -1 | </button>
+1283 | d:-3 | -1 | </>
+1285 | d:-2 | +1 | <label className="cursor-pointer text-zinc-700 hover:text-white transi
+1287 | d:-1 | +1 | <input type="file" accept="image/*" className="hidden" onChange={(e) =
+1294 | d:-2 | -1 | </label>
+1296 | d:-3 | -1 | </div>
+1297 | d:-4 | -1 | </div>
+1298 | d:-3 | +1 | <div className="flex-[2] space-y-2">
+1299 | d:-2 | +1 | <div className="flex items-center gap-2">
+1302 | d:-3 | -1 | </div>
+1309 | d:-4 | -1 | </div>
+1310 | d:-5 | -1 | </div>
+1311 | d:-6 | -1 | </div>
+1312 | d:-7 | -1 | </div>
+1314 | d:-8 | -1 | </div>
+1315 | d:-9 | -1 | </div>
+1318 | d:-8 | +1 | <div className="pt-6 border-t border-white/5 flex gap-3">
+1330 | d:-9 | -1 | </button>
+1336 | d:-10 | -1 | </button>
+1337 | d:-11 | -1 | </div>
+1338 | d:-12 | -1 | </div>
+1340 | d:-13 | -1 | </div>
+1343 | d:-14 | -1 | </div>
+1344 | d:-15 | -1 | </div>
+
+Final depth: -15
+Min depth: -15
+
+WARNING: JSX is unbalanced by -15 tag(s)
+Extra 15 closing tag(s)

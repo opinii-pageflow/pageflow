@@ -7,11 +7,13 @@ import PublicProfileRenderer from '@/components/preview/PublicProfileRenderer';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { profilesApi } from '@/lib/api/profiles';
 import { clientsApi } from '@/lib/api/clients';
+import { showcaseApi } from '@/lib/api/showcase';
 
 const PublicProfile: React.FC = () => {
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [showcase, setShowcase] = useState<any>(null);
   const [client, setClient] = useState<any>(null);
   const [clientPlan, setClientPlan] = useState<PlanType | undefined>();
   const [loading, setLoading] = useState(true);
@@ -30,6 +32,15 @@ const PublicProfile: React.FC = () => {
 
         if (found) {
           setProfile(found);
+
+          // Busca status da vitrine
+          try {
+            const scData = await showcaseApi.getByProfileId(found.id);
+            setShowcase(scData);
+          } catch (scErr) {
+            console.warn("Showcase not found or inactive:", scErr);
+          }
+
           const clientData = await clientsApi.getById(found.clientId);
           setClient(clientData);
           setClientPlan(clientData?.plan);
@@ -109,6 +120,7 @@ const PublicProfile: React.FC = () => {
           isPreview={false}
           clientPlan={clientPlan}
           client={client}
+          showcase={showcase}
           source={source}
           utm={utm}
         />

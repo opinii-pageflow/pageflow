@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { Profile, ProfileButton, CatalogItem, PortfolioItem, YoutubeVideoItem, SchedulingSlot } from '@/types';
+import { storageApi } from './storage';
 
 const isUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
@@ -18,7 +19,7 @@ function mapProfile(p: any): Profile {
         coverUrl: p.cover_url,
         layoutTemplate: p.layout_template,
         visibilityMode: p.visibility_mode,
-        password: p.password,
+        // password intentionally removed for security
         theme: p.theme || {},
         fonts: p.fonts || {},
         createdAt: p.created_at,
@@ -41,7 +42,7 @@ function mapProfile(p: any): Profile {
         showInCommunity: p.show_in_community,
         communitySegment: p.community_segment,
         communityCity: p.community_city,
-        communityState: p.community_state,
+        // communityState removed (not in DB)
         communityServiceMode: p.community_service_mode,
         communityPunchline: p.community_punchline,
         communityPrimaryCta: p.community_primary_cta,
@@ -141,7 +142,7 @@ function mapButton(b: any): ProfileButton {
         label: b.label,
         value: b.value,
         enabled: b.enabled,
-        visibility: b.visibility as any,
+        visibility: b.visibility as ProfileButton['visibility'],
         pinned: b.pinned,
         sortOrder: b.sort_order,
         style: b.style || {},
@@ -163,20 +164,35 @@ export const profilesApi = {
         return (data || []).map(mapProfile);
     },
 
+    getByIds: async (ids: string[]): Promise<Profile[]> => {
+        if (!ids.length) return [];
+        const { data, error } = await (supabase.from('profiles') as any)
+            .select('id, client_id, slug, display_name, headline, bio_short, avatar_url, updated_at')
+            .in('id', ids);
+
+        if (error) {
+            console.error('Error fetching profiles by ids:', error);
+            return [];
+        }
+
+        return (data || []).map(mapProfile);
+    },
+
     listCommunity: async (): Promise<Profile[]> => {
         const { data: profiles, error } = await (supabase.from('profiles') as any)
             .select(`
                 id, client_id, slug, profile_type, display_name, headline, bio_short, avatar_url, cover_url, 
                 layout_template, visibility_mode, theme, fonts, module_themes, created_at, updated_at,
-                show_in_community, community_segment, community_city, community_state, 
+                show_in_community, community_segment, community_city, 
                 community_punchline, sponsored_enabled, sponsored_until, sponsored_segment,
                 promotion_enabled, promotion_title, promotion_description, promotion_discount_percentage,
                 promotion_current_price, promotion_image_url, promotion_whatsapp, booking_whatsapp, featured,
                 pix_key, enable_lead_capture, enable_nps, hide_branding,
-                profile_buttons(*),
-                catalog_items(*),
-                portfolio_items(*),
-                youtube_videos(*)
+                profile_buttons(id, type, label, value, enabled, visibility, sort_order),
+                catalog_items(id, title, description, price_text, image_url, cta_label, cta_link, sort_order, is_active),
+                portfolio_items(id, title, image_url, sort_order, is_active),
+                youtube_videos(id, title, url, sort_order, is_active),
+                showcases(id, is_active, community_click_destination)
             `)
             .eq('show_in_community', true)
             .eq('visibility_mode', 'public')
@@ -197,6 +213,9 @@ export const profilesApi = {
             profile.catalogItems = (p.catalog_items || []).map(mapCatalogItem);
             profile.portfolioItems = (p.portfolio_items || []).map(mapPortfolioItem);
             profile.youtubeVideos = (p.youtube_videos || []).map(mapVideoItem);
+            const showcase = Array.isArray(p.showcases) ? p.showcases[0] : (p.showcases as any);
+            profile.communityClickDestination = showcase?.community_click_destination || 'profile';
+            profile.hasShowcase = showcase?.is_active === true;
             return profile;
         });
     },
@@ -206,15 +225,16 @@ export const profilesApi = {
             .select(`
                 id, client_id, slug, profile_type, display_name, headline, bio_short, avatar_url, cover_url, 
                 layout_template, visibility_mode, theme, fonts, module_themes, created_at, updated_at,
-                show_on_landing, community_segment, community_city, community_state,
+                show_on_landing, community_segment, community_city,
                 community_punchline, sponsored_enabled, sponsored_until, sponsored_segment,
                 promotion_enabled, promotion_title, promotion_description, promotion_discount_percentage,
                 promotion_current_price, promotion_image_url, promotion_whatsapp, booking_whatsapp, featured,
                 pix_key, enable_lead_capture, enable_nps, hide_branding,
-                profile_buttons(*),
-                catalog_items(*),
-                portfolio_items(*),
-                youtube_videos(*)
+                profile_buttons(id, type, label, value, enabled, visibility, sort_order),
+                catalog_items(id, title, description, price_text, image_url, cta_label, cta_link, sort_order, is_active),
+                portfolio_items(id, title, image_url, sort_order, is_active),
+                youtube_videos(id, title, url, sort_order, is_active),
+                showcases(id, is_active, community_click_destination)
             `)
             .eq('show_on_landing', true)
             .eq('visibility_mode', 'public')
@@ -235,13 +255,16 @@ export const profilesApi = {
             profile.catalogItems = (p.catalog_items || []).map(mapCatalogItem);
             profile.portfolioItems = (p.portfolio_items || []).map(mapPortfolioItem);
             profile.youtubeVideos = (p.youtube_videos || []).map(mapVideoItem);
+            const showcase = Array.isArray(p.showcases) ? p.showcases[0] : (p.showcases as any);
+            profile.communityClickDestination = showcase?.community_click_destination || 'profile';
+            profile.hasShowcase = showcase?.is_active === true;
             return profile;
         });
     },
 
     listFeaturedProfiles: async (): Promise<Profile[]> => {
         const { data: profiles, error } = await (supabase.from('profiles') as any)
-            .select('*')
+            .select('id, client_id, slug, profile_type, display_name, headline, bio_short, avatar_url, cover_url, layout_template, theme, fonts, module_themes, featured, updated_at, showcases(id, is_active, community_click_destination)')
             .eq('featured', true)
             .eq('visibility_mode', 'public')
             .order('created_at', { ascending: false });
@@ -251,7 +274,13 @@ export const profilesApi = {
             return [];
         }
 
-        return (profiles || []).map(mapProfile);
+        return (profiles || []).map(p => {
+            const profile = mapProfile(p);
+            const showcase = Array.isArray(p.showcases) ? p.showcases[0] : (p.showcases as any);
+            profile.communityClickDestination = showcase?.community_click_destination || 'profile';
+            profile.hasShowcase = showcase?.is_active === true;
+            return profile;
+        });
     },
 
     listByClient: async (clientId: string): Promise<Profile[]> => {
@@ -259,7 +288,8 @@ export const profilesApi = {
             .select(`
                 id, client_id, display_name, slug, avatar_url, updated_at, layout_template, 
                 theme, fonts,
-                profile_buttons(*)
+                profile_buttons(*),
+                scheduling_slots(*)
             `)
             .eq('client_id', clientId)
             .order('created_at', { ascending: true })
@@ -273,13 +303,25 @@ export const profilesApi = {
         return (profiles || []).map(p => {
             const profile = mapProfile(p);
             profile.buttons = (p.profile_buttons || []).map(mapButton);
+            profile.nativeSlots = (p.scheduling_slots || []).map(mapSlot);
             return profile;
         });
     },
 
     getBySlug: async (slug: string) => {
         const { data, error } = await (supabase.from('profiles') as any)
-            .select('*')
+            .select(`
+                id, client_id, slug, profile_type, display_name, headline, bio_short, bio_long, avatar_url, cover_url, 
+                layout_template, visibility_mode, theme, fonts, created_at, updated_at,
+                pix_key, enable_lead_capture, enable_nps, nps_redirect_url, hide_branding,
+                enable_scheduling, scheduling_mode, external_booking_url, booking_whatsapp,
+                show_in_community, community_segment, community_city, community_service_mode, 
+                community_punchline, community_primary_cta, community_gmb_link,
+                promotion_enabled, promotion_title, promotion_description, promotion_discount_percentage,
+                promotion_current_price, promotion_image_url, promotion_whatsapp,
+                sponsored_enabled, sponsored_until, sponsored_segment,
+                featured, show_on_landing, module_themes, general_module_theme
+            `)
             .eq('slug', slug)
             .maybeSingle();
 
@@ -295,11 +337,11 @@ export const profilesApi = {
             { data: videos },
             { data: slots }
         ] = await Promise.all([
-            (supabase.from('profile_buttons') as any).select('*').eq('profile_id', id).order('sort_order', { ascending: true }),
-            (supabase.from('catalog_items') as any).select('*').eq('profile_id', id).order('sort_order', { ascending: true }),
-            (supabase.from('portfolio_items') as any).select('*').eq('profile_id', id).order('sort_order', { ascending: true }),
-            (supabase.from('youtube_videos') as any).select('*').eq('profile_id', id).order('sort_order', { ascending: true }),
-            (supabase.from('scheduling_slots') as any).select('*').eq('profile_id', id).order('day_of_week', { ascending: true })
+            (supabase.from('profile_buttons') as any).select('id, profile_id, type, label, value, enabled, visibility, pinned, sort_order, style, client_id').eq('profile_id', id).order('sort_order', { ascending: true }),
+            (supabase.from('catalog_items') as any).select('id, profile_id, kind, title, description, price_text, image_url, cta_label, cta_link, sort_order, is_active, client_id').eq('profile_id', id).order('sort_order', { ascending: true }),
+            (supabase.from('portfolio_items') as any).select('id, profile_id, title, image_url, sort_order, is_active, client_id').eq('profile_id', id).order('sort_order', { ascending: true }),
+            (supabase.from('youtube_videos') as any).select('id, profile_id, title, url, sort_order, is_active, client_id').eq('profile_id', id).order('sort_order', { ascending: true }),
+            (supabase.from('scheduling_slots') as any).select('id, day_of_week, start_time, end_time, is_active, status, booked_by, booked_at, client_id').eq('profile_id', id).order('day_of_week', { ascending: true })
         ]);
 
         profile.buttons = (buttons || []).map(mapButton);
@@ -314,7 +356,18 @@ export const profilesApi = {
     getById: async (id: string): Promise<Profile | null> => {
         console.log(`[profilesApi] Fetching full profile for ${id}...`);
         const { data, error } = await (supabase.from('profiles') as any)
-            .select('*')
+            .select(`
+                id, client_id, slug, profile_type, display_name, headline, bio_short, bio_long, avatar_url, cover_url, 
+                layout_template, visibility_mode, theme, fonts, created_at, updated_at,
+                pix_key, enable_lead_capture, enable_nps, nps_redirect_url, hide_branding,
+                enable_scheduling, scheduling_mode, external_booking_url, booking_whatsapp,
+                show_in_community, community_segment, community_city, community_service_mode, 
+                community_punchline, community_primary_cta, community_gmb_link,
+                promotion_enabled, promotion_title, promotion_description, promotion_discount_percentage,
+                promotion_current_price, promotion_image_url, promotion_whatsapp,
+                sponsored_enabled, sponsored_until, sponsored_segment,
+                featured, show_on_landing, module_themes, general_module_theme
+            `)
             .eq('id', id)
             .maybeSingle();
 
@@ -400,8 +453,43 @@ export const profilesApi = {
         if (updates.headline !== undefined) dbUpdates.headline = updates.headline;
         if (updates.bioShort !== undefined) dbUpdates.bio_short = updates.bioShort;
         if (updates.bioLong !== undefined) dbUpdates.bio_long = updates.bioLong;
-        if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl;
-        if (updates.coverUrl !== undefined) dbUpdates.cover_url = updates.coverUrl;
+        if (updates.bioLong !== undefined) dbUpdates.bio_long = updates.bioLong;
+
+        // Handle Avatar and Cover Uploads
+        if (updates.avatarUrl && updates.avatarUrl.startsWith('data:')) {
+            try {
+                dbUpdates.avatar_url = await storageApi.uploadImage(`avatars/${id}.jpg`, updates.avatarUrl);
+            } catch (err) {
+                console.error("[profilesApi] Critical: Failed to upload avatar:", err);
+                throw new Error("Falha ao enviar avatar. Tente novamente.");
+            }
+        } else if (updates.avatarUrl !== undefined) {
+            dbUpdates.avatar_url = updates.avatarUrl;
+        }
+
+        if (updates.coverUrl && updates.coverUrl.startsWith('data:')) {
+            try {
+                dbUpdates.cover_url = await storageApi.uploadImage(`covers/${id}.jpg`, updates.coverUrl);
+            } catch (err) {
+                console.error("[profilesApi] Critical: Failed to upload cover:", err);
+                throw new Error("Falha ao enviar capa. Tente novamente.");
+            }
+        } else if (updates.coverUrl !== undefined) {
+            dbUpdates.cover_url = updates.coverUrl;
+        }
+
+        // Handle Promotion Image Upload
+        if (updates.promotionImageUrl && updates.promotionImageUrl.startsWith('data:')) {
+            try {
+                dbUpdates.promotion_image_url = await storageApi.uploadImage(`promotions/${id}.jpg`, updates.promotionImageUrl);
+            } catch (err) {
+                console.error("[profilesApi] Critical: Failed to upload promotion image:", err);
+                throw new Error("Falha ao enviar imagem da promoção.");
+            }
+        } else if (updates.promotionImageUrl !== undefined) {
+            dbUpdates.promotion_image_url = updates.promotionImageUrl;
+        }
+
         if (updates.theme) dbUpdates.theme = updates.theme;
         if (updates.fonts) dbUpdates.fonts = updates.fonts;
         if (updates.slug) dbUpdates.slug = updates.slug;
@@ -420,7 +508,6 @@ export const profilesApi = {
         if (updates.showInCommunity !== undefined) dbUpdates.show_in_community = updates.showInCommunity;
         if (updates.communitySegment !== undefined) dbUpdates.community_segment = updates.communitySegment;
         if (updates.communityCity !== undefined) dbUpdates.community_city = updates.communityCity;
-        if (updates.communityState !== undefined) dbUpdates.community_state = updates.communityState;
         if (updates.communityPunchline !== undefined) dbUpdates.community_punchline = updates.communityPunchline;
         if (updates.communityServiceMode !== undefined) dbUpdates.community_service_mode = updates.communityServiceMode;
         if (updates.communityPrimaryCta !== undefined) dbUpdates.community_primary_cta = updates.communityPrimaryCta;
@@ -458,122 +545,144 @@ export const profilesApi = {
         console.log(`[profilesApi] Syncing buttons for ${profileId}...`);
         const activeIds = buttons.map(b => b.id).filter(id => id && isUUID(id));
 
+        const deleteQuery = (supabase.from('profile_buttons') as any).delete().eq('profile_id', profileId);
         if (activeIds.length > 0) {
-            await (supabase.from('profile_buttons') as any).delete().eq('profile_id', profileId).not('id', 'in', `(${activeIds.join(',')})`);
+            await deleteQuery.not('id', 'in', `(${activeIds.join(',')})`);
         } else {
-            await (supabase.from('profile_buttons') as any).delete().eq('profile_id', profileId);
+            await deleteQuery;
         }
 
-        const upsertData = buttons.map((b, idx) => {
-            const data: any = {
-                profile_id: profileId,
-                client_id: clientId || b.clientId,
-                type: b.type || 'link',
-                label: b.label || '',
-                value: b.value || '',
-                enabled: b.enabled !== false,
-                pinned: b.pinned || false,
-                visibility: b.visibility || 'public',
-                style: b.style || {},
-                sort_order: idx
-            };
-            if (b.id && isUUID(b.id)) data.id = b.id;
-            return data;
-        });
+        if (buttons.length === 0) return;
 
-        if (upsertData.length > 0) {
-            const { error } = await (supabase.from('profile_buttons') as any).upsert(upsertData);
-            if (error) throw error;
-        }
+        const upsertData = buttons.map((b, idx) => ({
+            id: (b.id && isUUID(b.id)) ? b.id : undefined,
+            profile_id: profileId,
+            client_id: clientId || b.clientId,
+            type: b.type || 'link',
+            label: b.label || '',
+            value: b.value || '',
+            enabled: b.enabled !== false,
+            pinned: b.pinned || false,
+            visibility: b.visibility || 'public',
+            style: b.style || {},
+            sort_order: idx
+        }));
+
+        const { error } = await (supabase.from('profile_buttons') as any).upsert(upsertData);
+        if (error) throw error;
     },
 
     syncCatalogItems: async (profileId: string, items: CatalogItem[], clientId?: string) => {
         console.log(`[profilesApi] Syncing catalog for ${profileId}...`);
         const activeIds = items.map(i => i.id).filter(id => id && isUUID(id));
 
+        const deleteQuery = (supabase.from('catalog_items') as any).delete().eq('profile_id', profileId);
         if (activeIds.length > 0) {
-            await (supabase.from('catalog_items') as any).delete().eq('profile_id', profileId).not('id', 'in', `(${activeIds.join(',')})`);
+            await deleteQuery.not('id', 'in', `(${activeIds.join(',')})`);
         } else {
-            await (supabase.from('catalog_items') as any).delete().eq('profile_id', profileId);
+            await deleteQuery;
         }
 
-        if (!items || items.length === 0) return;
+        if (!items || items.length === 0) return [];
 
-        const upsertData = items.map((item, idx) => {
+        const processed = await Promise.all(items.map(async (item, idx) => {
+            let imageUrl = item.imageUrl;
+            if (imageUrl && imageUrl.startsWith('data:')) {
+                try {
+                    imageUrl = await storageApi.uploadImage(`catalog/${profileId}_${item.id || idx}.jpg`, imageUrl);
+                } catch (err) {
+                    console.error("[profilesApi] Failed to upload catalog image:", err);
+                }
+            }
+
             const data: any = {
+                id: (item.id && isUUID(item.id)) ? item.id : undefined,
                 profile_id: profileId,
                 client_id: clientId || item.clientId,
                 kind: item.kind || 'service',
                 title: item.title || '',
                 description: item.description || '',
                 price_text: item.priceText || '',
-                image_url: item.imageUrl || '',
+                image_url: imageUrl,
                 cta_label: item.ctaLabel || '',
                 cta_link: item.ctaLink || '',
                 is_active: item.isActive !== false,
                 sort_order: idx
             };
-            if (item.id && isUUID(item.id)) data.id = item.id;
-            return data;
-        });
 
-        const { error } = await (supabase.from('catalog_items') as any).upsert(upsertData);
+            return { data, obj: { ...item, imageUrl } };
+        }));
+
+        const { error } = await (supabase.from('catalog_items') as any).upsert(processed.map(p => p.data));
         if (error) throw error;
+
+        return processed.map(p => p.obj);
     },
 
     syncPortfolioItems: async (profileId: string, items: PortfolioItem[], clientId?: string) => {
         console.log(`[profilesApi] Syncing portfolio for ${profileId}...`);
         const activeIds = items.map(i => i.id).filter(id => id && isUUID(id));
 
+        const deleteQuery = (supabase.from('portfolio_items') as any).delete().eq('profile_id', profileId);
         if (activeIds.length > 0) {
-            await (supabase.from('portfolio_items') as any).delete().eq('profile_id', profileId).not('id', 'in', `(${activeIds.join(',')})`);
+            await deleteQuery.not('id', 'in', `(${activeIds.join(',')})`);
         } else {
-            await (supabase.from('portfolio_items') as any).delete().eq('profile_id', profileId);
+            await deleteQuery;
         }
 
-        if (!items || items.length === 0) return;
+        if (!items || items.length === 0) return [];
 
-        const upsertData = items.map((item, idx) => {
+        const processed = await Promise.all(items.map(async (item, idx) => {
+            let imageUrl = item.imageUrl;
+            if (imageUrl && imageUrl.startsWith('data:')) {
+                try {
+                    imageUrl = await storageApi.uploadImage(`portfolio/${profileId}_${item.id || idx}.jpg`, imageUrl);
+                } catch (err) {
+                    console.error("[profilesApi] Failed to upload portfolio image:", err);
+                }
+            }
+
             const data: any = {
+                id: (item.id && isUUID(item.id)) ? item.id : undefined,
                 profile_id: profileId,
                 client_id: clientId || item.clientId,
                 title: item.title || '',
-                image_url: item.imageUrl || '',
+                image_url: imageUrl || '',
                 is_active: item.isActive !== false,
                 sort_order: idx
             };
-            if (item.id && isUUID(item.id)) data.id = item.id;
-            return data;
-        });
 
-        const { error } = await (supabase.from('portfolio_items') as any).upsert(upsertData);
+            return { data, obj: { ...item, imageUrl } };
+        }));
+
+        const { error } = await (supabase.from('portfolio_items') as any).upsert(processed.map(p => p.data));
         if (error) throw error;
+
+        return processed.map(p => p.obj);
     },
 
     syncYoutubeVideos: async (profileId: string, items: YoutubeVideoItem[], clientId?: string) => {
         console.log(`[profilesApi] Syncing videos for ${profileId}...`);
         const activeIds = items.map(i => i.id).filter(id => id && isUUID(id));
 
+        const deleteQuery = (supabase.from('youtube_videos') as any).delete().eq('profile_id', profileId);
         if (activeIds.length > 0) {
-            await (supabase.from('youtube_videos') as any).delete().eq('profile_id', profileId).not('id', 'in', `(${activeIds.join(',')})`);
+            await deleteQuery.not('id', 'in', `(${activeIds.join(',')})`);
         } else {
-            await (supabase.from('youtube_videos') as any).delete().eq('profile_id', profileId);
+            await deleteQuery;
         }
 
         if (!items || items.length === 0) return;
 
-        const upsertData = items.map((item, idx) => {
-            const data: any = {
-                profile_id: profileId,
-                client_id: clientId || item.clientId,
-                title: item.title || '',
-                url: item.url || '',
-                is_active: item.isActive !== false,
-                sort_order: idx
-            };
-            if (item.id && isUUID(item.id)) data.id = item.id;
-            return data;
-        });
+        const upsertData = items.map((item, idx) => ({
+            id: (item.id && isUUID(item.id)) ? item.id : undefined,
+            profile_id: profileId,
+            client_id: clientId || item.clientId,
+            title: item.title || '',
+            url: item.url || '',
+            is_active: item.isActive !== false,
+            sort_order: idx
+        }));
 
         const { error } = await (supabase.from('youtube_videos') as any).upsert(upsertData);
         if (error) throw error;
@@ -583,27 +692,25 @@ export const profilesApi = {
         console.log(`[profilesApi] Syncing slots for ${profileId}...`);
         const activeIds = items.map(i => i.id).filter(id => id && isUUID(id));
 
+        const deleteQuery = (supabase.from('scheduling_slots') as any).delete().eq('profile_id', profileId);
         if (activeIds.length > 0) {
-            await (supabase.from('scheduling_slots') as any).delete().eq('profile_id', profileId).not('id', 'in', `(${activeIds.join(',')})`);
+            await deleteQuery.not('id', 'in', `(${activeIds.join(',')})`);
         } else {
-            await (supabase.from('scheduling_slots') as any).delete().eq('profile_id', profileId);
+            await deleteQuery;
         }
 
         if (!items || items.length === 0) return;
 
-        const upsertData = items.map((item) => {
-            const data: any = {
-                profile_id: profileId,
-                client_id: clientId || item.clientId,
-                day_of_week: item.dayOfWeek,
-                start_time: item.startTime,
-                end_time: item.endTime,
-                is_active: item.isActive !== false,
-                status: item.status || 'available'
-            };
-            if (item.id && isUUID(item.id)) data.id = item.id;
-            return data;
-        });
+        const upsertData = items.map((item) => ({
+            id: (item.id && isUUID(item.id)) ? item.id : undefined,
+            profile_id: profileId,
+            client_id: clientId || item.clientId,
+            day_of_week: item.dayOfWeek,
+            start_time: item.startTime,
+            end_time: item.endTime,
+            is_active: item.isActive !== false,
+            status: item.status || 'available'
+        }));
 
         const { error } = await (supabase.from('scheduling_slots') as any).upsert(upsertData);
         if (error) throw error;

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useRef } from 'react';
-import { Profile, AnalyticsSource, PlanType, CatalogItem, SchedulingSlot, ModuleType, UtmParams } from '../../types';
+import { Profile, AnalyticsSource, PlanType, CatalogItem, SchedulingSlot, ModuleType, UtmParams, Showcase } from '../../types';
 import { formatLink } from '@/lib/linkHelpers';
 import { trackEvent } from '@/lib/analytics';
 import { backgroundPresets } from '@/lib/backgroundPresets';
@@ -18,6 +18,7 @@ interface Props {
   isPreview?: boolean;
   clientPlan?: PlanType;
   client?: any;
+  showcase?: (Showcase & { items: any[] }) | null;
   source?: AnalyticsSource;
   utm?: UtmParams;
 }
@@ -106,7 +107,7 @@ const getBrandColor = (type: string): string | null => {
   }
 };
 
-const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan, client, source = 'direct', utm }) => {
+const PublicProfileRenderer = React.memo<Props>(({ profile, isPreview, clientPlan, client, showcase, source = 'direct', utm }) => {
   const DEFAULT_THEME = {
     primary: '#3b82f6',
     text: '#ffffff',
@@ -393,6 +394,17 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
 
                       setBookingSuccess(true);
 
+                      // Track Analytics Event for Conversion
+                      trackEvent({
+                        clientId: profile.clientId,
+                        profileId: profile.id,
+                        type: 'appointment_requested' as any,
+                        assetType: 'scheduling' as any,
+                        assetId: 'booking_modal',
+                        source,
+                        utm
+                      });
+
                       // Optional: Open WhatsApp after a short delay
                       if (profile.bookingWhatsapp) {
                         const text = encodeURIComponent(`Olá! Acabei de solicitar um agendamento para ${dayName} às ${time} pelo seu perfil PageFlow. Nome: ${bookingName}.`);
@@ -588,9 +600,10 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
     let textColor = textColorOverride || theme.text || '#ffffff';
     let titleColor = titleColorOverride || theme.text || '#ffffff';
     let mutedColor = theme.muted || 'rgba(255,255,255,0.6)';
-    let inputBg = 'rgba(0,0,0,0.2)';
+    let inputBg = 'rgba(255,255,255,0.05)';
     let inputBorder = `${borderWidth} solid ${theme.border}`;
     let inputFocusBorder = `${borderWidth} solid ${primary}`;
+    let placeholderColor = theme.muted || 'rgba(255,255,255,0.5)';
 
     switch (effectiveStyle) {
       case 'minimal':
@@ -612,8 +625,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
         textColor = '#000000';
         titleColor = '#000000';
         mutedColor = 'rgba(0,0,0,0.6)';
-        inputBg = 'rgba(0,0,0,0.05)';
+        inputBg = 'rgba(0,0,0,0.08)';
         inputBorder = '2px solid #000000';
+        placeholderColor = 'rgba(0,0,0,0.4)';
         break;
       case '3d':
         containerStyle.background = `linear-gradient(145deg, ${primary}15, ${primary}05)`;
@@ -677,8 +691,9 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
         background: inputBg,
         border: inputBorder,
         color: textColor,
-        transition: 'border-color 0.2s',
-        outline: 'none'
+        transition: 'all 0.2s',
+        outline: 'none',
+        fontWeight: '500'
       },
       inputFocusStyle: {
         borderColor: primary
@@ -998,6 +1013,17 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
         captureType: 'form'
       });
       setLeadSent(true);
+
+      // Track Analytics Event
+      trackEvent({
+        clientId: profile.clientId,
+        profileId: profile.id,
+        type: 'lead_sent' as any,
+        assetType: 'lead' as any,
+        assetId: 'lead_form',
+        source,
+        utm
+      });
     } catch (err) {
       console.error("Lead submission error:", err);
       alert("Erro ao enviar. Tente novamente.");
@@ -1097,6 +1123,17 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
         /* Garantia para títulos em módulos */
         .profile-root h1, .profile-root h2, .profile-root h3, .profile-root h4 {
            font-family: ${headingFontStack} !important;
+        }
+
+        .profile-root input::placeholder, 
+        .profile-root textarea::placeholder {
+           color: inherit;
+           opacity: 0.5;
+        }
+
+        .profile-root input, 
+        .profile-root textarea {
+           color: inherit;
         }
       `}} />
       {/* Efeitos de Preset */}
@@ -1204,6 +1241,27 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                 >
                   Salvar Contato
                 </button>
+
+                {(clientPlan === 'business' || clientPlan === 'enterprise') && showcase?.isActive && (
+                  <button
+                    onClick={() => {
+                      if (isPreview) return;
+                      handleLinkClick(undefined, 'button');
+                      window.location.hash = `/u/${profile.slug}/vitrine`;
+                    }}
+                    className="rounded-xl px-6 py-3 font-black text-[11px] uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-xl button-font flex items-center gap-2"
+                    style={{
+                      borderRadius: theme.radius,
+                      background: theme.buttonStyle === 'solid' ? theme.primary : (theme.buttonStyle === 'outline' ? 'transparent' : 'rgba(255,255,255,0.08)'),
+                      color: theme.buttonStyle === 'solid' ? pickReadableOn(theme.primary) : theme.text,
+                      border: theme.buttonStyle === 'outline' ? `1.5px solid ${theme.primary}` : (theme.buttonStyle === 'glass' ? `1px solid ${theme.border}` : `1px solid rgba(255,255,255,0.1)`),
+                      boxShadow: theme.buttonStyle === 'solid' ? `0 0 20px ${theme.primary}30` : 'none'
+                    }}
+                  >
+                    <LucideIcons.Store size={14} />
+                    Ver Vitrine
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1624,10 +1682,13 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                           clientId: profile.clientId,
                           profileId: profile.id,
                           type: 'pix_copied',
-                          linkId: 'pix_key',
+                          assetId: 'pix',
+                          assetType: 'pix',
+                          assetLabel: 'Chave Pix',
                           source,
                           utm
                         });
+
                         alert('Chave Pix copiada!');
                       }}
                       className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest button-font shadow-lg transition-all hover:scale-[1.02] active:scale-95"
@@ -1833,7 +1894,7 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                                 type: 'portfolio_click',
                                 assetId: item.id,
                                 assetType: 'portfolio',
-                                assetLabel: item.title,
+                                assetLabel: item.title && item.title.trim() ? item.title : `Foto #${idx + 1}`,
                                 source,
                                 utm
                               });
@@ -1918,10 +1979,11 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                                     type: 'video_view',
                                     assetId: v.id,
                                     assetType: 'video',
-                                    assetLabel: v.title,
+                                    assetLabel: v.title && v.title.trim() ? v.title : `Vídeo ${idx + 1}`,
                                     source,
                                     utm
                                   });
+
                                 }
                               }}
                               className="w-full h-full"
@@ -2129,7 +2191,14 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                   "w-full flex justify-center pb-8 pt-4",
                   isStack ? "p-6 rounded-[2rem] shadow-xl backdrop-blur-md" : ""
                 )} style={isStack ? { background: theme.cardBg, border: `${borderWidth} solid ${theme.border}` } : {}}>
-                  <img src="/logo.png" alt="PageFlow" className="h-12 opacity-40" />
+                  <a
+                    href="/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transition-transform hover:scale-105 active:scale-95 opacity-100"
+                  >
+                    <img src="/logo.png" alt="PageFlow" className="h-10 opacity-100" />
+                  </a>
                 </div>
               )}
             </div>
@@ -2227,6 +2296,19 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
                       href={isPreview ? '#' : ctaHref}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => {
+                        if (isPreview) return;
+                        trackEvent({
+                          clientId: profile.clientId,
+                          profileId: profile.id,
+                          type: 'catalog_cta_click',
+                          assetId: selectedCatalogItem.id,
+                          assetType: 'catalog',
+                          assetLabel: `CTA: ${selectedCatalogItem.title}`,
+                          source,
+                          utm
+                        });
+                      }}
                       className="group w-full py-5 px-8 bg-white text-black text-[11px] font-black uppercase tracking-[0.3em] flex items-center justify-between hover:bg-zinc-200 transition-all active:scale-95"
                     >
                       {selectedCatalogItem.ctaLabel || 'Acquire Now'}
@@ -2259,6 +2341,6 @@ const PublicProfileRenderer: React.FC<Props> = ({ profile, isPreview, clientPlan
       }
     </div >
   );
-};
+});
 
 export default PublicProfileRenderer;

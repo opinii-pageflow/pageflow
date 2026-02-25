@@ -14,14 +14,23 @@ import {
   Sparkles,
   TrendingUp,
   Crown,
-  Eye
+  Eye,
+  Check,
+  X,
+  MessageCircle,
+  Mail,
+  User as UserIcon,
+  Phone,
+  Loader2
 } from 'lucide-react';
 import { getCurrentUser, getStorage } from '@/lib/storage';
 import { FeatureCard, PricingCard, FAQItem } from '@/components/landing/LandingUI';
 import { PLANS } from '@/lib/plans';
 import clsx from 'clsx';
 import CommunityCard from '@/components/preview/CommunityCard';
+import PromotionModal from '@/components/preview/PromotionModal';
 import { trackEvent } from '@/lib/analytics';
+import { upgradeRequestsApi } from '@/lib/api/upgradeRequests';
 
 import { profilesApi } from '@/lib/api/profiles';
 import { Profile } from '@/types';
@@ -34,6 +43,73 @@ const LandingPage: React.FC = () => {
   const user = getCurrentUser();
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly');
   const [serverProfiles, setServerProfiles] = useState<Profile[]>([]);
+
+  // Request State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [selectedPromoProfile, setSelectedPromoProfile] = useState<Profile | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    whatsapp: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleOpenModal = (planId: string) => {
+    if (user) {
+      handleStart();
+      return;
+    }
+    setSelectedPlan(planId);
+    setFormData({
+      name: '',
+      email: '',
+      whatsapp: ''
+    });
+    setSuccess(false);
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPlan) return;
+
+    setSubmitting(true);
+    try {
+      await upgradeRequestsApi.create({
+        clientId: undefined as any, // Novo lead
+        name: formData.name,
+        email: formData.email,
+        whatsapp: formData.whatsapp,
+        requestedPlan: selectedPlan,
+        requestSource: 'new_client'
+      });
+
+      // Analytics
+      trackEvent({
+        profileId: 'system',
+        clientId: 'new-lead',
+        type: 'lead_capture',
+        assetId: `landing-upgrade-${selectedPlan}`,
+        assetType: 'form',
+        assetLabel: `Landing Upgrade: ${selectedPlan}`,
+        source: 'landing_page'
+      });
+
+      setSuccess(true);
+      setTimeout(() => {
+        setIsModalOpen(false);
+        setSuccess(false);
+        navigate('/register'); // Leva ao cadastro após interesse
+      }, 3000);
+    } catch (err) {
+      console.error('Error submitting landing upgrade request:', err);
+      alert('Erro ao enviar solicitação. Tente novamente.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Carregar perfis priorizando seleção do admin (landing) com fallback para comunidade
   useEffect(() => {
@@ -334,17 +410,22 @@ const LandingPage: React.FC = () => {
             <div className="mb-20">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
                 {communityProfiles.map((profile, index) => (
-                  <Link
+                  <div
                     key={profile.id}
-                    to={`/u/${profile.slug}?utm_source=landing_community`}
-                    onClick={() => trackEvent({
-                      clientId: profile.clientId,
-                      profileId: profile.id,
-                      type: 'click',
-                      source: 'landing_community'
-                    })}
+                    onClick={() => {
+                      trackEvent({
+                        clientId: profile.clientId,
+                        profileId: profile.id,
+                        type: 'click',
+                        source: 'landing_community'
+                      });
+                      const destination = profile.hasShowcase
+                        ? `/u/${profile.slug}/vitrine?utm_source=landing_community`
+                        : `/u/${profile.slug}?utm_source=landing_community`;
+                      navigate(destination);
+                    }}
                     className={clsx(
-                      "group/card flex justify-center animate-in fade-in slide-in-from-bottom-8 duration-700",
+                      "group/card flex justify-center animate-in fade-in slide-in-from-bottom-8 duration-700 cursor-pointer",
                     )}
                     style={{ animationDelay: `${index * 150}ms` }}
                   >
@@ -353,8 +434,9 @@ const LandingPage: React.FC = () => {
                       featured={false}
                       className="h-[380px] md:h-[440px] w-full max-w-[220px] mx-auto transition-transform duration-500 hover:-translate-y-3 hover:scale-[1.03]"
                       clientPlan={getClientPlan(profile.id)}
+                      onPromotionClick={(p) => setSelectedPromoProfile(p)}
                     />
-                  </Link>
+                  </div>
                 ))}
               </div>
             </div>
@@ -460,7 +542,7 @@ const LandingPage: React.FC = () => {
             price={getDisplayPrice('starter')}
             features={PLANS.starter.features}
             ctaLabel="Get Started"
-            onCta={handleStart}
+            onCta={() => handleOpenModal('starter')}
           />
           <PricingCard
             plan={PLANS.pro.name}
@@ -468,21 +550,21 @@ const LandingPage: React.FC = () => {
             features={PLANS.pro.features}
             ctaLabel="Upgrade to Pro"
             highlighted={true}
-            onCta={handleStart}
+            onCta={() => handleOpenModal('pro')}
           />
           <PricingCard
             plan={PLANS.business.name}
             price={getDisplayPrice('business')}
             features={PLANS.business.features}
             ctaLabel="Go Business"
-            onCta={handleStart}
+            onCta={() => handleOpenModal('business')}
           />
           <PricingCard
             plan={PLANS.enterprise.name}
             price={getDisplayPrice('enterprise')}
             features={PLANS.enterprise.features}
             ctaLabel="Contact Team"
-            onCta={handleStart}
+            onCta={() => handleOpenModal('enterprise')}
           />
         </div>
       </section>
@@ -532,7 +614,119 @@ const LandingPage: React.FC = () => {
           </footer>
         </div>
       </section>
-    </div>
+
+      {/* INTEREST MODAL (Landing) */}
+      {
+        isModalOpen && (
+          <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/95 backdrop-blur-3xl animate-in fade-in duration-300 overflow-y-auto">
+            <div className="bg-zinc-900 border border-white/10 w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl relative my-8 animate-in zoom-in-95 duration-300">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="absolute top-6 right-6 p-2 text-zinc-500 hover:text-white transition-all bg-white/5 rounded-full"
+              >
+                <X size={20} />
+              </button>
+
+              {success ? (
+                <div className="p-12 text-center space-y-6">
+                  <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto">
+                    <Check className="text-emerald-500 w-10 h-10" />
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="text-2xl font-black italic tracking-tighter">Protocolo Recebido</h3>
+                    <p className="text-zinc-500 text-sm leading-relaxed">Nossa equipe entrará em contato via WhatsApp em breve para ativar seu novo plano.</p>
+                    <div className="pt-4 animate-pulse text-[10px] font-black uppercase tracking-widest text-blue-400">Direcionando para o cadastro...</div>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="p-8 sm:p-12 space-y-8">
+                  <div className="space-y-3">
+                    <div className="inline-flex bg-blue-500/10 text-blue-500 px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-blue-500/20">
+                      Lead Prioritário
+                    </div>
+                    <h2 className="text-3xl font-black tracking-tighter italic">Inicie com tudo!</h2>
+                    <p className="text-zinc-500 text-sm leading-relaxed">
+                      Para sua segurança e rapidez, o código de pagamento **PIX será enviado em até 12 horas** para seu WhatsApp.
+                      <br /><br />
+                      Após o pagamento, seu plano será **ativado automaticamente em no máximo 2 horas**.
+                    </p>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Seu Nome</label>
+                      <div className="relative">
+                        <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                        <input
+                          type="text"
+                          required
+                          placeholder="Nome completo"
+                          value={formData.name}
+                          onChange={e => setFormData({ ...formData, name: e.target.value })}
+                          className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-sm font-bold focus:border-blue-500 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">E-mail de Contato</label>
+                      <div className="relative">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                        <input
+                          type="email"
+                          required
+                          placeholder="seu@email.com"
+                          value={formData.email}
+                          onChange={e => setFormData({ ...formData, email: e.target.value })}
+                          className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-sm font-bold focus:border-blue-500 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">WhatsApp</label>
+                      <div className="relative">
+                        <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={16} />
+                        <input
+                          type="tel"
+                          required
+                          placeholder="(00) 00000-0000"
+                          value={formData.whatsapp}
+                          onChange={e => setFormData({ ...formData, whatsapp: e.target.value })}
+                          className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-5 py-4 text-sm font-bold focus:border-blue-500 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full bg-blue-600 text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-blue-500 transition-all active:scale-95 shadow-xl disabled:opacity-50 flex items-center justify-center gap-3"
+                  >
+                    {submitting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <MessageCircle size={16} />
+                        Solicitar Contato
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
+      {/* PROMOTION MODAL */}
+      {selectedPromoProfile && (
+        <PromotionModal
+          profile={selectedPromoProfile}
+          onClose={() => setSelectedPromoProfile(null)}
+        />
+      )}
+    </div >
   );
 };
 

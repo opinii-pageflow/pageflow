@@ -1,0 +1,156 @@
+1194|                                                                </div>
+1195|                                                            </div>
+1196|                                                        ))}
+1197|                                                </div>
+1198|                                            </div>
+1199|                                        </div>
+1200|
+1201|                                        {/* Prova Social (Depoimentos) */}
+1202|                                        <div className="bg-black/20 rounded-[2rem] p-8 border border-white/5 space-y-6">
+1203|                                    <div className="flex items-center justify-between">
+1204|                                        <div className="flex items-center gap-3">
+1205|                                            <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
+1206|                                                <Sparkles size={16} className="text-emerald-400" />
+1207|                                            </div>
+1208|                                            <div>
+1209|                                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">Prova Social</h4>
+1210|                                                <p className="text-[9px] text-zinc-600 uppercase font-black tracking-widest">Depoimentos de clientes satisfeitos</p>
+1211|                                            </div>
+1212|                                        </div>
+1213|                                        <button
+1214|                                            onClick={addTestimonial}
+1215|                                            className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-500/20 transition-all"
+1216|                                        >
+1217|                                            + Novo Depoimento
+1218|                                        </button>
+1219|                                    </div>
+1220|
+1221|                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+1222|                                        {localDraft?.testimonials?.map((t) => (
+1223|                                            <div key={t.id} className="bg-zinc-900/60 border border-white/5 p-6 rounded-[2rem] relative group/t">
+1224|                                                <button
+1225|                                                    onClick={() => removeTestimonial(t.id)}
+1226|                                                    className="absolute top-4 right-4 text-zinc-700 hover:text-red-500 opacity-0 group-hover/t:opacity-100 transition-opacity"
+1227|                                                >
+1228|                                                    <X size={16} />
+1229|                                                </button>
+1230|                                                <div className="space-y-4">
+1231|                                                    <div className="flex items-center gap-3">
+1232|                                                        <div className="w-10 h-10 rounded-xl bg-black/40 border border-white/10 flex items-center justify-center overflow-hidden group/tavatar relative">
+1233|                                                            {t.avatarUrl ? (
+1234|                                                                <img src={t.avatarUrl} alt="" className="w-full h-full object-cover" />
+1235|                                                            ) : (
+1236|                                                                <Upload size={14} className="text-zinc-700" />
+1237|                                                            )}
+1238|                                                            <input
+1239|                                                                type="file"
+1240|                                                                accept="image/*"
+1241|                                                                className="absolute inset-0 opacity-0 cursor-pointer"
+1242|                                                                onChange={(e) => {
+1243|                                                                    const file = e.target.files?.[0];
+1244|                                                                    if (!file) return;
+1245|                                                                    const reader = new FileReader();
+1246|                                                                    reader.onloadend = () => {
+1247|                                                                        updateTestimonial(t.id, { avatarUrl: reader.result as string });
+1248|                                                                    };
+1249|                                                                    reader.readAsDataURL(file);
+1250|                                                                }}
+1251|                                                            />
+1252|                                                        </div>
+1253|                                                        <input
+1254|                                                            value={t.name}
+1255|                                                            onChange={(e) => updateTestimonial(t.id, { name: e.target.value })}
+1256|                                                            placeholder="Nome do Cliente"
+1257|                                                            className="flex-1 bg-transparent border-none outline-none text-xs font-black text-white px-0"
+1258|                                                        />
+1259|                                                    </div>
+1260|
+1261|                                                    <textarea
+1262|                                                        value={t.text}
+1263|                                                        onChange={(e) => updateTestimonial(t.id, { text: e.target.value })}
+1264|                                                        rows={3}
+1265|                                                        className="w-full bg-transparent border-none outline-none text-[11px] font-medium text-zinc-400 px-0 resize-none leading-relaxed italic"
+1266|                                                        placeholder="O que o cliente disse..."
+1267|                                                    />
+1268|
+1269|                                                    {/* Mídia da Prova Social */}
+1270|                                                    <div className="flex gap-2 pt-2 border-t border-white/5">
+1271|                                                        <div className="flex-1 space-y-2">
+1272|                                                            <div className="flex items-center gap-2">
+1273|                                                                <ImageIcon size={10} className="text-zinc-600" />
+1274|                                                                <span className="text-[8px] font-black uppercase tracking-widest text-zinc-600">Foto da Prova</span>
+1275|                                                            </div>
+1276|                                                            <div className="relative h-16 rounded-xl bg-black/40 border border-white/10 overflow-hidden group/timg border-dashed flex items-center justify-center">
+1277|                                                                {t.imageUrl ? (
+1278|                                                                    <>
+1279|                                                                        <img src={t.imageUrl} alt="" className="w-full h-full object-cover" />
+1280|                                                                        <button onClick={() => updateTestimonial(t.id, { imageUrl: '' })} className="absolute inset-0 bg-red-600/60 opacity-0 group-hover/timg:opacity-100 flex items-center justify-center transition-opacity">
+1281|                                                                            <Trash2 size={12} className="text-white" />
+1282|                                                                        </button>
+1283|                                                                    </>
+1284|                                                                ) : (
+1285|                                                                    <label className="cursor-pointer text-zinc-700 hover:text-white transition-colors">
+1286|                                                                        <Plus size={14} />
+1287|                                                                        <input type="file" accept="image/*" className="hidden" onChange={(e) => {
+1288|                                                                            const file = e.target.files?.[0];
+1289|                                                                            if (!file) return;
+1290|                                                                            const reader = new FileReader();
+1291|                                                                            reader.onloadend = () => updateTestimonial(t.id, { imageUrl: reader.result as string });
+1292|                                                                            reader.readAsDataURL(file);
+1293|                                                                        }} />
+1294|                                                                    </label>
+1295|                                                                )}
+1296|                                                            </div>
+1297|                                                        </div>
+1298|                                                        <div className="flex-[2] space-y-2">
+1299|                                                            <div className="flex items-center gap-2">
+1300|                                                                <Sparkles size={10} className="text-zinc-600" />
+1301|                                                                <span className="text-[8px] font-black uppercase tracking-widest text-zinc-600">Link de Vídeo</span>
+1302|                                                            </div>
+1303|                                                            <input
+1304|                                                                value={t.videoUrl || ''}
+1305|                                                                onChange={(e) => updateTestimonial(t.id, { videoUrl: e.target.value })}
+1306|                                                                placeholder="YouTube/Vimeo..."
+1307|                                                                className="w-full bg-black/40 border border-white/10 rounded-xl px-3 py-2.5 text-[10px] outline-none focus:border-emerald-500/30"
+1308|                                                            />
+1309|                                                        </div>
+1310|                                                    </div>
+1311|                                                </div>
+1312|                                            </div>
+1313|                                        ))}
+1314|                                    </div>
+1315|                                </div>
+1316|
+1317|                                {/* Botão de Salvar Global do Item */}
+1318|                                <div className="pt-6 border-t border-white/5 flex gap-3">
+1319|                                    <button
+1320|                                        onClick={handleSaveCurrentItem}
+1321|                                        disabled={isSaving}
+1322|                                        className="flex-1 bg-white text-black py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-[0.98] shadow-2xl disabled:opacity-50 flex items-center justify-center gap-3"
+1323|                                    >
+1324|                                        {isSaving ? (
+1325|                                            <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+1326|                                        ) : (
+1327|                                            <Save size={18} />
+1328|                                        )}
+1329|                                        {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+1330|                                    </button>
+1331|                                    <button
+1332|                                        onClick={() => setEditingItem(null)}
+1333|                                        className="px-8 bg-zinc-900 text-zinc-500 py-5 rounded-[2rem] font-black text-xs uppercase tracking-widest hover:bg-zinc-800 transition-all active:scale-[0.98]"
+1334|                                    >
+1335|                                        Cancelar
+1336|                                    </button>
+1337|                                </div>
+1338|                                    </div>
+1339|                                )}
+1340|                            </div>
+1341|                        ))
+1342|                )}
+1343|            </div>
+1344|        </div>
+1345|    );
+1346|};
+1347|
+1348|export default ShowcaseTab;
+1349|

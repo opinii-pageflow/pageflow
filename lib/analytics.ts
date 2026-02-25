@@ -14,6 +14,8 @@ import {
 } from './api/analytics';
 import { normalizeEvent } from './eventNormalizer';
 import { profilesApi } from './api/profiles';
+import { leadsApi } from './api/leads';
+import { npsApi } from './api/nps';
 
 // ============================================
 // TRACK EVENT (Delegação para Supabase)
@@ -30,7 +32,7 @@ export const trackEvent = (params: {
     referrer?: string;
     landingPath?: string;
     assetId?: string;
-    assetType?: 'button' | 'portfolio' | 'catalog' | 'video' | 'pix' | 'nps';
+    assetType?: 'button' | 'portfolio' | 'catalog' | 'video' | 'pix' | 'nps' | 'form' | 'showcase' | 'showcase_item';
     assetLabel?: string;
     score?: number;
     comment?: string;
@@ -173,6 +175,15 @@ export const getProfileSummary = async (
                         percentage: Math.round(((c.count || 0) / totalCatActions) * 100)
                     }));
 
+                    // Extração inteligente de PIX (Pode estar na raiz ou no byCategory)
+                    const rpcPixCount = rpcData.pixCopies ??
+                        rpcCategories.find((c: any) => c.category === 'pix')?.count ?? 0;
+
+                    // Unificação de Leads Reais (Offline/Sync)
+                    const officialLeads = await leadsApi.listByClient(clientId);
+                    const eventLeadsCount = rpcCategories.find((c: any) => c.category === 'lead')?.count || 0;
+                    const finalLeadsCount = Math.max(officialLeads.length, eventLeadsCount);
+
                     return {
                         totalViews: totalViewsVal,
                         totalClicks: totalClicksVal,
@@ -193,8 +204,9 @@ export const getProfileSummary = async (
                             totalActions: totalClicksVal,
                             bestAsset: rpcData.topAssets?.[0] ? { label: rpcData.topAssets[0].label, count: rpcData.topAssets[0].clicks, type: 'clique' } : null,
                             zeroInteractionItems: [],
-                            pixCopies: 0
-                        }
+                            pixCopies: rpcPixCount
+                        },
+                        leadsCount: finalLeadsCount
                     };
                 }
             } catch (rpcErr) {
@@ -209,11 +221,9 @@ export const getProfileSummary = async (
         if (clientId) {
             profiles = await profilesApi.listByClient(clientId);
         } else if (rawFiltered.length > 0) {
-            // If no clientId but we have events, try to get unique profileIds
+            // Eliminar N+1: usar getByIds para buscar todos os perfis em uma única query
             const uniqueProfileIds = Array.from(new Set(rawFiltered.map(e => e.profileId)));
-            const profilePromises = uniqueProfileIds.map(id => profilesApi.getById(id));
-            const results = await Promise.all(profilePromises);
-            profiles = results.filter((p): p is Profile => p !== null);
+            profiles = await profilesApi.getByIds(uniqueProfileIds);
         }
 
         const filteredEvents = rawFiltered.map(e => normalizeEvent(e, profiles));
@@ -319,6 +329,13 @@ export const getProfileSummary = async (
                 .sort((a, b) => b.value - a.value)
                 .slice(0, 10);
 
+        // Unificação Final (Fallback)
+        let finalLeadsCount = interactions.filter(e => e.type === 'lead_sent' || e.type === 'lead_capture').length;
+        if (clientId) {
+            const officialLeads = await leadsApi.listByClient(clientId);
+            finalLeadsCount = Math.max(finalLeadsCount, officialLeads.length);
+        }
+
         return {
             totalViews,
             totalClicks: totalActions,
@@ -352,7 +369,8 @@ export const getProfileSummary = async (
                 bestAsset: topAssets.length > 0 ? { label: topAssets[0].label, count: topAssets[0].clicks, type: 'clique' } : null,
                 zeroInteractionItems: [],
                 pixCopies: interactions.filter(e => e.type === 'pix_copied').length
-            }
+            },
+            leadsCount: finalLeadsCount
         };
     } catch (error) {
         console.error('Erro ao gerar resumo de analytics:', error);
@@ -375,7 +393,8 @@ export const getProfileSummary = async (
                 bestAsset: null,
                 zeroInteractionItems: [],
                 pixCopies: 0
-            }
+            },
+            leadsCount: 0
         };
     }
 };
