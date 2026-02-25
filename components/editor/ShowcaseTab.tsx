@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import {
@@ -106,6 +106,13 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
 
     const hasAccess = clientPlan === 'business' || clientPlan === 'enterprise';
 
+    const showcaseUrl = useMemo(() => {
+        if (typeof window === 'undefined') return '';
+        const baseUrl = window.location.origin;
+        const safeSlug = profile.slug || 'perfil';
+        return `${baseUrl}/#/u/${safeSlug}/vitrine`;
+    }, [profile.slug]);
+
     const formatCurrency = (val: number) => {
         return new Intl.NumberFormat('pt-BR', {
             minimumFractionDigits: 2,
@@ -143,7 +150,6 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
         initShowcase();
     }, [profile.id, profile.clientId, hasAccess]);
 
-    // Update localDraft when editingItem changes
     useEffect(() => {
         if (editingItem && showcase) {
             const item = showcase.items.find(i => i.id === editingItem);
@@ -213,19 +219,16 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
         const existingBtn = profile.buttons?.find(b => b.type === addingShortcutType);
 
         if (existingBtn) {
-            // Update existing button
             const updatedButtons = profile.buttons.map(b =>
                 b.id === existingBtn.id ? { ...b, value: shortcutInputValue, enabled: true } : b
             );
             onUpdate({ buttons: updatedButtons });
 
-            // Ensure it's selected
             if (!showcase.headerButtonIds?.includes(existingBtn.id)) {
                 const nextIds = [...(showcase.headerButtonIds || []), existingBtn.id].slice(0, 5);
                 handleSaveGlobalSettings({ headerButtonIds: nextIds });
             }
         } else {
-            // Create new button
             const newButton = {
                 id: crypto.randomUUID(),
                 profileId: profile.id,
@@ -259,7 +262,6 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                 localDraft.testimonials || []
             );
 
-            // Build the final saved item with fresh Storage URLs
             const savedItem = {
                 ...localDraft,
                 mainImageUrl,
@@ -269,7 +271,6 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                 }))
             };
 
-            // Optimistic update: Update the item in the local list instead of full re-fetch
             if (showcase) {
                 const nextItems = showcase.items.map(i =>
                     i.id === localDraft.id ? savedItem : i
@@ -277,7 +278,7 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                 setShowcase({ ...showcase, items: nextItems });
             }
 
-            setEditingItem(null); // Fecha o editor após salvar
+            setEditingItem(null);
             alert('Item salvo com sucesso!');
         } catch (err) {
             console.error("Error updating item:", err);
@@ -287,20 +288,16 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
         }
     };
 
-    // Use a ref to store the timeout for debouncing settings saves
     const saveSettingsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const handleSaveGlobalSettings = (updates: any) => {
         if (!showcase) return;
 
-        // Update locally for instant feedback
         const nextShowcase = { ...showcase, ...updates };
         setShowcase(nextShowcase);
 
-        // Notify parent about the sync (for integrated preview)
         if (onSync) onSync(nextShowcase);
 
-        // Debounce the database save
         if (saveSettingsTimeoutRef.current) {
             clearTimeout(saveSettingsTimeoutRef.current);
         }
@@ -319,11 +316,10 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                 });
             } catch (err) {
                 console.error("Error saving global settings:", err);
-                // We don't rollback here to avoid jumping UI, but show error
             } finally {
                 setGlobalIsSaving(false);
             }
-        }, 1000); // 1 second debounce
+        }, 1000);
     };
 
     const handleMainImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -409,7 +405,7 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                     A Vitrine é um recurso exclusivo do <b>Plano Business</b>.
                     Crie um catálogo independente com múltiplas fotos, variações de preço e design de alto impacto.
                 </p>
-                <button className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-xl shadow-blue-600/20">
+                <button onClick={() => navigate('/app/upgrade')} className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-xl shadow-blue-600/20">
                     Fazer Upgrade
                 </button>
             </div>
@@ -426,7 +422,7 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
     }
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-8 animate-in fade-in duration-700">
             {/* Showcase Master Switch */}
             <div className={clsx(
                 "flex items-center justify-between p-5 rounded-3xl border transition-all duration-500",
@@ -457,7 +453,7 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                 <div className="flex items-center gap-4">
                     {showcase?.isActive && (
                         <a
-                            href={formatPublicShowcaseUrl(profile.slug)}
+                            href={showcaseUrl}
                             target="_blank"
                             className="p-3 bg-white/5 hover:bg-white/10 rounded-xl text-zinc-400 hover:text-white transition-all active:scale-90"
                             title="Ver Vitrine em Produção"
@@ -517,7 +513,7 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                     </div>
 
                     <a
-                        href={formatPublicShowcaseUrl(profile.slug)}
+                        href={showcaseUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 transition-all flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em]"
@@ -528,7 +524,6 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                 </header>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Botões e Cores */}
                     <div className="space-y-6">
                         <div className="flex items-center gap-2 mb-2">
                             <MousePointer2 size={14} className="text-blue-500" />
@@ -568,50 +563,6 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                             </div>
                         </div>
                     </div>
-
-                    {/* Community Click Destination - Hidden as it is now automated
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-2 mb-2">
-                            <MousePointer2 size={14} className="text-emerald-500" />
-                            <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Destino do Clique na Comunidade</h4>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-3">
-                            {[
-                                { id: 'profile', label: 'Ver Perfil', description: 'Leva para o seu perfil e botões.' },
-                                { id: 'showcase', label: 'Ver Vitrine', description: 'Leva direto para os seus produtos.' }
-                            ].map((dest) => (
-                                <button
-                                    key={dest.id}
-                                    onClick={() => handleSaveGlobalSettings({ communityClickDestination: dest.id as any })}
-                                    className={clsx(
-                                        "group flex flex-col p-5 rounded-3xl border transition-all text-left",
-                                        (showcase?.communityClickDestination || 'profile') === dest.id
-                                            ? "bg-emerald-600/10 border-emerald-500 shadow-xl shadow-emerald-500/5"
-                                            : "bg-black/20 border-white/5 hover:border-white/10 hover:bg-black/40"
-                                    )}
-                                >
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className={clsx(
-                                            "text-[10px] font-black uppercase tracking-widest",
-                                            (showcase?.communityClickDestination || 'profile') === dest.id ? "text-white" : "text-zinc-400"
-                                        )}>
-                                            {dest.label}
-                                        </span>
-                                        {(showcase?.communityClickDestination || 'profile') === dest.id && (
-                                            <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-                                                <Check size={12} className="text-white" strokeWidth={4} />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest group-hover:text-zinc-400 transition-colors">
-                                        {dest.description}
-                                    </p>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    */}
                 </div>
 
                 {/* Seção de Atalhos de Botões */}
@@ -626,9 +577,8 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                         </div>
                     </div>
 
-                    {/* Quick Social Grid */}
                     <div className="space-y-4">
-                        <h4 className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Adicionar via Àcone</h4>
+                        <h4 className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Adicionar via Ícone</h4>
                         <div className="flex flex-wrap gap-3">
                             {[
                                 { type: 'whatsapp', label: 'WhatsApp' },
@@ -648,7 +598,6 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                                         key={social.type}
                                         onClick={() => {
                                             if (btnExists && btnExists.value) {
-                                                // Toggle selection only if it already has a value
                                                 let nextIds = [...(showcase?.headerButtonIds || [])];
                                                 if (isSelected) {
                                                     nextIds = nextIds.filter(id => id !== btnExists.id);
@@ -660,7 +609,6 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                                                 }
                                                 handleSaveGlobalSettings({ headerButtonIds: nextIds });
                                             } else {
-                                                // Ask for link if it doesn't exist OR has no value
                                                 setAddingShortcutType(social.type);
                                                 setShortcutInputValue(btnExists?.value || '');
                                             }
@@ -690,7 +638,6 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                         </div>
                     </div>
 
-                    {/* Inline Link Input for new shortcut */}
                     {addingShortcutType && (
                         <div className="bg-blue-600/5 border border-blue-500/20 rounded-3xl p-6 animate-in zoom-in-95 duration-300">
                             <div className="flex items-center justify-between mb-4">
@@ -712,7 +659,6 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                                         value={shortcutInputValue}
                                         onChange={(e) => {
                                             setShortcutInputValue(e.target.value);
-                                            // Se for tipo genérico (website), podemos tentar detectar o tipo
                                             if (addingShortcutType === 'website') {
                                                 const detected = detectLinkType(e.target.value);
                                                 if (detected !== 'website') {
@@ -740,7 +686,6 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                         </div>
                     )}
 
-                    {/* All Selection Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                         {(!profile.buttons || profile.buttons.length === 0) && !addingShortcutType && (
                             <div className="col-span-full py-8 text-center bg-black/20 rounded-3xl border border-dashed border-white/5">
@@ -826,13 +771,12 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                             <div className="flex gap-2">
                                 <input
                                     readOnly
-                                    value={`${window.location.origin}/#/u/${profile.slug}/vitrine`}
+                                    value={showcaseUrl}
                                     className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-zinc-400 outline-none"
                                 />
                                 <button
                                     onClick={() => {
-                                        const url = `${window.location.origin}/#/u/${profile.slug}/vitrine`;
-                                        navigator.clipboard.writeText(url);
+                                        navigator.clipboard.writeText(showcaseUrl);
                                         alert('Link copiado!');
                                     }}
                                     className="p-3 bg-white text-black rounded-xl hover:bg-zinc-200 transition-all active:scale-95"
@@ -853,7 +797,7 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                     <div className="flex flex-col items-center justify-center gap-4 bg-white/5 p-8 rounded-[2rem] border border-white/10">
                         <div className="p-4 bg-white rounded-3xl shadow-2xl">
                             <QRCodeSVG
-                                value={`${window.location.origin}/#/u/${profile.slug}/vitrine`}
+                                value={showcaseUrl}
                                 size={140}
                                 level="H"
                                 includeMargin={false}
@@ -884,7 +828,6 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                                 )}
                             >
                                 <div className="p-6 flex flex-col md:flex-row items-start md:items-center gap-6">
-                                    {/* Item Image Preview */}
                                     <div className="w-24 h-24 rounded-3xl bg-black/40 border border-white/10 flex-shrink-0 overflow-hidden flex items-center justify-center">
                                         {item.images?.[0] ? (
                                             <img src={item.images[0].storagePath} alt="" className="w-full h-full object-cover" />
@@ -928,13 +871,11 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                                         </button>
                                     </div>
                                 </div>
-
                             </div>
                         ))
                 )}
             </div>
 
-            {/* Modal de Edição */}
             {editingItem && localDraft && (
                 <ShowcaseItemModal
                     localDraft={localDraft}

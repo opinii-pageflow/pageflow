@@ -26,6 +26,7 @@ import TopBar from '@/components/common/TopBar';
 import { Profile, Client } from '@/types';
 import { themePresets } from '@/lib/themePresets';
 import { canAccessFeature, getPlanLimits } from '@/lib/permissions';
+import { formatPublicProfileUrl } from '@/lib/linkHelpers';
 
 const ProfilesListPage: React.FC = () => {
   const navigate = useNavigate();
@@ -36,7 +37,6 @@ const ProfilesListPage: React.FC = () => {
   const [clipboard, setClipboard] = useState<StyleConfig | null>(getStyleFromClipboard());
   const [justCopiedId, setJustCopiedId] = useState<string | null>(null);
 
-  // Duplicação
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
   const [profileToDuplicate, setProfileToDuplicate] = useState<Profile | null>(null);
   const [newProfileName, setNewProfileName] = useState('');
@@ -140,7 +140,6 @@ const ProfilesListPage: React.FC = () => {
 
     setProfileToDuplicate(profile);
     setNewProfileName(`${profile.displayName} (Cópia)`);
-    // Usamos um slug sugerido, o usuário pode editar no modal
     setNewProfileSlug(`${profile.slug}-copy-${Math.random().toString(36).substring(7)}`);
     setIsDuplicateModalOpen(true);
   };
@@ -150,7 +149,6 @@ const ProfilesListPage: React.FC = () => {
 
     setLocalLoading(true);
     try {
-      // Verificar se o slug está disponível de verdade no Supabase
       const isAvailable = await profilesApi.checkSlugAvailability(newProfileSlug);
       if (!isAvailable) {
         alert("Este link (slug) já está sendo usado por outro perfil. Escolha outro.");
@@ -168,7 +166,6 @@ const ProfilesListPage: React.FC = () => {
         buttons: profileToDuplicate.buttons?.map(b => ({ ...b })) || []
       };
 
-      // Remover ID e metadados de sistema para o banco gerar novos
       delete (newProfile as any).id;
       delete (newProfile as any).created_at;
       delete (newProfile as any).updated_at;
@@ -210,17 +207,6 @@ const ProfilesListPage: React.FC = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#020202] flex flex-col items-center justify-center p-6 text-center">
-        <Rocket className="w-10 h-10 text-rose-500 mb-6 animate-pulse" />
-        <h2 className="text-2xl font-black text-white uppercase italic mb-2 tracking-tighter">Upgrade Protocolo Offline</h2>
-        <p className="text-zinc-500 mb-8 max-w-sm">{error}</p>
-        <button onClick={() => refresh()} className="bg-white text-black px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-500 transition-all">Restaurar Conexão</button>
-      </div>
-    );
-  }
-
   const planConfig = PLANS_CONFIG[client?.plan || 'starter'];
   const capacityPercent = Math.min((profiles.length / (planConfig.maxProfiles || 1)) * 100, 100);
 
@@ -254,7 +240,7 @@ const ProfilesListPage: React.FC = () => {
               <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px] relative">
                 <div
                   className={clsx(
-                    "h-full rounded-full transition-all duration-[2s] ease-out relative group",
+                    "h-full rounded-full transition-all duration-[2s] ease-out relative",
                     capacityPercent > 85 ? "bg-rose-500" : "bg-neon-blue"
                   )}
                   style={{ width: `${capacityPercent}%` }}
@@ -288,203 +274,107 @@ const ProfilesListPage: React.FC = () => {
               Agenda Ativa
             </button>
 
-            <button
-              onClick={() => navigate('/app/upgrade')}
-              className="px-8 py-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 transition-all text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 flex items-center gap-3 active:scale-95 group"
-            >
-              <Zap size={16} className="group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_#f59e0b] transition-all" />
-              Upgrade
+            <button onClick={() => navigate('/app/upgrade')} className="px-8 py-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 transition-all text-[10px] font-black uppercase tracking-[0.2em] text-amber-500 flex items-center gap-3 active:scale-95 group">
+              <Zap size={16} /> Upgrade
             </button>
-            <button
-              onClick={createNewProfile}
-              className="bg-white text-black px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 shadow-xl"
-            >
-              <Plus size={18} strokeWidth={3} />
-              Novo Perfil
+            <button onClick={createNewProfile} className="bg-white text-black px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 shadow-xl">
+              <Plus size={18} strokeWidth={3} /> Novo Perfil
             </button>
           </div>
         </div>
 
-        {profiles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 glass-neon-blue border-2 border-dashed border-white/5 rounded-[3rem] text-center px-10 relative overflow-hidden group animate-in zoom-in-95 duration-1000">
-            <div className="absolute inset-0 bg-blue-600/[0.02] animate-pulse" />
-            <div className="relative w-20 h-20 bg-white/5 rounded-[2rem] flex items-center justify-center mb-8 text-zinc-700 border border-white/5 group-hover:scale-110 group-hover:border-neon-blue/30 transition-all duration-500 shadow-2xl">
-              <Plus size={32} className="text-zinc-800" />
-            </div>
-            <h2 className="text-3xl font-black mb-4 tracking-tighter italic text-white/80 uppercase">Inicie sua Presença</h2>
-            <p className="text-zinc-500 text-lg max-w-md mb-10 leading-relaxed font-medium">Crie seu primeiro terminal de links ultra moderno.</p>
-            <button
-              onClick={createNewProfile}
-              className="relative bg-neon-blue text-black px-10 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-white transition-all active:scale-95 shadow-lg shadow-neon-blue/20"
-            >
-              Iniciar Protocolo
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {profiles.map(profile => (
-              <div key={profile.id} className="bg-white/[0.02] backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-6 group hover:border-neon-blue/30 transition-all relative overflow-hidden flex flex-col min-h-[440px] animate-in slide-in-from-bottom-8 duration-700">
-                <div className="absolute top-0 right-0 w-48 h-48 bg-neon-blue/5 blur-[80px] pointer-events-none group-hover:bg-neon-blue/10 transition-colors" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {profiles.map(profile => (
+            <div key={profile.id} className="bg-white/[0.02] backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-6 group hover:border-neon-blue/30 transition-all relative overflow-hidden flex flex-col min-h-[440px] animate-in slide-in-from-bottom-8 duration-700">
+              <div className="absolute top-0 right-0 w-48 h-48 bg-neon-blue/5 blur-[80px] pointer-events-none group-hover:bg-neon-blue/10 transition-colors" />
 
-                <div className="flex items-start justify-between mb-8 relative z-10">
-                  <div className="relative group/avatar">
-                    <img src={profile.avatarUrl} className="relative w-18 h-18 rounded-[1.6rem] object-cover ring-1 ring-white/10 shadow-xl transition-all duration-500 group-hover/avatar:scale-105" alt="" />
-                    <div className="absolute -bottom-1.5 -right-1.5 bg-neon-blue p-2 rounded-lg border-4 border-[#050505] shadow-[0_0_10px_rgba(0,242,255,0.3)]">
-                      <Zap size={8} className="text-black fill-black" />
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1.5">
-                    <a
-                      href={`#/u/${profile.slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-1.5 hover:bg-emerald-500/20 transition-all cursor-pointer group/live"
-                      title="Visualizar Perfil Público"
-                    >
-                      <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[7.5px] font-black text-emerald-500 uppercase tracking-widest">Live</span>
-                      <ExternalLink size={8} className="text-emerald-500/50 group-hover/live:text-emerald-500 transition-colors" />
-                    </a>
-                  </div>
+              <div className="flex items-start justify-between mb-8 relative z-10">
+                <div className="relative group/avatar">
+                  <img src={profile.avatarUrl} className="relative w-18 h-18 rounded-[1.6rem] object-cover ring-1 ring-white/10 shadow-xl transition-all duration-500 group-hover/avatar:scale-105" alt="" />
                 </div>
-
-                <div className="mb-6 relative z-10">
-                  <h3 className="font-black text-2xl tracking-tighter truncate text-white uppercase italic group-hover:text-neon-blue transition-colors leading-tight mb-1">{profile.displayName}</h3>
-                  <a
-                    href={`#/u/${profile.slug}`}
+                <a
+                    href={formatPublicProfileUrl(profile.slug)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 group/link cursor-pointer w-fit"
-                  >
+                    className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-1.5 hover:bg-emerald-500/20 transition-all"
+                >
+                    <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[7.5px] font-black text-emerald-500 uppercase tracking-widest">Live</span>
+                    <ExternalLink size={8} className="text-emerald-500/50" />
+                </a>
+              </div>
+
+              <div className="mb-6 relative z-10">
+                <h3 className="font-black text-2xl tracking-tighter truncate text-white uppercase italic group-hover:text-neon-blue transition-colors leading-tight mb-1">{profile.displayName}</h3>
+                <a href={formatPublicProfileUrl(profile.slug)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 group/link cursor-pointer w-fit">
                     <Globe size={10} className="text-zinc-700 group-hover/link:text-neon-blue transition-colors" />
                     <p className="text-[8.5px] font-black uppercase text-zinc-500 tracking-[0.15em] truncate group-hover/link:text-zinc-300 transition-colors italic">pageflow.me/{profile.slug}</p>
-                    <ExternalLink size={8} className="opacity-0 group-hover/link:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all text-neon-blue" />
-                  </a>
-                </div>
+                </a>
+              </div>
 
-                <div className="flex-1 space-y-4 relative z-10">
-                  <div className="p-1 bg-black/40 rounded-xl border border-white/5 flex items-center gap-1">
-                    <button onClick={() => handleCopyStyle(profile)} className={clsx("flex-1 py-3 rounded-lg flex items-center justify-center gap-2 text-[8.5px] font-black uppercase tracking-[0.15em] transition-all", justCopiedId === profile.id ? "bg-emerald-500/20 text-emerald-500" : "text-zinc-500 hover:text-white hover:bg-white/5")}>
-                      {justCopiedId === profile.id ? <Check size={12} strokeWidth={3} /> : <Copy size={12} />}
-                      {justCopiedId === profile.id ? "Sync" : "Copy Style"}
+              <div className="flex-1 space-y-4 relative z-10">
+                <div className="p-1 bg-black/40 rounded-xl border border-white/5 flex items-center gap-1">
+                  <button onClick={() => handleCopyStyle(profile)} className={clsx("flex-1 py-3 rounded-lg flex items-center justify-center gap-2 text-[8.5px] font-black uppercase tracking-[0.15em] transition-all", justCopiedId === profile.id ? "bg-emerald-500/20 text-emerald-500" : "text-zinc-500 hover:text-white hover:bg-white/5")}>
+                    {justCopiedId === profile.id ? <Check size={12} strokeWidth={3} /> : <Copy size={12} />}
+                    {justCopiedId === profile.id ? "Sync" : "Copy Style"}
+                  </button>
+                  {clipboard && clipboard.sourceProfileId !== profile.id && (
+                    <button onClick={() => handlePasteStyle(profile.id)} className="flex-1 py-3 rounded-lg bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-black flex items-center justify-center gap-2 text-[8.5px] font-black uppercase tracking-[0.15em] transition-all animate-pulse">
+                      <ClipboardPaste size={12} /> Apply
                     </button>
-                    {clipboard && clipboard.sourceProfileId !== profile.id && (
-                      <button onClick={() => handlePasteStyle(profile.id)} className="flex-1 py-3 rounded-lg bg-neon-blue/10 text-neon-blue hover:bg-neon-blue hover:text-black flex items-center justify-center gap-2 text-[8.5px] font-black uppercase tracking-[0.15em] transition-all animate-pulse">
-                        <ClipboardPaste size={12} /> Apply
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white/[0.01] border border-white/[0.03] p-3 rounded-xl">
-                      <p className="text-[6.5px] font-black text-zinc-700 uppercase tracking-widest mb-0.5">Updated</p>
-                      <p className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter">{new Date(profile.updatedAt).toLocaleDateString()}</p>
-                    </div>
-                    <div className="bg-white/[0.01] border border-white/[0.03] p-3 rounded-xl">
-                      <p className="text-[6.5px] font-black text-zinc-700 uppercase tracking-widest mb-0.5">Template</p>
-                      <p className="text-[9px] font-black text-neon-blue/80 uppercase tracking-tighter">{profile.layoutTemplate}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5 relative z-10 mt-8">
-                  <Link to={`/app/profiles/${profile.id}/editor`} className="flex-1 bg-white text-black py-4 rounded-xl flex items-center justify-center gap-2.5 text-[9px] font-black uppercase tracking-[0.15em] hover:bg-neon-blue hover:text-black transition-all active:scale-95 shadow-lg">
-                    <Edit3 size={14} /> Configurar
-                  </Link>
-                  <button onClick={() => deleteProfile(profile.id)} className="w-11 h-11 bg-white/5 text-zinc-700 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl flex items-center justify-center transition-all border border-white/5" title="Excluir Perfil">
-                    <Trash2 size={14} />
-                  </button>
-                  <button onClick={() => handleOpenDuplicateModal(profile)} className="w-11 h-11 bg-white/5 text-zinc-700 hover:text-neon-blue hover:bg-neon-blue/10 rounded-xl flex items-center justify-center transition-all border border-white/5" title="Duplicar Perfil">
-                    <Copy size={14} />
-                  </button>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+
+              <div className="flex items-center gap-2.5 relative z-10 mt-8">
+                <Link to={`/app/profiles/${profile.id}/editor`} className="flex-1 bg-white text-black py-4 rounded-xl flex items-center justify-center gap-2.5 text-[9px] font-black uppercase tracking-[0.15em] hover:bg-neon-blue hover:text-black transition-all active:scale-95 shadow-lg">
+                  <Edit3 size={14} /> Configurar
+                </Link>
+                <button onClick={() => deleteProfile(profile.id)} className="w-11 h-11 bg-white/5 text-zinc-700 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl flex items-center justify-center transition-all border border-white/5"><Trash2 size={14} /></button>
+                <button onClick={() => handleOpenDuplicateModal(profile)} className="w-11 h-11 bg-white/5 text-zinc-700 hover:text-neon-blue hover:bg-neon-blue/10 rounded-xl flex items-center justify-center transition-all border border-white/5"><Copy size={14} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
       </main>
 
       {isBuyModalOpen && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/98 backdrop-blur-2xl animate-in fade-in duration-500">
-          <div className="bg-[#0A0A0A] border border-white/5 w-full max-w-lg rounded-[3.5rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-500 p-12">
-            <button onClick={() => setIsBuyModalOpen(false)} className="absolute top-10 right-10 text-zinc-500 hover:text-white bg-white/5 p-3.5 rounded-full transition-all border border-white/10 hover:border-white/20"><X size={20} /></button>
-            <div className="text-center space-y-10">
-              <div className="relative inline-block">
-                <div className="absolute inset-0 bg-neon-blue/20 blur-2xl rounded-full" />
-                <div className="relative w-24 h-24 bg-white/5 text-neon-blue rounded-[2.5rem] flex items-center justify-center mx-auto border border-neon-blue/20 shadow-2xl">
-                  <Zap size={40} className="filter drop-shadow-[0_0_10px_#00f2ff]" />
-                </div>
-              </div>
-              <div className="space-y-3">
-                <h2 className="text-3xl font-black tracking-tighter text-white uppercase italic">Limite / Recurso</h2>
-                <p className="text-zinc-500 text-base font-medium max-w-xs mx-auto leading-relaxed">Você atingiu um limite ou este recurso (Agendamento) requer um plano Business.</p>
-              </div>
-              <div className="grid grid-cols-1 gap-3">
-                <button onClick={() => navigate('/app/upgrade')} className="w-full bg-white text-black py-6 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-neon-blue transition-all active:scale-95 shadow-xl flex items-center justify-center gap-3">UPGRADE PROTOCOL <ChevronRight size={18} /></button>
-                <button onClick={() => setIsBuyModalOpen(false)} className="w-full bg-transparent text-zinc-600 py-4 rounded-2xl font-black text-[9px] uppercase tracking-widest hover:text-white transition-all">Talvez mais tarde</button>
-              </div>
-            </div>
+          <div className="bg-[#0A0A0A] border border-white/5 w-full max-w-lg rounded-[3.5rem] overflow-hidden shadow-2xl relative p-12 text-center">
+            <button onClick={() => setIsBuyModalOpen(false)} className="absolute top-10 right-10 text-zinc-500 hover:text-white bg-white/5 p-3.5 rounded-full transition-all border border-white/10"><X size={20} /></button>
+            <Zap size={40} className="text-neon-blue mx-auto mb-10" />
+            <h2 className="text-3xl font-black tracking-tighter text-white uppercase italic mb-3">Limite / Recurso</h2>
+            <p className="text-zinc-500 mb-10">Você atingiu um limite ou este recurso requer um plano superior.</p>
+            <button onClick={() => navigate('/app/upgrade')} className="w-full bg-white text-black py-6 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-neon-blue transition-all">UPGRADE PROTOCOL</button>
           </div>
         </div>
       )}
 
       {isDuplicateModalOpen && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-black/98 backdrop-blur-2xl animate-in fade-in duration-500">
-          <div className="bg-[#0A0A0A] border border-white/5 w-full max-w-lg rounded-[3.5rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-500 p-12">
-            <button onClick={() => setIsDuplicateModalOpen(false)} className="absolute top-10 right-10 text-zinc-500 hover:text-white bg-white/5 p-3.5 rounded-full transition-all border border-white/10 hover:border-white/20"><X size={20} /></button>
-            <div className="space-y-10">
-              <div className="text-center space-y-3">
-                <div className="w-20 h-20 bg-white/5 text-neon-blue rounded-[2.5rem] flex items-center justify-center mx-auto border border-neon-blue/20 mb-6 shadow-2xl">
-                  <Copy size={32} />
-                </div>
-                <h2 className="text-3xl font-black tracking-tighter text-white uppercase italic">Duplicar Perfil</h2>
-                <p className="text-zinc-500 text-sm font-medium">Crie uma cópia idêntica deste protocolo.</p>
-              </div>
-
-              <div className="space-y-6">
+          <div className="bg-[#0A0A0A] border border-white/5 w-full max-w-lg rounded-[3.5rem] p-12 relative animate-in zoom-in-95 duration-500">
+            <button onClick={() => setIsDuplicateModalOpen(false)} className="absolute top-10 right-10 text-zinc-500 hover:text-white bg-white/5 p-3.5 rounded-full"><X size={20} /></button>
+            <div className="text-center space-y-6">
+              <Copy size={32} className="text-neon-blue mx-auto" />
+              <h2 className="text-3xl font-black tracking-tighter text-white uppercase italic">Duplicar Perfil</h2>
+              <div className="space-y-6 text-left">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-2">Nome da Cópia</label>
-                  <input
-                    value={newProfileName}
-                    onChange={e => setNewProfileName(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-sm text-white focus:border-neon-blue outline-none transition-all"
-                  />
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Nome da Cópia</label>
+                  <input value={newProfileName} onChange={e => setNewProfileName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-sm outline-none focus:border-neon-blue" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 ml-2">Link da Cópia (Slug)</label>
-                  <div className="relative">
-                    <input
-                      value={newProfileSlug}
-                      onChange={e => setNewProfileSlug(e.target.value.toLowerCase().replace(/[^a-z0-0-]/g, ''))}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-sm text-white focus:border-neon-blue outline-none transition-all pl-28"
-                    />
-                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-600 text-[10px] font-black uppercase">pageflow.me/</div>
-                  </div>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-2">Link (Slug)</label>
+                  <input value={newProfileSlug} onChange={e => setNewProfileSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-sm outline-none focus:border-neon-blue" />
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4 pt-4">
-                <button onClick={() => setIsDuplicateModalOpen(false)} className="px-6 py-5 rounded-2xl bg-white/5 text-zinc-500 font-black text-[10px] uppercase tracking-widest hover:text-white transition-all">Cancelar</button>
-                <button
-                  onClick={handleConfirmDuplicate}
-                  disabled={!newProfileName || !newProfileSlug}
-                  className="bg-white text-black px-6 py-5 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-neon-blue transition-all active:scale-95 shadow-xl flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  <Check size={16} strokeWidth={3} /> CONFIRMAR
-                </button>
+                <button onClick={() => setIsDuplicateModalOpen(false)} className="px-6 py-5 rounded-2xl bg-white/5 text-zinc-500 font-black text-[10px] uppercase hover:text-white transition-all">Cancelar</button>
+                <button onClick={handleConfirmDuplicate} disabled={!newProfileName || !newProfileSlug} className="bg-white text-black px-6 py-5 rounded-2xl font-black text-[10px] uppercase hover:bg-neon-blue transition-all disabled:opacity-50">CONFIRMAR</button>
               </div>
             </div>
           </div>
         </div>
       )}
-
-      <style>{`
-          .glass-neon-blue {
-            background: rgba(0, 242, 255, 0.03);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-          }
-        `}</style>
     </div>
   );
 };

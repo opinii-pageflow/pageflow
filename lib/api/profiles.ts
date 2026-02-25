@@ -87,7 +87,7 @@ function mapCatalogItem(i: any): CatalogItem {
         title: i.title,
         description: i.description,
         priceText: i.price_text,
-        imageUrl: i.image_url,
+        image_url: i.image_url,
         ctaLabel: i.cta_label,
         ctaLink: i.cta_link,
         sortOrder: i.sort_order,
@@ -453,7 +453,6 @@ export const profilesApi = {
         if (updates.headline !== undefined) dbUpdates.headline = updates.headline;
         if (updates.bioShort !== undefined) dbUpdates.bio_short = updates.bioShort;
         if (updates.bioLong !== undefined) dbUpdates.bio_long = updates.bioLong;
-        if (updates.bioLong !== undefined) dbUpdates.bio_long = updates.bioLong;
 
         // Handle Avatar and Cover Uploads
         if (updates.avatarUrl && updates.avatarUrl.startsWith('data:')) {
@@ -712,8 +711,16 @@ export const profilesApi = {
             status: item.status || 'available'
         }));
 
-        const { error } = await (supabase.from('scheduling_slots') as any).upsert(upsertData);
-        if (error) throw error;
+        try {
+            const { error } = await (supabase.from('scheduling_slots') as any).upsert(upsertData);
+            if (error) {
+                console.error('[profilesApi] Error upserting scheduling slots:', error);
+                throw error;
+            }
+        } catch (err) {
+            console.error('[profilesApi] Fatal error in syncSchedulingSlots:', err);
+            throw err;
+        }
     },
 
     deleteButton: async (buttonId: string) => {

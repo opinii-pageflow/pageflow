@@ -24,7 +24,7 @@ const PhonePreview = React.memo<Props>(({ profile, showcase, clientPlan, client,
             {viewMode === 'vitrine' ? (
               <VitrineRenderer
                 profile={profile}
-                showcase={showcase}
+                showcase={showcase || null}
                 isPreview={true}
               />
             ) : (
@@ -33,7 +33,7 @@ const PhonePreview = React.memo<Props>(({ profile, showcase, clientPlan, client,
                 isPreview={true}
                 clientPlan={clientPlan}
                 client={client}
-                showcase={showcase}
+                showcase={showcase || null}
                 source="direct"
               />
             )}

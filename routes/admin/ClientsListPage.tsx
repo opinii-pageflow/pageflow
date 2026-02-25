@@ -34,7 +34,6 @@ import { PLANS_CONFIG } from '../../lib/plansConfig';
 import { formatPublicProfileUrl } from '../../lib/linkHelpers';
 import clsx from 'clsx';
 
-// ─── Tipos de ordenação ───
 type SortKey = 'name' | 'plan' | 'status' | 'date';
 type SortDir = 'asc' | 'desc';
 
@@ -53,17 +52,13 @@ const ClientsListPage: React.FC = () => {
   const [planFilter, setPlanFilter] = useState<'all' | PlanType>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'blocked'>('all');
 
-  // Ordenação
   const [sortKey, setSortKey] = useState<SortKey>('date');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
-  // Paginação
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(20);
 
-  // Mobile expand
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
-
   const [bonusAmount, setBonusAmount] = useState(1);
 
   useEffect(() => {
@@ -89,7 +84,6 @@ const ClientsListPage: React.FC = () => {
     }
   };
 
-  // ─── Filtro ───
   const filteredClients = useMemo(() => {
     return clients.filter(c => {
       const matchesSearch = !searchTerm ||
@@ -104,7 +98,6 @@ const ClientsListPage: React.FC = () => {
     });
   }, [clients, searchTerm, planFilter, statusFilter]);
 
-  // ─── Ordenação ───
   const sortedClients = useMemo(() => {
     const PLAN_ORDER: Record<string, number> = { starter: 0, pro: 1, business: 2, enterprise: 3 };
     const sorted = [...filteredClients].sort((a, b) => {
@@ -128,12 +121,10 @@ const ClientsListPage: React.FC = () => {
     return sorted;
   }, [filteredClients, sortKey, sortDir]);
 
-  // ─── Paginação ───
   const totalPages = Math.max(1, Math.ceil(sortedClients.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
   const paginatedClients = sortedClients.slice((safePage - 1) * pageSize, safePage * pageSize);
 
-  // Reset page on filter/sort change
   useEffect(() => { setCurrentPage(1); }, [searchTerm, planFilter, statusFilter, sortKey, sortDir, pageSize]);
 
   const handleSort = (key: SortKey) => {
@@ -152,7 +143,6 @@ const ClientsListPage: React.FC = () => {
       : <ChevronDown size={12} className="text-blue-400 ml-1.5 flex-shrink-0" />;
   };
 
-  // ─── Handlers (100% preservados) ───
   const handleToggleStatus = async (client: Client) => {
     try {
       await clientsApi.update(client.id, { isActive: !client.isActive });
@@ -220,7 +210,6 @@ const ClientsListPage: React.FC = () => {
 
   const hasActiveFilters = searchTerm || planFilter !== 'all' || statusFilter !== 'all';
 
-  // Contagem de perfis por cliente
   const profileCounts = useMemo(() => {
     const map: Record<string, number> = {};
     profiles.forEach(p => {
@@ -234,8 +223,6 @@ const ClientsListPage: React.FC = () => {
       <TopBar title="Diretório de Companies" />
 
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-10 relative z-10">
-
-        {/* ─── Header compacto ─── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl md:text-4xl font-black tracking-tighter text-white">Companies</h1>
@@ -255,10 +242,8 @@ const ClientsListPage: React.FC = () => {
           </button>
         </div>
 
-        {/* ─── Toolbar sticky: busca + filtros ─── */}
         <div className="sticky top-20 z-30 bg-[#020202]/95 backdrop-blur-xl pb-4 pt-2 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 border-b border-white/5">
           <div className="flex flex-col md:flex-row gap-3 items-stretch">
-            {/* Busca */}
             <div className="relative flex-1 group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-blue-500 transition-colors" size={16} />
               <input
@@ -270,7 +255,6 @@ const ClientsListPage: React.FC = () => {
               />
             </div>
 
-            {/* Filtro plano */}
             <div className="relative">
               <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none" size={14} />
               <select
@@ -286,7 +270,6 @@ const ClientsListPage: React.FC = () => {
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-600" size={12} />
             </div>
 
-            {/* Filtro status */}
             <div className="relative">
               <select
                 value={statusFilter}
@@ -300,103 +283,42 @@ const ClientsListPage: React.FC = () => {
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-600" size={12} />
             </div>
           </div>
-
-          {/* Info bar: contagem + limpar filtros */}
-          <div className="flex items-center justify-between mt-3">
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">
-              {filteredClients.length} {filteredClients.length === 1 ? 'resultado' : 'resultados'}
-              {filteredClients.length !== clients.length && ` de ${clients.length}`}
-            </span>
-            {hasActiveFilters && (
-              <button
-                onClick={() => { setSearchTerm(''); setPlanFilter('all'); setStatusFilter('all'); }}
-                className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-white transition-all"
-              >
-                Limpar filtros
-              </button>
-            )}
-          </div>
         </div>
 
-        {/* ─── Tabela / Lista ─── */}
         {filteredClients.length === 0 ? (
-          /* Empty state */
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <div className="w-20 h-20 bg-zinc-900/60 rounded-2xl flex items-center justify-center mb-6 border border-white/5">
               <Users size={36} className="text-zinc-700" />
             </div>
-            <h2 className="text-xl font-black tracking-tight mb-2 text-zinc-300">
-              {hasActiveFilters ? 'Nenhum resultado encontrado' : 'Nenhuma company cadastrada'}
-            </h2>
-            <p className="text-zinc-600 text-sm max-w-sm mb-8">
-              {hasActiveFilters
-                ? 'Tente ajustar os filtros ou buscar por outro termo.'
-                : 'Comece provisionando sua primeira company.'}
-            </p>
-            {hasActiveFilters ? (
-              <button
+            <h2 className="text-xl font-black tracking-tight mb-2 text-zinc-300">Nenhum resultado encontrado</h2>
+            <button
                 onClick={() => { setSearchTerm(''); setPlanFilter('all'); setStatusFilter('all'); }}
-                className="px-6 py-3 rounded-xl bg-zinc-900 border border-white/10 text-sm font-bold text-zinc-400 hover:text-white transition-all"
-              >
+                className="text-[10px] font-black uppercase tracking-widest text-blue-400 hover:text-white transition-all mt-4"
+            >
                 Limpar filtros
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  setSelectedClient(null);
-                  setIsCreateModalOpen(true);
-                }}
-                className="px-8 py-3.5 rounded-2xl bg-white text-black font-black text-[11px] uppercase tracking-widest hover:bg-zinc-200 transition-all active:scale-95"
-              >
-                <UserPlus size={16} className="inline mr-2 -mt-0.5" />
-                Criar Primeira Company
-              </button>
-            )}
+            </button>
           </div>
         ) : (
           <>
-            {/* ─── Desktop: Tabela ─── */}
             <div className="hidden lg:block mt-4">
               <div className="bg-zinc-900/30 border border-white/5 rounded-2xl overflow-hidden">
-                {/* Table header */}
                 <div className="grid grid-cols-[2.5fr_1.5fr_1fr_0.8fr_0.8fr_1fr_auto] gap-0 px-5 py-3 border-b border-white/5 bg-zinc-900/50">
-                  {([
-                    ['name', 'Nome'],
-                    ['plan', 'Plano'],
-                    ['status', 'Status'],
-                  ] as [SortKey, string][]).map(([key, label]) => (
-                    <button
-                      key={key}
-                      onClick={() => handleSort(key)}
-                      className="flex items-center text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors text-left"
-                    >
-                      {label}
-                      <SortIcon column={key} />
+                  {([['name', 'Nome'], ['plan', 'Plano'], ['status', 'Status']] as [SortKey, string][]).map(([key, label]) => (
+                    <button key={key} onClick={() => handleSort(key)} className="flex items-center text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors">
+                      {label} <SortIcon column={key} />
                     </button>
                   ))}
                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Slots</span>
                   <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Perfis</span>
-                  <button
-                    onClick={() => handleSort('date')}
-                    className="flex items-center text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors text-left"
-                  >
-                    Desde
-                    <SortIcon column="date" />
+                  <button onClick={() => handleSort('date')} className="flex items-center text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors">
+                    Desde <SortIcon column="date" />
                   </button>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 text-right pr-1">Ações</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 text-right">Ações</span>
                 </div>
 
-                {/* Table rows */}
                 <div className="max-h-[calc(100vh-340px)] overflow-y-auto custom-scrollbar">
                   {paginatedClients.map((client, idx) => (
-                    <div
-                      key={client.id}
-                      className={clsx(
-                        "grid grid-cols-[2.5fr_1.5fr_1fr_0.8fr_0.8fr_1fr_auto] gap-0 px-5 py-3.5 items-center transition-colors hover:bg-white/[0.02] group",
-                        idx < paginatedClients.length - 1 && "border-b border-white/[0.03]"
-                      )}
-                    >
-                      {/* Nome + Email */}
+                    <div key={client.id} className="grid grid-cols-[2.5fr_1.5fr_1fr_0.8fr_0.8fr_1fr_auto] gap-0 px-5 py-3.5 items-center transition-colors hover:bg-white/[0.02] border-b border-white/[0.03] group">
                       <div className="flex items-center gap-3 min-w-0 pr-4">
                         <div className="w-9 h-9 bg-zinc-800 rounded-xl flex items-center justify-center font-black text-sm text-zinc-500 border border-white/5 flex-shrink-0">
                           {client.name.charAt(0).toUpperCase()}
@@ -406,110 +328,36 @@ const ClientsListPage: React.FC = () => {
                           <div className="text-[11px] text-zinc-600 truncate font-mono">{client.email || client.slug}</div>
                         </div>
                       </div>
-
-                      {/* Plano */}
                       <div>
-                        <span className={clsx(
-                          "inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border",
-                          client.plan === 'enterprise' && "bg-purple-500/10 text-purple-400 border-purple-500/20",
-                          client.plan === 'business' && "bg-amber-500/10 text-amber-400 border-amber-500/20",
-                          client.plan === 'pro' && "bg-blue-500/10 text-blue-400 border-blue-500/20",
-                          client.plan === 'starter' && "bg-zinc-800/50 text-zinc-500 border-zinc-700/50",
-                        )}>
-                          <Zap size={10} />
-                          {PLANS[client.plan]?.name || client.plan}
+                        <span className={clsx("inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border", client.plan === 'enterprise' ? "bg-purple-500/10 text-purple-400 border-purple-500/20" : "bg-blue-500/10 text-blue-400 border-blue-500/20")}>
+                          <Zap size={10} /> {PLANS[client.plan]?.name || client.plan}
                         </span>
                       </div>
-
-                      {/* Status */}
                       <div>
-                        <span className={clsx(
-                          "inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border",
-                          client.isActive
-                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                            : "bg-red-500/10 text-red-500 border-red-500/20"
-                        )}>
-                          <span className={clsx("w-1.5 h-1.5 rounded-full", client.isActive ? "bg-emerald-500" : "bg-red-500")} />
-                          {client.isActive ? 'Ativo' : 'Bloqueado'}
+                        <span className={clsx("inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border", client.isActive ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>
+                          <span className={clsx("w-1.5 h-1.5 rounded-full", client.isActive ? "bg-emerald-500" : "bg-red-500")} /> {client.isActive ? 'Ativo' : 'Bloqueado'}
                         </span>
                       </div>
-
-                      {/* Slots */}
-                      <div className="text-sm font-bold text-zinc-400 tabular-nums">
-                        {client.maxProfiles}
-                      </div>
-
-                      {/* Perfis em uso */}
+                      <div className="text-sm font-bold text-zinc-400 tabular-nums">{client.maxProfiles}</div>
                       <div className="min-w-0 pr-4">
                         <div className="text-sm font-bold tabular-nums">
-                          <span className={clsx(
-                            (profileCounts[client.id] || 0) >= client.maxProfiles ? "text-amber-400" : "text-zinc-500"
-                          )}>
-                            {profileCounts[client.id] || 0}
-                          </span>
+                          <span className={(profileCounts[client.id] || 0) >= client.maxProfiles ? "text-amber-400" : "text-zinc-500"}>{profileCounts[client.id] || 0}</span>
                           <span className="text-zinc-700">/{client.maxProfiles}</span>
                         </div>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {profiles
-                            .filter(p => p.clientId === client.id)
-                            .slice(0, 2)
-                            .map(p => (
-                              <a
-                                key={p.id}
-                                href={formatPublicProfileUrl(p.slug)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-[8px] px-1 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-zinc-600 hover:text-white transition-all"
-                              >
-                                /{p.slug}
-                              </a>
-                            ))}
-                          {(profileCounts[client.id] || 0) > 2 && (
-                            <span className="text-[8px] text-zinc-800">...</span>
-                          )}
+                          {profiles.filter(p => p.clientId === client.id).slice(0, 2).map(p => (
+                            <a key={p.id} href={formatPublicProfileUrl(p.slug)} target="_blank" rel="noreferrer" className="text-[8px] px-1 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-zinc-600 hover:text-white transition-all">/{p.slug}</a>
+                          ))}
                         </div>
                       </div>
-
-                      {/* Data */}
                       <div className="text-[11px] font-medium text-zinc-600 tabular-nums">
                         {new Date(client.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </div>
-
-                      {/* Ações */}
                       <div className="flex items-center gap-1.5 justify-end opacity-60 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => openEditModal(client)}
-                          title="Config Master"
-                          className="p-2 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
-                        >
-                          <Edit3 size={15} />
-                        </button>
-                        <button
-                          onClick={() => { setSelectedClient(client); setIsBonusModalOpen(true); }}
-                          title="Bônus de Slots"
-                          className="p-2 rounded-lg hover:bg-amber-500/10 text-zinc-400 hover:text-amber-400 transition-all"
-                        >
-                          <Gift size={15} />
-                        </button>
-                        <button
-                          onClick={() => handleToggleStatus(client)}
-                          title={client.isActive ? 'Bloquear' : 'Ativar'}
-                          className={clsx(
-                            "p-2 rounded-lg transition-all",
-                            client.isActive
-                              ? "hover:bg-orange-500/10 text-zinc-400 hover:text-orange-400"
-                              : "hover:bg-emerald-500/10 text-zinc-400 hover:text-emerald-400"
-                          )}
-                        >
-                          {client.isActive ? <XCircle size={15} /> : <CheckCircle2 size={15} />}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClient(client)}
-                          title="Excluir"
-                          className="p-2 rounded-lg hover:bg-red-500/10 text-zinc-600 hover:text-red-500 transition-all"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        <button onClick={() => openEditModal(client)} className="p-2 rounded-lg hover:bg-white/10 text-zinc-400 hover:text-white"><Edit3 size={15} /></button>
+                        <button onClick={() => { setSelectedClient(client); setIsBonusModalOpen(true); }} className="p-2 rounded-lg hover:bg-amber-500/10 text-zinc-400 hover:text-amber-400"><Gift size={15} /></button>
+                        <button onClick={() => handleToggleStatus(client)} className="p-2 rounded-lg hover:bg-orange-500/10 text-zinc-400">{client.isActive ? <XCircle size={15} /> : <CheckCircle2 size={15} />}</button>
+                        <button onClick={() => handleDeleteClient(client)} className="p-2 rounded-lg hover:bg-red-500/10 text-zinc-600 hover:text-red-500"><Trash2 size={15} /></button>
                       </div>
                     </div>
                   ))}
@@ -517,39 +365,20 @@ const ClientsListPage: React.FC = () => {
               </div>
             </div>
 
-            {/* ─── Mobile: Lista compacta com expand ─── */}
             <div className="lg:hidden mt-4 space-y-2">
               {paginatedClients.map(client => {
                 const isExpanded = expandedRow === client.id;
                 return (
-                  <div
-                    key={client.id}
-                    className="bg-zinc-900/40 border border-white/5 rounded-2xl overflow-hidden transition-all"
-                  >
-                    {/* Row principal — tap para expandir */}
-                    <button
-                      onClick={() => setExpandedRow(isExpanded ? null : client.id)}
-                      className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
-                    >
-                      <div className="w-9 h-9 bg-zinc-800 rounded-xl flex items-center justify-center font-black text-sm text-zinc-500 border border-white/5 flex-shrink-0">
-                        {client.name.charAt(0).toUpperCase()}
-                      </div>
+                  <div key={client.id} className="bg-zinc-900/40 border border-white/5 rounded-2xl overflow-hidden transition-all">
+                    <button onClick={() => setExpandedRow(isExpanded ? null : client.id)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left">
+                      <div className="w-9 h-9 bg-zinc-800 rounded-xl flex items-center justify-center font-black text-sm text-zinc-500 border border-white/5 flex-shrink-0">{client.name.charAt(0).toUpperCase()}</div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-bold text-white truncate">{client.name}</div>
                         <div className="text-[11px] text-zinc-600 truncate">{client.email || client.slug}</div>
                       </div>
-                      <span className={clsx(
-                        "text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border flex-shrink-0",
-                        client.isActive
-                          ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                          : "bg-red-500/10 text-red-500 border-red-500/20"
-                      )}>
-                        {client.isActive ? 'Ativo' : 'Off'}
-                      </span>
-                      <ChevronDown size={16} className={clsx("text-zinc-600 transition-transform flex-shrink-0", isExpanded && "rotate-180")} />
+                      <span className={clsx("text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border", client.isActive ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-red-500/10 text-red-500 border-red-500/20")}>{client.isActive ? 'Ativo' : 'Off'}</span>
+                      <ChevronDown size={16} className={clsx("text-zinc-600 transition-transform", isExpanded && "rotate-180")} />
                     </button>
-
-                    {/* Detalhes expandidos */}
                     {isExpanded && (
                       <div className="px-4 pb-4 pt-1 space-y-3 border-t border-white/5 animate-in fade-in slide-in-from-top-2 duration-200">
                         <div className="grid grid-cols-3 gap-2">
@@ -561,63 +390,17 @@ const ClientsListPage: React.FC = () => {
                             <div className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-1">Slots</div>
                             <div className="text-xs font-bold text-white">{profileCounts[client.id] || 0}/{client.maxProfiles}</div>
                           </div>
-                          <div className="bg-black/30 rounded-xl p-3 text-center">
-                            <div className="text-[9px] font-black uppercase tracking-widest text-zinc-600 mb-1">Desde</div>
-                            <div className="text-xs font-bold text-white">{new Date(client.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}</div>
-                          </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => openEditModal(client)}
-                            className="flex-1 bg-white text-black py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-zinc-200 transition-all active:scale-95"
-                          >
-                            <Edit3 size={13} /> Config
-                          </button>
-                          <button
-                            onClick={() => { setSelectedClient(client); setIsBonusModalOpen(true); }}
-                            className="p-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-xl transition-all border border-white/5"
-                          >
-                            <Gift size={16} />
-                          </button>
-                          <button
-                            onClick={() => handleToggleStatus(client)}
-                            className={clsx(
-                              "p-2.5 rounded-xl transition-all border",
-                              client.isActive
-                                ? "bg-orange-500/10 text-orange-500 border-orange-500/20"
-                                : "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                            )}
-                          >
-                            {client.isActive ? <XCircle size={16} /> : <CheckCircle2 size={16} />}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClient(client)}
-                            className="p-2.5 bg-red-500/5 text-red-500/50 hover:text-red-500 rounded-xl transition-all border border-red-500/10"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          <button onClick={() => openEditModal(client)} className="flex-1 bg-white text-black py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2"><Edit3 size={13} /> Config</button>
+                          <button onClick={() => handleDeleteClient(client)} className="p-2.5 bg-red-500/5 text-red-500/50 hover:text-red-500 rounded-xl border border-red-500/10"><Trash2 size={16} /></button>
                         </div>
-
-                        {/* Profiles List (Mobile) */}
                         <div className="pt-2 border-t border-white/[0.03]">
                           <div className="text-[9px] font-black uppercase text-zinc-700 mb-2">Perfis Associados</div>
                           <div className="flex flex-wrap gap-2">
-                            {profiles
-                              .filter(p => p.clientId === client.id)
-                              .map(p => (
-                                <a
-                                  key={p.id}
-                                  href={`#/u/${p.slug}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-[10px] font-bold px-3 py-1.5 bg-zinc-800 text-zinc-500 rounded-lg border border-white/5"
-                                >
-                                  /{p.slug}
-                                </a>
-                              ))}
-                            {profiles.filter(p => p.clientId === client.id).length === 0 && (
-                              <span className="text-[10px] text-zinc-800 italic">Nenhum perfil criado</span>
-                            )}
+                            {profiles.filter(p => p.clientId === client.id).map(p => (
+                                <a key={p.id} href={formatPublicProfileUrl(p.slug)} target="_blank" rel="noreferrer" className="text-[10px] font-bold px-3 py-1.5 bg-zinc-800 text-zinc-500 rounded-lg border border-white/5">/{p.slug}</a>
+                            ))}
                           </div>
                         </div>
                       </div>
@@ -626,57 +409,10 @@ const ClientsListPage: React.FC = () => {
                 );
               })}
             </div>
-
-            {/* ─── Paginação ─── */}
-            {sortedClients.length > PAGE_SIZE_OPTIONS[0] && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-white/5">
-                {/* Page size selector */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600">Exibir</span>
-                  {PAGE_SIZE_OPTIONS.map(size => (
-                    <button
-                      key={size}
-                      onClick={() => setPageSize(size)}
-                      className={clsx(
-                        "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-                        pageSize === size
-                          ? "bg-white text-black"
-                          : "bg-zinc-900 text-zinc-500 hover:text-white border border-white/5"
-                      )}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-600 ml-1">por página</span>
-                </div>
-
-                {/* Navegação */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={safePage <= 1}
-                    className="p-2 rounded-lg bg-zinc-900 border border-white/5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <span className="text-xs font-bold text-zinc-500 px-3 tabular-nums">
-                    {safePage} <span className="text-zinc-700">de</span> {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={safePage >= totalPages}
-                    className="p-2 rounded-lg bg-zinc-900 border border-white/5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
-            )}
           </>
         )}
       </main>
 
-      {/* ─── Modal: Criar / Editar (100% preservado) ─── */}
       <CompanyModal
         isOpen={isCreateModalOpen || isEditModalOpen}
         onClose={() => { setIsCreateModalOpen(false); setIsEditModalOpen(false); }}
@@ -685,35 +421,22 @@ const ClientsListPage: React.FC = () => {
         isEditing={isEditModalOpen}
       />
 
-      {/* ─── Modal: Bônus de Slots (100% preservado) ─── */}
       {isBonusModalOpen && selectedClient && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 sm:p-6 bg-black/95 backdrop-blur-3xl animate-in fade-in duration-500">
-          <div className="bg-zinc-900 border border-white/10 w-full max-w-md rounded-2xl sm:rounded-[4rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-500">
+          <div className="bg-zinc-900 border border-white/10 w-full max-w-md rounded-2xl sm:rounded-[4rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300">
             <button onClick={() => setIsBonusModalOpen(false)} className="absolute top-6 right-6 sm:top-12 sm:right-12 text-zinc-500 hover:text-white bg-white/5 p-3 rounded-full transition-all"><X size={20} className="sm:w-6 sm:h-6" /></button>
             <div className="p-8 sm:p-16 text-center space-y-8 sm:space-y-12">
-              <div className="w-16 h-16 sm:w-24 sm:h-24 bg-amber-500/10 text-amber-500 rounded-2xl sm:rounded-[2.5rem] flex items-center justify-center mx-auto border border-amber-500/20 shadow-2xl shadow-amber-500/10">
-                <Award size={48} />
-              </div>
-              <div className="space-y-2 sm:space-y-3">
-                <h2 className="text-2xl sm:text-4xl font-black tracking-tighter">Bônus de Capacidade</h2>
-                <p className="text-zinc-500 text-xs sm:text-sm font-medium">Adicionando slots extras para <span className="text-white">{selectedClient.name}</span>.</p>
-              </div>
-
+              <div className="w-16 h-16 sm:w-24 sm:h-24 bg-amber-500/10 text-amber-500 rounded-2xl sm:rounded-[2.5rem] flex items-center justify-center mx-auto border border-amber-500/20 shadow-2xl shadow-amber-500/10"><Award size={48} /></div>
+              <h2 className="text-2xl sm:text-4xl font-black tracking-tighter">Bônus de Capacidade</h2>
               <div className="flex items-center justify-center gap-6 sm:gap-8 bg-black/40 p-6 sm:p-10 rounded-2xl sm:rounded-[2.5rem] border border-white/5 relative shadow-inner">
-                <button onClick={() => setBonusAmount(Math.max(1, bonusAmount - 1))} className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border border-white/10 text-2xl sm:text-3xl font-bold hover:bg-white/10 transition-all active:scale-90">-</button>
+                <button onClick={() => setBonusAmount(Math.max(1, bonusAmount - 1))} className="w-12 h-12 rounded-xl border border-white/10 text-2xl font-bold hover:bg-white/10">-</button>
                 <div className="flex flex-col items-center">
-                  <span className="text-5xl sm:text-7xl font-black text-amber-500 tabular-nums leading-none mb-2">{bonusAmount}</span>
+                  <span className="text-5xl font-black text-amber-500 tabular-nums leading-none mb-2">{bonusAmount}</span>
                   <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-600 font-mono">Extra Slots</span>
                 </div>
-                <button onClick={() => setBonusAmount(bonusAmount + 1)} className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl border border-white/10 text-2xl sm:text-3xl font-bold hover:bg-white/10 transition-all active:scale-90">+</button>
+                <button onClick={() => setBonusAmount(bonusAmount + 1)} className="w-12 h-12 rounded-xl border border-white/10 text-2xl font-bold hover:bg-white/10">+</button>
               </div>
-
-              <button
-                onClick={handleAddBonus}
-                className="w-full bg-amber-500 text-black py-4 sm:py-6 rounded-xl sm:rounded-[2rem] font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-amber-400 transition-all active:scale-95 shadow-2xl shadow-amber-500/20 flex items-center justify-center gap-3"
-              >
-                Aplicar Recursos
-              </button>
+              <button onClick={handleAddBonus} className="w-full bg-amber-500 text-black py-4 sm:py-6 rounded-xl sm:rounded-[2rem] font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-amber-400 transition-all active:scale-95 shadow-2xl flex items-center justify-center gap-3">Aplicar Recursos</button>
             </div>
           </div>
         </div>
