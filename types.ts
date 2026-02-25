@@ -47,6 +47,68 @@ export interface YoutubeVideoItem {
   clientId?: string;
 }
 
+// ===== Vitrine (Showcase) Module - Business Plan =====
+export interface Showcase {
+  id: string;
+  profileId: string;
+  clientId: string;
+  isActive: boolean;
+  createdAt: string;
+  buttonColor?: string;
+  buttonSecondaryColor?: string;
+  buttonGradientEnabled?: boolean;
+  itemTemplate?: string;
+  headerButtonIds?: string[];
+  communityClickDestination?: 'profile' | 'showcase';
+  items?: ShowcaseItem[];
+}
+
+export interface ShowcaseItem {
+  id: string;
+  showcaseId: string;
+  kind: 'physical' | 'digital';
+  title: string;
+  description?: string;
+  mainImageUrl?: string;
+  videoUrl?: string; // Vídeo principal do produto
+  basePrice: number;
+  tag?: string;
+  ctaType: 'link' | 'whatsapp';
+  ctaValue?: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  images?: ShowcaseImage[];
+  options?: ShowcaseOption[];
+  testimonials?: ShowcaseTestimonial[];
+}
+
+export interface ShowcaseImage {
+  id: string;
+  itemId: string;
+  storagePath: string;
+  sortOrder: number;
+}
+
+export interface ShowcaseOption {
+  id: string;
+  itemId: string;
+  label: string;
+  price: number;
+  sortOrder: number;
+}
+
+export interface ShowcaseTestimonial {
+  id: string;
+  itemId: string;
+  name: string;
+  text: string;
+  avatarUrl?: string;
+  imageUrl?: string; // Foto de prova social
+  videoUrl?: string;  // Link de vídeo de prova social
+  sortOrder: number;
+}
+
 // ===== Scheduling =====
 export type SlotStatus = 'available' | 'pending' | 'booked';
 
@@ -118,7 +180,6 @@ export interface Client {
   maxTemplates?: number;
   createdAt: string;
   isActive: boolean;
-  password?: string;
   email?: string;
   schedulingScope?: 'global' | 'per_profile'; // Configuração de escopo
   enableScheduling?: boolean; // Master Switch
@@ -181,7 +242,6 @@ export interface Profile {
   layoutTemplate: string;
   fonts: Fonts;
   visibilityMode: VisibilityMode;
-  password?: string;
   createdAt: string;
   updatedAt: string;
 
@@ -204,12 +264,12 @@ export interface Profile {
   // Community
   showInCommunity?: boolean;
   communitySegment?: string;
-  communityState?: string;
   communityCity?: string;
   communityServiceMode?: 'online' | 'presencial' | 'hibrido';
   communityPunchline?: string;
   communityPrimaryCta?: 'whatsapp' | 'instagram' | 'site';
   communityGmbLink?: string;
+  communityClickDestination?: 'profile' | 'showcase';
 
   // Promotion
   promotionEnabled?: boolean;
@@ -228,13 +288,14 @@ export interface Profile {
   // Admin Curation
   featured?: boolean;
   showOnLanding?: boolean;
+  hasShowcase?: boolean;
 
   // Module Styling (New)
   moduleThemes?: Partial<Record<ModuleType, ModuleTheme>>;
   generalModuleTheme?: ModuleTheme; // Estilo global para todos os módulos
 }
 
-export type ModuleType = 'scheduling' | 'catalog' | 'leadCapture' | 'nps' | 'portfolio' | 'videos' | 'pix';
+export type ModuleType = 'scheduling' | 'catalog' | 'leadCapture' | 'nps' | 'portfolio' | 'videos' | 'pix' | 'showcase';
 export type ModuleStyleType = 'minimal' | 'neon' | 'glass' | 'solid' | 'outline' | 'soft' | 'brutalist' | '3d';
 
 export interface ModuleTheme {
@@ -248,7 +309,7 @@ export interface ModuleTheme {
   shadow?: string; // override global shadow
 }
 
-export type EventType = 'view' | 'click' | 'portfolio_click' | 'pix_copied' | 'catalog_zoom' | 'catalog_cta_click' | 'video_view' | 'nps_response'; // Adicionado portfolio_click e nps_response
+export type EventType = 'view' | 'click' | 'portfolio_click' | 'pix_copied' | 'catalog_zoom' | 'catalog_cta_click' | 'video_view' | 'nps_response' | 'lead_capture' | 'lead_sent' | 'showcase_view' | 'showcase_item_click';
 
 export interface AnalyticsEvent {
   id: string;
@@ -265,7 +326,7 @@ export interface AnalyticsEvent {
   ts: number;
 
   // Snapshot Fields (New Standard)
-  assetType?: 'button' | 'portfolio' | 'catalog' | 'video' | 'pix' | 'nps' | 'unknown';
+  assetType?: 'button' | 'portfolio' | 'catalog' | 'video' | 'pix' | 'nps' | 'form' | 'showcase' | 'showcase_item' | 'unknown';
   assetId?: string;
   assetLabel?: string;
   assetUrl?: string;
@@ -305,6 +366,7 @@ export interface AnalyticsSummary {
     zeroInteractionItems: { label: string; type: string }[];
     pixCopies: number;
   };
+  leadsCount: number;
   npsScore?: number;
   npsBreakdown?: {
     promoters: number;

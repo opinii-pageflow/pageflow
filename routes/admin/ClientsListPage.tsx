@@ -180,7 +180,7 @@ const ClientsListPage: React.FC = () => {
       name: client.name,
       slug: client.slug,
       email: client.email || '',
-      password: client.password || '',
+      password: '', // Iniciar vazio para edição segura
       plan: client.plan,
       maxProfiles: client.maxProfiles,
       isActive: client.isActive
@@ -257,7 +257,7 @@ const ClientsListPage: React.FC = () => {
           </div>
           <button
             onClick={() => {
-              setFormData({ name: '', slug: '', email: '', password: '', plan: 'pro', maxProfiles: 3, isActive: true });
+              setFormData({ name: '', slug: '', email: '', password: '', plan: 'pro', maxProfiles: PLANS_CONFIG.pro.maxProfiles, isActive: true });
               setIsCreateModalOpen(true);
             }}
             className="w-full sm:w-auto bg-white text-black px-8 py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-zinc-200 transition-all active:scale-95 shadow-lg shadow-white/5"
@@ -452,13 +452,34 @@ const ClientsListPage: React.FC = () => {
                       </div>
 
                       {/* Perfis em uso */}
-                      <div className="text-sm font-bold tabular-nums">
-                        <span className={clsx(
-                          (profileCounts[client.id] || 0) >= client.maxProfiles ? "text-amber-400" : "text-zinc-500"
-                        )}>
-                          {profileCounts[client.id] || 0}
-                        </span>
-                        <span className="text-zinc-700">/{client.maxProfiles}</span>
+                      <div className="min-w-0 pr-4">
+                        <div className="text-sm font-bold tabular-nums">
+                          <span className={clsx(
+                            (profileCounts[client.id] || 0) >= client.maxProfiles ? "text-amber-400" : "text-zinc-500"
+                          )}>
+                            {profileCounts[client.id] || 0}
+                          </span>
+                          <span className="text-zinc-700">/{client.maxProfiles}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {profiles
+                            .filter(p => p.clientId === client.id)
+                            .slice(0, 2)
+                            .map(p => (
+                              <a
+                                key={p.id}
+                                href={`#/u/${p.slug}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[8px] px-1 bg-white/5 hover:bg-white/10 border border-white/5 rounded text-zinc-600 hover:text-white transition-all"
+                              >
+                                /{p.slug}
+                              </a>
+                            ))}
+                          {(profileCounts[client.id] || 0) > 2 && (
+                            <span className="text-[8px] text-zinc-800">...</span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Data */}
@@ -588,6 +609,29 @@ const ClientsListPage: React.FC = () => {
                             <Trash2 size={16} />
                           </button>
                         </div>
+
+                        {/* Profiles List (Mobile) */}
+                        <div className="pt-2 border-t border-white/[0.03]">
+                          <div className="text-[9px] font-black uppercase text-zinc-700 mb-2">Perfis Associados</div>
+                          <div className="flex flex-wrap gap-2">
+                            {profiles
+                              .filter(p => p.clientId === client.id)
+                              .map(p => (
+                                <a
+                                  key={p.id}
+                                  href={`#/u/${p.slug}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[10px] font-bold px-3 py-1.5 bg-zinc-800 text-zinc-500 rounded-lg border border-white/5"
+                                >
+                                  /{p.slug}
+                                </a>
+                              ))}
+                            {profiles.filter(p => p.clientId === client.id).length === 0 && (
+                              <span className="text-[10px] text-zinc-800 italic">Nenhum perfil criado</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -683,8 +727,8 @@ const ClientsListPage: React.FC = () => {
                     <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Senha (Access Token)</label>
                     <input
                       type="text"
-                      required
-                      placeholder="Crie uma senha forte"
+                      required={!isEditModalOpen}
+                      placeholder={isEditModalOpen ? "Preencha apenas para alterar" : "Crie uma senha forte"}
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       className="w-full bg-black/40 border border-white/10 rounded-xl sm:rounded-[1.5rem] px-5 sm:px-6 py-4 sm:py-5 text-sm font-mono focus:border-blue-500 outline-none transition-all"

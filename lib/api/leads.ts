@@ -5,7 +5,7 @@ export const leadsApi = {
     // Listar leads de um cliente
     listByClient: async (clientId: string): Promise<LeadCapture[]> => {
         const { data, error } = await (supabase.from('leads') as any)
-            .select('*')
+            .select('id, client_id, profile_id, name, contact, message, status, notes, created_at, source, capture_type, utm_source, utm_medium, utm_campaign, utm_content, utm_term')
             .eq('client_id', clientId)
             .order('created_at', { ascending: false });
 

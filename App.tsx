@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext';
 // Public
 import LandingPage from './routes/public/LandingPage';
 import PublicProfile from './routes/public/PublicProfile';
+import VitrinePage from '@/routes/public/VitrinePage';
 import CommunityPage from './routes/public/CommunityPage';
 import LoginPage from './routes/auth/LoginPage';
 import RegisterPage from './routes/auth/RegisterPage';
@@ -51,6 +52,7 @@ const App: React.FC = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/u/:slug" element={<PublicProfile />} />
+          <Route path="/u/:slug/vitrine" element={<VitrinePage />} />
           <Route path="/c" element={<CommunityPage />} />
 
           {/* Admin Routes */}

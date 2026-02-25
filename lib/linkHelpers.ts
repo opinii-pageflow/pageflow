@@ -2,7 +2,7 @@
 export const formatLink = (type: string, value: string): string => {
   const v = value.trim();
   if (!v) return '#';
-  
+
   switch (type) {
     case 'whatsapp':
       return `https://wa.me/${v.replace(/\D/g, '')}`;
@@ -46,7 +46,7 @@ export const getIconColor = (type: string): string => {
     case 'whatsapp': return '#25D366';
     case 'instagram': return '#E1306C';
     case 'linkedin': return '#0077B5';
-    case 'twitter': 
+    case 'twitter':
     case 'x': return '#ffffff';
     case 'youtube': return '#FF0000';
     case 'facebook': return '#1877F2';
@@ -58,4 +58,26 @@ export const getIconColor = (type: string): string => {
     case 'threads': return '#ffffff';
     default: return '#6b7280';
   }
+};
+
+export const detectLinkType = (value: string): string => {
+  const v = value.toLowerCase().trim();
+  if (!v) return 'website';
+
+  if (v.includes('wa.me') || v.includes('whatsapp.com') || /^\+?\d+$/.test(v.replace(/[\s-()]/g, ''))) return 'whatsapp';
+  if (v.includes('instagram.com') || v.startsWith('@')) return 'instagram';
+  if (v.includes('linkedin.com')) return 'linkedin';
+  if (v.includes('youtube.com') || v.includes('youtu.be')) return 'youtube';
+  if (v.includes('facebook.com') || v.includes('fb.com')) return 'facebook';
+  if (v.includes('twitter.com') || v.includes('x.com')) return 'twitter';
+  if (v.includes('github.com')) return 'github';
+  if (v.includes('tiktok.com')) return 'tiktok';
+  if (v.includes('t.me') || v.includes('telegram.org')) return 'telegram';
+  if (v.includes('discord.gg') || v.includes('discord.com')) return 'discord';
+  if (v.includes('twitch.tv')) return 'twitch';
+  if (v.includes('threads.net')) return 'threads';
+  if (v.includes('mailto:') || v.includes('@') && v.includes('.')) return 'email';
+  if (v.includes('google.com/maps') || v.includes('goo.gl/maps')) return 'maps';
+
+  return 'website';
 };
