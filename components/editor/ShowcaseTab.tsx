@@ -88,6 +88,7 @@ const iconMap: Record<string, any> = {
 };
 
 const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync }) => {
+    const navigate = useNavigate();
     const [showcase, setShowcase] = useState<(Showcase & { items: (ShowcaseItem & { images: ShowcaseImage[], options: ShowcaseOption[], testimonials: ShowcaseTestimonial[] })[] }) | null>(null);
 
     useEffect(() => {
@@ -100,6 +101,18 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
     const [isSaving, setIsSaving] = useState(false);
     const [globalIsSaving, setGlobalIsSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Sync real-time changes to preview
+    useEffect(() => {
+        if (!onSync || !showcase) return;
+
+        let previewShowcase = { ...showcase };
+        if (localDraft && editingItem) {
+            // Se houver rascunho em edição, mostramos APENAS o rascunho para foco total no preview
+            previewShowcase.items = [{ ...localDraft }];
+        }
+        onSync(previewShowcase);
+    }, [showcase, localDraft, editingItem, onSync]);
 
     const [addingShortcutType, setAddingShortcutType] = useState<string | null>(null);
     const [shortcutInputValue, setShortcutInputValue] = useState('');
@@ -561,6 +574,49 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                                     </div>
                                 )}
                             </div>
+
+                            <div className="pt-6 border-t border-white/5">
+                                <ColorPickerButton
+                                    label="Cor da Descrição"
+                                    value={showcase?.descriptionColor || '#9ca3af'}
+                                    onChange={(hex) => handleSaveGlobalSettings({ descriptionColor: hex })}
+                                />
+                                <p className="text-[10px] text-zinc-600 uppercase tracking-widest mt-2 font-bold">
+                                    Define a cor da fonte das descrições.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-2 mb-2">
+                            <LayoutIcon size={14} className="text-blue-500" />
+                            <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Template de Itens</h4>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            {[
+                                { id: 'modern', label: 'Grade Moderna', icon: LayoutIcon },
+                                { id: 'list', label: 'Lista Focada', icon: GripVertical },
+                                { id: '3d', label: 'Estilo 3D', icon: Box },
+                                { id: 'glassy', label: 'Efeito Vidro', icon: Sparkles },
+                                { id: 'neon', label: 'Estilo Neon', icon: Zap },
+                                { id: 'transparent', label: 'Minimalista', icon: Square }
+                            ].map((tpl) => (
+                                <button
+                                    key={tpl.id}
+                                    onClick={() => handleSaveGlobalSettings({ itemTemplate: tpl.id })}
+                                    className={clsx(
+                                        "p-6 rounded-3xl border flex flex-col items-center gap-4 transition-all duration-300",
+                                        showcase?.itemTemplate === tpl.id
+                                            ? "bg-blue-600/10 border-blue-500 text-white scale-[1.02] shadow-2xl"
+                                            : "bg-black/20 border-white/5 text-zinc-500 hover:border-white/10"
+                                    )}
+                                >
+                                    <tpl.icon size={24} className={showcase?.itemTemplate === tpl.id ? "text-blue-400" : "text-zinc-700"} />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-center">{tpl.label}</span>
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -638,53 +694,55 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                         </div>
                     </div>
 
-                    {addingShortcutType && (
-                        <div className="bg-blue-600/5 border border-blue-500/20 rounded-3xl p-6 animate-in zoom-in-95 duration-300">
-                            <div className="flex items-center justify-between mb-4">
-                                <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
-                                    Configurar {addingShortcutType.toUpperCase()}
-                                </h4>
-                                <button onClick={() => setAddingShortcutType(null)} className="text-zinc-500 hover:text-white">
-                                    <X size={16} />
-                                </button>
-                            </div>
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <div className="flex-1 relative">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
-                                        {React.createElement(iconMap[addingShortcutType] || Globe, { size: 16 })}
-                                    </div>
-                                    <input
-                                        type="text"
-                                        autoFocus
-                                        value={shortcutInputValue}
-                                        onChange={(e) => {
-                                            setShortcutInputValue(e.target.value);
-                                            if (addingShortcutType === 'website') {
-                                                const detected = detectLinkType(e.target.value);
-                                                if (detected !== 'website') {
-                                                    setAddingShortcutType(detected);
-                                                }
-                                            }
-                                        }}
-                                        placeholder={
-                                            addingShortcutType === 'whatsapp' ? 'DDD + Número' :
-                                                addingShortcutType === 'instagram' ? '@seu_usuario' :
-                                                    addingShortcutType === 'facebook' ? 'facebook.com/seu_perfil' :
-                                                        addingShortcutType === 'website' ? 'https://seu-site.com' :
-                                                            'Seu link ou usuário'
-                                        }
-                                        className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-sm font-bold focus:border-blue-500 outline-none transition-all"
-                                    />
+                    {
+                        addingShortcutType && (
+                            <div className="bg-blue-600/5 border border-blue-500/20 rounded-3xl p-6 animate-in zoom-in-95 duration-300">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
+                                        Configurar {addingShortcutType.toUpperCase()}
+                                    </h4>
+                                    <button onClick={() => setAddingShortcutType(null)} className="text-zinc-500 hover:text-white">
+                                        <X size={16} />
+                                    </button>
                                 </div>
-                                <button
-                                    onClick={handleAddShortcut}
-                                    className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95"
-                                >
-                                    Confirmar
-                                </button>
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <div className="flex-1 relative">
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">
+                                            {React.createElement(iconMap[addingShortcutType] || Globe, { size: 16 })}
+                                        </div>
+                                        <input
+                                            type="text"
+                                            autoFocus
+                                            value={shortcutInputValue}
+                                            onChange={(e) => {
+                                                setShortcutInputValue(e.target.value);
+                                                if (addingShortcutType === 'website') {
+                                                    const detected = detectLinkType(e.target.value);
+                                                    if (detected !== 'website') {
+                                                        setAddingShortcutType(detected);
+                                                    }
+                                                }
+                                            }}
+                                            placeholder={
+                                                addingShortcutType === 'whatsapp' ? 'DDD + Número' :
+                                                    addingShortcutType === 'instagram' ? '@seu_usuario' :
+                                                        addingShortcutType === 'facebook' ? 'facebook.com/seu_perfil' :
+                                                            addingShortcutType === 'website' ? 'https://seu-site.com' :
+                                                                'Seu link ou usuário'
+                                            }
+                                            className="w-full bg-black/40 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-sm font-bold focus:border-blue-500 outline-none transition-all"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={handleAddShortcut}
+                                        className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95"
+                                    >
+                                        Confirmar
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )
+                    }
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                         {(!profile.buttons || profile.buttons.length === 0) && !addingShortcutType && (
@@ -736,7 +794,7 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                             );
                         })}
                     </div>
-                </div>
+                </div >
 
                 <div className="flex items-center gap-3 p-4 bg-blue-500/5 rounded-2xl border border-blue-500/10">
                     <Zap size={14} className="text-blue-500 animate-pulse" />
@@ -745,15 +803,17 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                     </p>
                 </div>
 
-                {globalIsSaving && (
-                    <div className="flex justify-end pt-2">
-                        <span className="text-[9px] font-black text-blue-400 uppercase tracking-[0.3em] animate-pulse">Salvando Estilo...</span>
-                    </div>
-                )}
-            </section>
+                {
+                    globalIsSaving && (
+                        <div className="flex justify-end pt-2">
+                            <span className="text-[9px] font-black text-blue-400 uppercase tracking-[0.3em] animate-pulse">Salvando Estilo...</span>
+                        </div>
+                    )
+                }
+            </section >
 
             {/* Sharing Section */}
-            <section className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            < section className="bg-zinc-900/40 border border-white/5 rounded-[2.5rem] p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000" >
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-2xl bg-emerald-600/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                         <Share2 size={20} />
@@ -806,7 +866,7 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                         <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">QR Code Oficial da Vitrine</p>
                     </div>
                 </div>
-            </section>
+            </section >
 
             <div className="space-y-4">
                 {showcase?.items?.length === 0 ? (
@@ -876,24 +936,26 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                 )}
             </div>
 
-            {editingItem && localDraft && (
-                <ShowcaseItemModal
-                    localDraft={localDraft}
-                    setLocalDraft={setLocalDraft}
-                    onSave={handleSaveCurrentItem}
-                    onCancel={() => setEditingItem(null)}
-                    isSaving={isSaving}
-                    handleMainImageUpload={handleMainImageUpload}
-                    handleGalleryUpload={handleGalleryUpload}
-                    removeImage={removeImage}
-                    addTestimonial={addTestimonial}
-                    updateTestimonial={updateTestimonial}
-                    removeTestimonial={removeTestimonial}
-                    formatCurrency={formatCurrency}
-                    parseCurrency={parseCurrency}
-                />
-            )}
-        </div>
+            {
+                editingItem && localDraft && (
+                    <ShowcaseItemModal
+                        localDraft={localDraft}
+                        setLocalDraft={setLocalDraft}
+                        onSave={handleSaveCurrentItem}
+                        onCancel={() => setEditingItem(null)}
+                        isSaving={isSaving}
+                        handleMainImageUpload={handleMainImageUpload}
+                        handleGalleryUpload={handleGalleryUpload}
+                        removeImage={removeImage}
+                        addTestimonial={addTestimonial}
+                        updateTestimonial={updateTestimonial}
+                        removeTestimonial={removeTestimonial}
+                        formatCurrency={formatCurrency}
+                        parseCurrency={parseCurrency}
+                    />
+                )
+            }
+        </div >
     );
 };
 

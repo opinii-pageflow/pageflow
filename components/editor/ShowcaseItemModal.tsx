@@ -308,13 +308,20 @@ const ShowcaseItemModal: React.FC<Props> = ({
                             </div>
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-600 ml-1">Valor do CTA</label>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-zinc-600 ml-1">
+                                {localDraft.ctaType === 'whatsapp' ? 'Mensagem Automática' : 'Link de Destino'}
+                            </label>
                             <input
                                 value={localDraft.ctaValue || ''}
                                 onChange={(e) => setLocalDraft({ ...localDraft, ctaValue: e.target.value })}
-                                placeholder={localDraft.ctaType === 'whatsapp' ? 'Diga olá...' : 'https://...'}
-                                className="w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3 text-sm font-medium outline-none focus:border-blue-500/50 transition-all"
+                                placeholder={localDraft.ctaType === 'whatsapp' ? 'Ex: Olá! Tenho interesse...' : 'https://seusite.com/produto'}
+                                className="w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3 text-sm font-medium outline-none focus:border-blue-500/50 transition-all font-mono"
                             />
+                            <p className="text-[8px] text-zinc-700 font-bold uppercase tracking-widest ml-1">
+                                {localDraft.ctaType === 'whatsapp'
+                                    ? 'Esta mensagem será enviada para o seu WhatsApp cadastrado.'
+                                    : 'O cliente será redirecionado para este link ao clicar em comprar.'}
+                            </p>
                         </div>
                     </section>
 

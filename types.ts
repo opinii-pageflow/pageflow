@@ -58,6 +58,7 @@ export interface Showcase {
   buttonSecondaryColor?: string;
   buttonGradientEnabled?: boolean;
   itemTemplate?: string;
+  descriptionColor?: string;
   headerButtonIds?: string[];
   communityClickDestination?: 'profile' | 'showcase';
   items?: ShowcaseItem[];
