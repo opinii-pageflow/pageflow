@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import {
@@ -102,6 +102,13 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
     const [shortcutInputValue, setShortcutInputValue] = useState('');
 
     const hasAccess = clientPlan === 'business' || clientPlan === 'enterprise';
+
+    // URL da Vitrine (Memoized para consistência)
+    const showcaseUrl = useMemo(() => {
+        if (typeof window === 'undefined') return '';
+        // Garante a construção correta da URL com HashRouter
+        return `${window.location.origin}/#/u/${profile.slug}/vitrine`;
+    }, [profile.slug]);
 
     const formatCurrency = (val: number) => {
         return new Intl.NumberFormat('pt-BR', {
@@ -457,7 +464,7 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                     </div>
 
                     <a
-                        href={`${window.location.origin}/#/u/${profile.slug}/vitrine`}
+                        href={showcaseUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 transition-all flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em]"
@@ -722,13 +729,12 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                             <div className="flex gap-2">
                                 <input
                                     readOnly
-                                    value={`${window.location.origin}/#/u/${profile.slug}/vitrine`}
+                                    value={showcaseUrl}
                                     className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs text-zinc-400 outline-none"
                                 />
                                 <button
                                     onClick={() => {
-                                        const url = `${window.location.origin}/#/u/${profile.slug}/vitrine`;
-                                        navigator.clipboard.writeText(url);
+                                        navigator.clipboard.writeText(showcaseUrl);
                                         alert('Link copiado!');
                                     }}
                                     className="p-3 bg-white text-black rounded-xl hover:bg-zinc-200 transition-all active:scale-95"
@@ -749,7 +755,7 @@ const ShowcaseTab: React.FC<Props> = ({ profile, clientPlan, onUpdate, onSync })
                     <div className="flex flex-col items-center justify-center gap-4 bg-white/5 p-8 rounded-[2rem] border border-white/10">
                         <div className="p-4 bg-white rounded-3xl shadow-2xl">
                             <QRCodeSVG
-                                value={`${window.location.origin}/#/u/${profile.slug}/vitrine`}
+                                value={showcaseUrl}
                                 size={140}
                                 level="H"
                                 includeMargin={false}
