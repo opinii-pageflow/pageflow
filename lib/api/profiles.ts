@@ -458,7 +458,7 @@ export const profilesApi = {
         // Handle Avatar and Cover Uploads
         if (updates.avatarUrl && updates.avatarUrl.startsWith('data:')) {
             try {
-                dbUpdates.avatar_url = await storageApi.uploadImage(`avatars/${id}.jpg`, updates.avatarUrl);
+                dbUpdates.avatar_url = await storageApi.uploadImage(`avatars/${id}.jpg`, updates.avatarUrl) + '?t=' + Date.now();
             } catch (err) {
                 console.error("[profilesApi] Critical: Failed to upload avatar:", err);
                 throw new Error("Falha ao enviar avatar. Tente novamente.");
@@ -469,7 +469,7 @@ export const profilesApi = {
 
         if (updates.coverUrl && updates.coverUrl.startsWith('data:')) {
             try {
-                dbUpdates.cover_url = await storageApi.uploadImage(`covers/${id}.jpg`, updates.coverUrl);
+                dbUpdates.cover_url = await storageApi.uploadImage(`covers/${id}.jpg`, updates.coverUrl) + '?t=' + Date.now();
             } catch (err) {
                 console.error("[profilesApi] Critical: Failed to upload cover:", err);
                 throw new Error("Falha ao enviar capa. Tente novamente.");
@@ -481,7 +481,7 @@ export const profilesApi = {
         // Handle Promotion Image Upload
         if (updates.promotionImageUrl && updates.promotionImageUrl.startsWith('data:')) {
             try {
-                dbUpdates.promotion_image_url = await storageApi.uploadImage(`promotions/${id}.jpg`, updates.promotionImageUrl);
+                dbUpdates.promotion_image_url = await storageApi.uploadImage(`promotions/${id}.jpg`, updates.promotionImageUrl) + '?t=' + Date.now();
             } catch (err) {
                 console.error("[profilesApi] Critical: Failed to upload promotion image:", err);
                 throw new Error("Falha ao enviar imagem da promoção.");
@@ -490,7 +490,17 @@ export const profilesApi = {
             dbUpdates.promotion_image_url = updates.promotionImageUrl;
         }
 
-        if (updates.theme) dbUpdates.theme = updates.theme;
+        if (updates.theme) {
+            const theme = { ...updates.theme };
+            if (theme.backgroundType === 'image' && theme.backgroundValue && theme.backgroundValue.startsWith('data:')) {
+                try {
+                    theme.backgroundValue = await storageApi.uploadImage(`backgrounds/${id}.jpg`, theme.backgroundValue) + '?t=' + Date.now();
+                } catch (err) {
+                    console.error("[profilesApi] Failed to upload background image:", err);
+                }
+            }
+            dbUpdates.theme = theme;
+        }
         if (updates.fonts) dbUpdates.fonts = updates.fonts;
         if (updates.slug) dbUpdates.slug = updates.slug;
         if (updates.layoutTemplate) dbUpdates.layout_template = updates.layoutTemplate;
@@ -589,7 +599,7 @@ export const profilesApi = {
             let imageUrl = item.imageUrl;
             if (imageUrl && imageUrl.startsWith('data:')) {
                 try {
-                    imageUrl = await storageApi.uploadImage(`catalog/${profileId}_${item.id || idx}.jpg`, imageUrl);
+                    imageUrl = await storageApi.uploadImage(`catalog/${profileId}_${item.id || idx}.jpg`, imageUrl) + '?t=' + Date.now();
                 } catch (err) {
                     console.error("[profilesApi] Failed to upload catalog image:", err);
                 }
@@ -636,7 +646,7 @@ export const profilesApi = {
             let imageUrl = item.imageUrl;
             if (imageUrl && imageUrl.startsWith('data:')) {
                 try {
-                    imageUrl = await storageApi.uploadImage(`portfolio/${profileId}_${item.id || idx}.jpg`, imageUrl);
+                    imageUrl = await storageApi.uploadImage(`portfolio/${profileId}_${item.id || idx}.jpg`, imageUrl) + '?t=' + Date.now();
                 } catch (err) {
                     console.error("[profilesApi] Failed to upload portfolio image:", err);
                 }
